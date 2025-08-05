@@ -12,6 +12,8 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import RegisterExit from "./pages/RegisterExit";
 import Exits from "./pages/Exits";
+import ManageNotices from "./pages/ManageNotices";
+import ManageUsers from "./pages/ManageUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -82,6 +84,20 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Exits />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/notices" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <ManageNotices />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/users" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <ManageUsers />
                 </AppLayout>
               </ProtectedRoute>
             } />
