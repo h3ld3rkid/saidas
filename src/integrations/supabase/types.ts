@@ -106,16 +106,29 @@ export type Database = {
       }
       vehicle_exits: {
         Row: {
+          ambulance_number: string | null
           created_at: string
+          crew: string | null
           departure_date: string
           departure_time: string
           destination: string
           driver_license: string
           driver_name: string
+          exit_type: string | null
           expected_return_date: string | null
           expected_return_time: string | null
           id: string
+          is_pem: boolean | null
+          is_reserve: boolean | null
           observations: string | null
+          patient_address: string | null
+          patient_age: number | null
+          patient_contact: string | null
+          patient_district: string | null
+          patient_gender: string | null
+          patient_municipality: string | null
+          patient_name: string | null
+          patient_parish: string | null
           purpose: string
           status: string
           updated_at: string
@@ -123,16 +136,29 @@ export type Database = {
           vehicle_id: string
         }
         Insert: {
+          ambulance_number?: string | null
           created_at?: string
+          crew?: string | null
           departure_date: string
           departure_time: string
           destination: string
           driver_license: string
           driver_name: string
+          exit_type?: string | null
           expected_return_date?: string | null
           expected_return_time?: string | null
           id?: string
+          is_pem?: boolean | null
+          is_reserve?: boolean | null
           observations?: string | null
+          patient_address?: string | null
+          patient_age?: number | null
+          patient_contact?: string | null
+          patient_district?: string | null
+          patient_gender?: string | null
+          patient_municipality?: string | null
+          patient_name?: string | null
+          patient_parish?: string | null
           purpose: string
           status?: string
           updated_at?: string
@@ -140,16 +166,29 @@ export type Database = {
           vehicle_id: string
         }
         Update: {
+          ambulance_number?: string | null
           created_at?: string
+          crew?: string | null
           departure_date?: string
           departure_time?: string
           destination?: string
           driver_license?: string
           driver_name?: string
+          exit_type?: string | null
           expected_return_date?: string | null
           expected_return_time?: string | null
           id?: string
+          is_pem?: boolean | null
+          is_reserve?: boolean | null
           observations?: string | null
+          patient_address?: string | null
+          patient_age?: number | null
+          patient_contact?: string | null
+          patient_district?: string | null
+          patient_gender?: string | null
+          patient_municipality?: string | null
+          patient_name?: string | null
+          patient_parish?: string | null
           purpose?: string
           status?: string
           updated_at?: string
