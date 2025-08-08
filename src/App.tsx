@@ -4,10 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AppSidebar } from "@/components/AppSidebar";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import RegisterExit from "./pages/RegisterExit";
@@ -16,19 +14,18 @@ import ManageNotices from "./pages/ManageNotices";
 import ManageUsers from "./pages/ManageUsers";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Home from "./pages/Home";
+import ManageVehicles from "./pages/ManageVehicles";
 
 const queryClient = new QueryClient();
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <AppSidebar />
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
-    </SidebarProvider>
+    <div className="min-h-screen flex w-full">
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
+    </div>
   );
 };
 
@@ -38,7 +35,7 @@ const AuthRedirect = () => {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/dashboard');
+      navigate('/home');
     }
   }, [user, loading, navigate]);
 
@@ -67,6 +64,13 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<AuthRedirect />} />
             <Route path="/" element={<AuthRedirect />} />
+            <Route path="/home" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Home />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <AppLayout>
@@ -85,6 +89,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Exits />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/vehicles" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <ManageVehicles />
                 </AppLayout>
               </ProtectedRoute>
             } />

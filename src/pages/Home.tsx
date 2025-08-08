@@ -1,0 +1,94 @@
+import { useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+
+const fetchNotices = async () => {
+  const { data, error } = await supabase
+    .from('notices')
+    .select('id, title, content, start_date, end_date')
+    .order('start_date', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+};
+
+const fetchActiveServices = async () => {
+  const { data, error } = await supabase
+    .from('vehicle_exits')
+    .select('id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status')
+    .eq('status', 'active')
+    .order('departure_date', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+};
+
+export default function Home() {
+  useEffect(() => {
+    document.title = 'Home | Avisos e Serviços Ativos';
+  }, []);
+
+  const { data: notices } = useQuery({ queryKey: ['notices-active'], queryFn: fetchNotices });
+  const { data: services } = useQuery({ queryKey: ['services-active'], queryFn: fetchActiveServices });
+
+  return (
+    <div className="p-6 space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold">Home</h1>
+        <p className="text-muted-foreground">Avisos e serviços que ainda não terminaram</p>
+      </header>
+
+      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Avisos</CardTitle>
+            <CardDescription>Informações importantes ativas</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {notices && notices.length > 0 ? (
+              notices.map((n: any) => (
+                <div key={n.id} className="rounded-md border p-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">{n.title}</h3>
+                    <Badge variant="secondary">Ativo</Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{n.content}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem avisos ativos.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Serviços em Curso</CardTitle>
+            <CardDescription>Saídas ainda ativas</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {services && services.length > 0 ? (
+              services.map((s: any) => (
+                <div key={s.id} className="rounded-md border p-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="font-medium">Ambulância: {s.ambulance_number ?? '—'}</p>
+                      <p className="text-sm text-muted-foreground">Destino: {s.destination}</p>
+                    </div>
+                    <Badge>{s.exit_type ?? 'Serviço'}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Partida: {s.departure_date} {s.departure_time}</p>
+                  {s.crew && (
+                    <p className="text-xs text-muted-foreground">Tripulação: {s.crew}</p>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm text-muted-foreground">Sem serviços ativos.</p>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+}
