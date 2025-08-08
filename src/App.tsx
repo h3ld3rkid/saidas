@@ -14,6 +14,7 @@ import RegisterExit from "./pages/RegisterExit";
 import Exits from "./pages/Exits";
 import ManageNotices from "./pages/ManageNotices";
 import ManageUsers from "./pages/ManageUsers";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -98,6 +99,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <ManageUsers />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Profile />
                 </AppLayout>
               </ProtectedRoute>
             } />

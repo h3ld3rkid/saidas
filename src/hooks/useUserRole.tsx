@@ -17,19 +17,13 @@ export const useUserRole = () => {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .order('role', { ascending: true })
-          .limit(1)
-          .single();
+        const { data, error } = await supabase.rpc('get_current_user_role');
 
         if (error) {
-          console.error('Error fetching user role:', error);
+          console.error('Error fetching user role via RPC:', error);
           setRole('user');
         } else {
-          setRole(data.role as UserRole);
+          setRole((data as UserRole) ?? 'user');
         }
       } catch (error) {
         console.error('Error fetching user role:', error);
