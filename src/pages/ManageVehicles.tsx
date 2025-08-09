@@ -77,38 +77,40 @@ export default function ManageVehicles() {
         <p className="text-muted-foreground">Adicionar e gerir viaturas ativas</p>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Adicionar Viatura</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div>
-              <Label>Matrícula</Label>
-              <Input value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value.toUpperCase() })} placeholder="AA-00-AA" />
-            </div>
-            <div>
-              <Label>Marca</Label>
-              <Input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} />
-            </div>
-            <div>
-              <Label>Modelo</Label>
-              <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
-            </div>
-            <div>
-              <Label>Ano</Label>
-              <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
-            </div>
-            <div className="flex items-end gap-3">
-              <div className="flex items-center gap-2">
-                <Checkbox checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: Boolean(v) })} id="active" />
-                <Label htmlFor="active">Ativa</Label>
+      {hasRole('admin') && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Adicionar Viatura</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div>
+                <Label>Matrícula</Label>
+                <Input value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value.toUpperCase() })} placeholder="AA-00-AA" />
               </div>
-              <Button onClick={addVehicle} disabled={loading}>Adicionar</Button>
+              <div>
+                <Label>Marca</Label>
+                <Input value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} />
+              </div>
+              <div>
+                <Label>Modelo</Label>
+                <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
+              </div>
+              <div>
+                <Label>Ano</Label>
+                <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
+              </div>
+              <div className="flex items-end gap-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: Boolean(v) })} id="active" />
+                  <Label htmlFor="active">Ativa</Label>
+                </div>
+                <Button onClick={addVehicle} disabled={loading}>Adicionar</Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
