@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
+import { useAddressHierarchy } from '@/hooks/useAddressHierarchy';
+import { useCrewSearch } from '@/hooks/useCrewSearch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Search } from 'lucide-react';
 
 interface Vehicle {
   id: string;
@@ -39,6 +41,31 @@ export default function RegisterExit() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { hasRole } = useUserRole();
+  
+  // Address hooks
+  const {
+    districts,
+    municipalities,
+    parishes,
+    streets,
+    selectedDistrict,
+    selectedMunicipality,
+    selectedParish,
+    streetSearch,
+    setSelectedDistrict,
+    setSelectedMunicipality,
+    setSelectedParish,
+    setStreetSearch,
+    getSelectedNames
+  } = useAddressHierarchy();
+
+  // Crew search hook
+  const {
+    crewMembers,
+    searchTerm: crewSearchTerm,
+    setSearchTerm: setCrewSearchTerm,
+    loading: crewLoading
+  } = useCrewSearch();
 
   // Base data
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -54,6 +81,8 @@ export default function RegisterExit() {
   const [phone2, setPhone2] = useState('');
   const [phone3, setPhone3] = useState('');
   const [inemOption, setInemOption] = useState<'inem' | 'inem_s_iteams' | 'reserva' | ''>('');
+  const [showCrewDropdown, setShowCrewDropdown] = useState(false);
+  const [showStreetDropdown, setShowStreetDropdown] = useState(false);
 
   // Form data mapping 1:1 to DB where possible
   const [form, setForm] = useState({
@@ -121,10 +150,21 @@ export default function RegisterExit() {
     setForm((f) => ({ ...f, patient_contact: joined }));
   }, [phone1, phone2, phone3]);
 
-  // Keep exit_type and ambulance selection in sync
+  // Keep exit_type in sync
   useEffect(() => {
     setForm((f) => ({ ...f, exit_type: exitType }));
   }, [exitType]);
+
+  // Sync address fields with selected values
+  useEffect(() => {
+    const names = getSelectedNames();
+    setForm(f => ({
+      ...f,
+      patient_district: names.district,
+      patient_municipality: names.municipality,
+      patient_parish: names.parish
+    }));
+  }, [selectedDistrict, selectedMunicipality, selectedParish, getSelectedNames]);
 
   const set = (key: keyof typeof form, value: any) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -237,16 +277,10 @@ export default function RegisterExit() {
               )}
             </div>
 
-            {/* Linha 3: Motivo e Destino */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Motivo</Label>
-                <Input value={form.purpose} onChange={(e) => set('purpose', e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Destino</Label>
-                <Input value={form.destination} onChange={(e) => set('destination', e.target.value)} />
-              </div>
+            {/* Linha 3: Motivo */}
+            <div className="space-y-2">
+              <Label>Motivo</Label>
+              <Input value={form.purpose} onChange={(e) => set('purpose', e.target.value)} />
             </div>
 
             {/* Linha 4: Dados do paciente */}
@@ -285,22 +319,96 @@ export default function RegisterExit() {
               <p className="text-xs text-muted-foreground">Será guardado como um número único.</p>
             </div>
 
-            {/* Linha 6: Morada (texto com possibilidade de filtros futuros) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Distrito</Label>
-                <Input value={form.patient_district} onChange={(e) => set('patient_district', e.target.value)} placeholder="Ex.: Braga" />
+            {/* Linha 6: Morada com dropdowns hierárquicos */}
+            <div className="space-y-4">
+              <Label>Morada</Label>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Distrito</Label>
+                  <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione o distrito" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {districts.map((district) => (
+                        <SelectItem key={district.id} value={district.id}>
+                          {district.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Concelho</Label>
+                  <Select value={selectedMunicipality} onValueChange={setSelectedMunicipality} disabled={!selectedDistrict}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione o concelho" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {municipalities.map((municipality) => (
+                        <SelectItem key={municipality.id} value={municipality.id}>
+                          {municipality.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Freguesia</Label>
+                  <Select value={selectedParish} onValueChange={setSelectedParish} disabled={!selectedMunicipality}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione a freguesia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parishes.map((parish) => (
+                        <SelectItem key={parish.id} value={parish.id}>
+                          {parish.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Concelho</Label>
-                <Input value={form.patient_municipality} onChange={(e) => set('patient_municipality', e.target.value)} placeholder="Ex.: Amares" />
+
+              <div className="space-y-2 relative">
+                <Label>Rua</Label>
+                <div className="relative">
+                  <Input
+                    value={streetSearch}
+                    onChange={(e) => {
+                      setStreetSearch(e.target.value);
+                      setShowStreetDropdown(true);
+                    }}
+                    onFocus={() => setShowStreetDropdown(true)}
+                    placeholder="Procurar rua..."
+                    disabled={!selectedParish}
+                  />
+                  <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                </div>
+                {showStreetDropdown && streets.length > 0 && (
+                  <div className="absolute z-10 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                    {streets.map((street) => (
+                      <div
+                        key={street.id}
+                        className="px-3 py-2 hover:bg-accent cursor-pointer"
+                        onClick={() => {
+                          setStreetSearch(street.nome);
+                          set('patient_address', street.nome);
+                          setShowStreetDropdown(false);
+                        }}
+                      >
+                        {street.nome}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div className="space-y-2">
-                <Label>Freguesia</Label>
-                <Input value={form.patient_parish} onChange={(e) => set('patient_parish', e.target.value)} placeholder="Ex.: Ferreiros" />
-              </div>
-              <div className="space-y-2">
-                <Label>Morada</Label>
+                <Label>Morada completa</Label>
                 <Input value={form.patient_address} onChange={(e) => set('patient_address', e.target.value)} placeholder="Rua, nº, andar..." />
               </div>
             </div>
@@ -349,29 +457,48 @@ export default function RegisterExit() {
               </div>
             </div>
 
-            {/* Linha 8: Tripulação (texto + sugestões quando possível) */}
+            {/* Linha 8: Destino */}
             <div className="space-y-2">
-              <Label>Tripulação</Label>
-              <Input list="crew_list" value={form.crew} onChange={(e) => set('crew', e.target.value)} placeholder="Ex.: João, Maria, Pedro" />
-              {crewSuggestions.length > 0 && (
-                <datalist id="crew_list">
-                  {crewSuggestions.map((name) => (
-                    <option key={name} value={name} />
-                  ))}
-                </datalist>
-              )}
-              <p className="text-xs text-muted-foreground">Sugestões visíveis apenas se permitido pelas permissões.</p>
+              <Label>Destino</Label>
+              <Input value={form.destination} onChange={(e) => set('destination', e.target.value)} />
             </div>
 
-            {/* Linha 9: Condutor e observações */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome do Condutor</Label>
-                <Input value={form.driver_name} onChange={(e) => set('driver_name', e.target.value)} />
+            {/* Linha 9: Tripulação com pesquisa ativa */}
+            <div className="space-y-2 relative">
+              <Label>Tripulação</Label>
+              <div className="relative">
+                <Input
+                  value={crewSearchTerm}
+                  onChange={(e) => {
+                    setCrewSearchTerm(e.target.value);
+                    setShowCrewDropdown(true);
+                  }}
+                  onFocus={() => setShowCrewDropdown(true)}
+                  placeholder="Procurar tripulação..."
+                />
+                <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
+              {showCrewDropdown && crewMembers.length > 0 && (
+                <div className="absolute z-10 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                  {crewMembers.map((member) => (
+                    <div
+                      key={member.user_id}
+                      className="px-3 py-2 hover:bg-accent cursor-pointer"
+                      onClick={() => {
+                        const currentCrew = form.crew ? `${form.crew}, ${member.display_name}` : member.display_name;
+                        set('crew', currentCrew);
+                        setCrewSearchTerm('');
+                        setShowCrewDropdown(false);
+                      }}
+                    >
+                      {member.display_name}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="space-y-2">
-                <Label>Carta de Condução</Label>
-                <Input value={form.driver_license} onChange={(e) => set('driver_license', e.target.value)} />
+                <Label>Tripulação selecionada</Label>
+                <Textarea value={form.crew} onChange={(e) => set('crew', e.target.value)} placeholder="Ex.: João Silva, Maria Santos" rows={2} />
               </div>
             </div>
 
