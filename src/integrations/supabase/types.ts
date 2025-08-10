@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      concelhos: {
+        Row: {
+          created_at: string
+          distrito_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          distrito_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          distrito_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "concelhos_distrito_id_fkey"
+            columns: ["distrito_id"]
+            isOneToOne: false
+            referencedRelation: "distritos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      distritos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      freguesias: {
+        Row: {
+          concelho_id: string
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          concelho_id: string
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          concelho_id?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freguesias_concelho_id_fkey"
+            columns: ["concelho_id"]
+            isOneToOne: false
+            referencedRelation: "concelhos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notices: {
         Row: {
           content: string
@@ -83,6 +168,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ruas: {
+        Row: {
+          created_at: string
+          freguesia_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          freguesia_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          freguesia_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ruas_freguesia_id_fkey"
+            columns: ["freguesia_id"]
+            isOneToOne: false
+            referencedRelation: "freguesias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -112,8 +229,8 @@ export type Database = {
           departure_date: string
           departure_time: string
           destination: string
-          driver_license: string
-          driver_name: string
+          driver_license: string | null
+          driver_name: string | null
           exit_type: string | null
           expected_return_date: string | null
           expected_return_time: string | null
@@ -142,8 +259,8 @@ export type Database = {
           departure_date: string
           departure_time: string
           destination: string
-          driver_license: string
-          driver_name: string
+          driver_license?: string | null
+          driver_name?: string | null
           exit_type?: string | null
           expected_return_date?: string | null
           expected_return_time?: string | null
@@ -172,8 +289,8 @@ export type Database = {
           departure_date?: string
           departure_time?: string
           destination?: string
-          driver_license?: string
-          driver_name?: string
+          driver_license?: string | null
+          driver_name?: string | null
           exit_type?: string | null
           expected_return_date?: string | null
           expected_return_time?: string | null
@@ -253,6 +370,13 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
         }
         Returns: boolean
+      }
+      search_active_crew_profiles: {
+        Args: { q: string }
+        Returns: {
+          user_id: string
+          display_name: string
+        }[]
       }
     }
     Enums: {
