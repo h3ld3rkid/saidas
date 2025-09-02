@@ -8,47 +8,53 @@ import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3 } from "lucide-react";
 const fetchNotices = async () => {
-  const { data, error } = await supabase
-    .from('notices')
-    .select('id, title, content, start_date, end_date')
-    .order('start_date', { ascending: false });
+  const {
+    data,
+    error
+  } = await supabase.from('notices').select('id, title, content, start_date, end_date').order('start_date', {
+    ascending: false
+  });
   if (error) throw error;
   return data ?? [];
 };
-
 const fetchActiveServices = async () => {
-  const { data, error } = await supabase
-    .from('vehicle_exits')
-    .select('id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
-    .eq('status', 'active')
-    .order('departure_date', { ascending: false });
+  const {
+    data,
+    error
+  } = await supabase.from('vehicle_exits').select('id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number').eq('status', 'active').order('departure_date', {
+    ascending: false
+  });
   if (error) throw error;
   return data ?? [];
 };
-
 export default function Home() {
   useEffect(() => {
     document.title = 'Home | CV Amares';
   }, []);
-
-  const { data: notices } = useQuery({ queryKey: ['notices-active'], queryFn: fetchNotices });
-  const { data: services } = useQuery({ queryKey: ['services-active'], queryFn: fetchActiveServices });
-  const { hasRole } = useUserRole();
-  
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+  const {
+    data: notices
+  } = useQuery({
+    queryKey: ['notices-active'],
+    queryFn: fetchNotices
+  });
+  const {
+    data: services
+  } = useQuery({
+    queryKey: ['services-active'],
+    queryFn: fetchActiveServices
+  });
+  const {
+    hasRole
+  } = useUserRole();
+  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
         <div className="relative px-6 py-12 md:py-20">
           <div className="max-w-4xl mx-auto text-center">
             <div className="animate-float">
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
-                CV Amares
-              </h1>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-                Sistema de gestão de emergências e serviços de bombeiros voluntários
-              </p>
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">Cruz Vermelha Amares</h1>
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">Sistema de gestão de emergências e serviços</p>
             </div>
             
             {/* Quick Actions */}
@@ -83,8 +89,7 @@ export default function Home() {
                 </div>
               </Link>
               
-              {hasRole('admin') && (
-                <>
+              {hasRole('admin') && <>
                   <Link to="/vehicles" className="group">
                     <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
                       <div className="bg-orange-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-orange-500/20 transition-colors">
@@ -114,8 +119,7 @@ export default function Home() {
                       <p className="text-sm text-muted-foreground">Gestão de acesso</p>
                     </div>
                   </Link>
-                </>
-              )}
+                </>}
             </div>
           </div>
         </div>
@@ -139,9 +143,7 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {notices && notices.length > 0 ? (
-                  notices.map((n: any) => (
-                    <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                {notices && notices.length > 0 ? notices.map((n: any) => <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
@@ -149,16 +151,12 @@ export default function Home() {
                         </div>
                         <Badge variant="secondary" className="shrink-0">Ativo</Badge>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12">
+                    </div>) : <div className="text-center py-12">
                     <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Megaphone className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <p className="text-muted-foreground">Sem avisos ativos no momento</p>
-                  </div>
-                )}
+                  </div>}
               </CardContent>
             </Card>
 
@@ -176,21 +174,15 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {services && services.length > 0 ? (
-                  services.map((s: any) => (
-                    <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                {services && services.length > 0 ? services.map((s: any) => <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <h4 className="font-semibold text-foreground">
                               {s.ambulance_number ?? 'Viatura'}
                             </h4>
-                            {s.service_number && (
-                              <Badge variant="outline" className="text-xs">Nº {s.service_number}</Badge>
-                            )}
-                            {s.total_service_number && (
-                              <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>
-                            )}
+                            {s.service_number && <Badge variant="outline" className="text-xs">Nº {s.service_number}</Badge>}
+                            {s.total_service_number && <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>}
                           </div>
                           <p className="text-sm text-muted-foreground mb-1">
                             <strong>Destino:</strong> {s.destination}
@@ -198,11 +190,9 @@ export default function Home() {
                           <p className="text-xs text-muted-foreground mb-1">
                             <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
                           </p>
-                          {s.crew && (
-                            <p className="text-xs text-muted-foreground">
+                          {s.crew && <p className="text-xs text-muted-foreground">
                               <strong>Tripulação:</strong> {s.crew}
-                            </p>
-                          )}
+                            </p>}
                         </div>
                         <div className="flex flex-col gap-2 items-end">
                           <Badge className="shrink-0">{s.exit_type ?? 'Serviço'}</Badge>
@@ -214,21 +204,16 @@ export default function Home() {
                           </Link>
                         </div>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12">
+                    </div>) : <div className="text-center py-12">
                     <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                       <Car className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <p className="text-muted-foreground">Sem serviços ativos no momento</p>
-                  </div>
-                )}
+                  </div>}
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 }
