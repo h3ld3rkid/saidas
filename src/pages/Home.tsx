@@ -28,122 +28,206 @@ const fetchActiveServices = async () => {
 
 export default function Home() {
   useEffect(() => {
-    document.title = 'Home | Avisos e Serviços Ativos';
+    document.title = 'Home | CV Amares';
   }, []);
 
   const { data: notices } = useQuery({ queryKey: ['notices-active'], queryFn: fetchNotices });
   const { data: services } = useQuery({ queryKey: ['services-active'], queryFn: fetchActiveServices });
   const { hasRole } = useUserRole();
+  
   return (
-    <div className="p-6 space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold">Home</h1>
-        <p className="text-muted-foreground">Avisos e serviços que ainda não terminaram</p>
-      </header>
-
-      <section aria-label="Ações rápidas" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <Link to="/register-exit">
-          <Button className="w-full justify-center" variant="default">
-            <FilePlus2 className="h-4 w-4 mr-2" /> Registar Saída
-          </Button>
-        </Link>
-        <Link to="/exits">
-          <Button className="w-full justify-center" variant="secondary">
-            <ListChecks className="h-4 w-4 mr-2" /> Saídas
-          </Button>
-        </Link>
-        <Link to="/profile">
-          <Button className="w-full justify-center" variant="outline">
-            <UserCircle2 className="h-4 w-4 mr-2" /> Perfil
-          </Button>
-        </Link>
-        {hasRole('admin') && (
-          <>
-            <Link to="/vehicles">
-              <Button className="w-full justify-center" variant="outline">
-                <Car className="h-4 w-4 mr-2" /> Viaturas
-              </Button>
-            </Link>
-            <Link to="/notices">
-              <Button className="w-full justify-center" variant="outline">
-                <Megaphone className="h-4 w-4 mr-2" /> Avisos
-              </Button>
-            </Link>
-            <Link to="/users">
-              <Button className="w-full justify-center" variant="outline">
-                <Users className="h-4 w-4 mr-2" /> Utilizadores
-              </Button>
-            </Link>
-          </>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
+        <div className="relative px-6 py-12 md:py-20">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="animate-float">
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
+                CV Amares
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Sistema de gestão de emergências e serviços de bombeiros voluntários
+              </p>
+            </div>
+            
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+              <Link to="/register-exit" className="group">
+                <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
+                  <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
+                    <FilePlus2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Registar Saída</h3>
+                  <p className="text-sm text-muted-foreground">Nova saída de emergência</p>
+                </div>
+              </Link>
+              
+              <Link to="/exits" className="group">
+                <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
+                  <div className="bg-blue-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-blue-500/20 transition-colors">
+                    <ListChecks className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Ver Saídas</h3>
+                  <p className="text-sm text-muted-foreground">Histórico de serviços</p>
+                </div>
+              </Link>
+              
+              <Link to="/profile" className="group">
+                <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
+                  <div className="bg-green-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-green-500/20 transition-colors">
+                    <UserCircle2 className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-lg mb-2">Perfil</h3>
+                  <p className="text-sm text-muted-foreground">Dados pessoais</p>
+                </div>
+              </Link>
+              
+              {hasRole('admin') && (
+                <>
+                  <Link to="/vehicles" className="group">
+                    <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
+                      <div className="bg-orange-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-orange-500/20 transition-colors">
+                        <Car className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Viaturas</h3>
+                      <p className="text-sm text-muted-foreground">Gestão de frota</p>
+                    </div>
+                  </Link>
+                  
+                  <Link to="/notices" className="group">
+                    <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
+                      <div className="bg-purple-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-purple-500/20 transition-colors">
+                        <Megaphone className="h-6 w-6 text-purple-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Avisos</h3>
+                      <p className="text-sm text-muted-foreground">Comunicações</p>
+                    </div>
+                  </Link>
+                  
+                  <Link to="/users" className="group">
+                    <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
+                      <div className="bg-indigo-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-indigo-500/20 transition-colors">
+                        <Users className="h-6 w-6 text-indigo-600" />
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">Utilizadores</h3>
+                      <p className="text-sm text-muted-foreground">Gestão de acesso</p>
+                    </div>
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Avisos</CardTitle>
-            <CardDescription>Informações importantes ativas</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {notices && notices.length > 0 ? (
-              notices.map((n: any) => (
-                <div key={n.id} className="rounded-md border p-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">{n.title}</h3>
-                    <Badge variant="secondary">Ativo</Badge>
+      {/* Content Section */}
+      <section className="px-6 pb-12">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Avisos Card */}
+            <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-yellow-500/10 p-2 rounded-lg">
+                    <Megaphone className="h-5 w-5 text-yellow-600" />
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{n.content}</p>
+                  <div>
+                    <CardTitle className="text-xl">Avisos Ativos</CardTitle>
+                    <CardDescription>Informações importantes em vigor</CardDescription>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">Sem avisos ativos.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Serviços em Curso</CardTitle>
-            <CardDescription>Saídas ainda ativas</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {services && services.length > 0 ? (
-              services.map((s: any) => (
-                <div key={s.id} className="rounded-md border p-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-medium">Ambulância: {s.ambulance_number ?? '—'}</p>
-                        {s.service_number && (
-                          <Badge variant="outline">Nº {s.service_number}</Badge>
-                        )}
-                        {s.total_service_number && (
-                          <Badge variant="secondary">#{s.total_service_number}</Badge>
-                        )}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {notices && notices.length > 0 ? (
+                  notices.map((n: any) => (
+                    <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
+                          <p className="text-sm text-muted-foreground leading-relaxed">{n.content}</p>
+                        </div>
+                        <Badge variant="secondary" className="shrink-0">Ativo</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">Destino: {s.destination}</p>
-                      <p className="text-xs text-muted-foreground mt-1">Partida: {s.departure_date} {s.departure_time}</p>
-                      {s.crew && (
-                        <p className="text-xs text-muted-foreground">Tripulação: {s.crew}</p>
-                      )}
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <Badge>{s.exit_type ?? 'Serviço'}</Badge>
-                      <Link to={`/exits/${s.id}/edit`}>
-                        <Button size="sm" variant="outline">
-                          <Edit3 className="h-3 w-3 mr-1" />
-                          Editar
-                        </Button>
-                      </Link>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Megaphone className="h-8 w-8 text-muted-foreground" />
                     </div>
+                    <p className="text-muted-foreground">Sem avisos ativos no momento</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Serviços Card */}
+            <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-blue-500/10 p-2 rounded-lg">
+                    <Car className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Serviços em Curso</CardTitle>
+                    <CardDescription>Saídas ativas no terreno</CardDescription>
                   </div>
                 </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">Sem serviços ativos.</p>
-            )}
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {services && services.length > 0 ? (
+                  services.map((s: any) => (
+                    <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h4 className="font-semibold text-foreground">
+                              {s.ambulance_number ?? 'Viatura'}
+                            </h4>
+                            {s.service_number && (
+                              <Badge variant="outline" className="text-xs">Nº {s.service_number}</Badge>
+                            )}
+                            {s.total_service_number && (
+                              <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            <strong>Destino:</strong> {s.destination}
+                          </p>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
+                          </p>
+                          {s.crew && (
+                            <p className="text-xs text-muted-foreground">
+                              <strong>Tripulação:</strong> {s.crew}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2 items-end">
+                          <Badge className="shrink-0">{s.exit_type ?? 'Serviço'}</Badge>
+                          <Link to={`/exits/${s.id}/edit`}>
+                            <Button size="sm" variant="outline" className="text-xs">
+                              <Edit3 className="h-3 w-3 mr-1" />
+                              Editar
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Car className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground">Sem serviços ativos no momento</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </section>
     </div>
   );
