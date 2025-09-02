@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks } from "lucide-react";
+import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3 } from "lucide-react";
 const fetchNotices = async () => {
   const { data, error } = await supabase
     .from('notices')
@@ -19,7 +19,7 @@ const fetchNotices = async () => {
 const fetchActiveServices = async () => {
   const { data, error } = await supabase
     .from('vehicle_exits')
-    .select('id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status')
+    .select('id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
     .eq('status', 'active')
     .order('departure_date', { ascending: false });
   if (error) throw error;

@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -200,6 +200,48 @@ export type Database = {
           },
         ]
       }
+      service_counters: {
+        Row: {
+          created_at: string | null
+          current_number: number
+          id: string
+          service_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_number?: number
+          id?: string
+          service_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_number?: number
+          id?: string
+          service_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      total_service_counter: {
+        Row: {
+          current_number: number
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          current_number?: number
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          current_number?: number
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -247,7 +289,9 @@ export type Database = {
           patient_name: string | null
           patient_parish: string | null
           purpose: string
+          service_number: number | null
           status: string
+          total_service_number: number | null
           updated_at: string
           user_id: string
           vehicle_id: string
@@ -277,7 +321,9 @@ export type Database = {
           patient_name?: string | null
           patient_parish?: string | null
           purpose: string
+          service_number?: number | null
           status?: string
+          total_service_number?: number | null
           updated_at?: string
           user_id: string
           vehicle_id: string
@@ -307,7 +353,9 @@ export type Database = {
           patient_name?: string | null
           patient_parish?: string | null
           purpose?: string
+          service_number?: number | null
           status?: string
+          total_service_number?: number | null
           updated_at?: string
           user_id?: string
           vehicle_id?: string
@@ -364,18 +412,25 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_next_service_number: {
+        Args: { p_service_type: string }
+        Returns: {
+          service_num: number
+          total_num: number
+        }[]
+      }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
       search_active_crew_profiles: {
         Args: { q: string }
         Returns: {
-          user_id: string
           display_name: string
+          user_id: string
         }[]
       }
     }

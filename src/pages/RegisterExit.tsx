@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Search } from 'lucide-react';
+import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 
 interface Vehicle {
   id: string;
@@ -77,9 +78,8 @@ export default function RegisterExit() {
   const [editTime, setEditTime] = useState(false);
   const [exitType, setExitType] = useState('');
   const [coduNumber, setCoduNumber] = useState('');
-  const [phone1, setPhone1] = useState('');
-  const [phone2, setPhone2] = useState('');
-  const [phone3, setPhone3] = useState('');
+  const [showSummary, setShowSummary] = useState(false);
+  const [summaryData, setSummaryData] = useState({ serviceType: '', serviceNumber: 0, totalServiceNumber: 0 });
   const [inemOption, setInemOption] = useState<'inem' | 'inem_s_iteams' | 'reserva' | ''>('');
   const [showCrewDropdown, setShowCrewDropdown] = useState(false);
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
@@ -144,11 +144,6 @@ export default function RegisterExit() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keep patient_contact synced from segmented inputs
-  useEffect(() => {
-    const joined = `${phone1}${phone2}${phone3}`.replace(/\D/g, '').slice(0, 9);
-    setForm((f) => ({ ...f, patient_contact: joined }));
-  }, [phone1, phone2, phone3]);
 
   // Keep exit_type in sync
   useEffect(() => {
@@ -210,7 +205,7 @@ export default function RegisterExit() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -308,15 +303,17 @@ export default function RegisterExit() {
               </div>
             </div>
 
-            {/* Linha 5: Contacto em 3 blocos */}
+            {/* Linha 5: Contacto único */}
             <div className="space-y-2">
               <Label>Contacto</Label>
-              <div className="grid grid-cols-3 gap-3">
-                <Input inputMode="numeric" maxLength={3} value={phone1} onChange={(e) => setPhone1(e.target.value.replace(/\D/g, '').slice(0,3))} placeholder="000" />
-                <Input inputMode="numeric" maxLength={3} value={phone2} onChange={(e) => setPhone2(e.target.value.replace(/\D/g, '').slice(0,3))} placeholder="000" />
-                <Input inputMode="numeric" maxLength={3} value={phone3} onChange={(e) => setPhone3(e.target.value.replace(/\D/g, '').slice(0,3))} placeholder="000" />
-              </div>
-              <p className="text-xs text-muted-foreground">Será guardado como um número único.</p>
+              <Input 
+                inputMode="numeric" 
+                maxLength={9} 
+                value={form.patient_contact} 
+                onChange={(e) => set('patient_contact', e.target.value.replace(/\D/g, '').slice(0, 9))} 
+                placeholder="123456789" 
+              />
+              <p className="text-xs text-muted-foreground">Número de telefone com 9 dígitos.</p>
             </div>
 
             {/* Linha 6: Morada com dropdowns hierárquicos */}
