@@ -191,14 +191,39 @@ export default function RegisterExit() {
     } as const;
 
     setLoading(true);
-    const { error } = await supabase.from('vehicle_exits').insert(payload as any);
-    setLoading(false);
-
-    if (error) {
+    
+    try {
+      // Get service numbers first
+      const { data: numberData, error: numberError } = await supabase.rpc('get_next_service_number', {
+        p_service_type: exitType
+      });
+      
+      if (numberError) throw numberError;
+      
+      const serviceNumber = numberData[0]?.service_num || 1;
+      const totalServiceNumber = numberData[0]?.total_num || 1;
+      
+      // Insert the exit with the numbers
+      const { error } = await supabase.from('vehicle_exits').insert({
+        ...payload,
+        service_number: serviceNumber,
+        total_service_number: totalServiceNumber
+      } as any);
+      
+      if (error) throw error;
+      
+      // Show summary modal
+      setSummaryData({ 
+        serviceType: exitType, 
+        serviceNumber, 
+        totalServiceNumber 
+      });
+      setShowSummary(true);
+      
+    } catch (error: any) {
       toast({ title: 'Erro ao registar saída', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: 'Saída registada com sucesso' });
-      navigate('/exits');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -505,16 +530,27 @@ export default function RegisterExit() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" className="flex-1" disabled={loading}>
+              <Button type="submit" disabled={loading || !form.vehicle_id || !form.purpose || !form.destination}>
                 {loading ? 'A registar...' : 'Registar Saída'}
               </Button>
-              <Button type="button" variant="outline" onClick={() => navigate(-1)}>
+              <Button type="button" variant="outline" onClick={() => navigate('/')}>
                 Cancelar
               </Button>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      <ServiceSummaryModal
+        open={showSummary}
+        onClose={() => {
+          setShowSummary(false);
+          navigate('/exits');
+        }}
+        serviceType={summaryData.serviceType}
+        serviceNumber={summaryData.serviceNumber}
+        totalServiceNumber={summaryData.totalServiceNumber}
+      />
     </div>
   );
 }

@@ -111,16 +111,32 @@ export default function Home() {
               services.map((s: any) => (
                 <div key={s.id} className="rounded-md border p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="font-medium">Ambulância: {s.ambulance_number ?? '—'}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium">Ambulância: {s.ambulance_number ?? '—'}</p>
+                        {s.service_number && (
+                          <Badge variant="outline">Nº {s.service_number}</Badge>
+                        )}
+                        {s.total_service_number && (
+                          <Badge variant="secondary">#{s.total_service_number}</Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">Destino: {s.destination}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Partida: {s.departure_date} {s.departure_time}</p>
+                      {s.crew && (
+                        <p className="text-xs text-muted-foreground">Tripulação: {s.crew}</p>
+                      )}
                     </div>
-                    <Badge>{s.exit_type ?? 'Serviço'}</Badge>
+                    <div className="flex flex-col gap-2">
+                      <Badge>{s.exit_type ?? 'Serviço'}</Badge>
+                      <Link to={`/exits/${s.id}/edit`}>
+                        <Button size="sm" variant="outline">
+                          <Edit3 className="h-3 w-3 mr-1" />
+                          Editar
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Partida: {s.departure_date} {s.departure_time}</p>
-                  {s.crew && (
-                    <p className="text-xs text-muted-foreground">Tripulação: {s.crew}</p>
-                  )}
                 </div>
               ))
             ) : (

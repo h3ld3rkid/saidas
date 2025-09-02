@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import RegisterExit from "./pages/RegisterExit";
 import Exits from "./pages/Exits";
+import EditExit from "./pages/EditExit";
 import ManageNotices from "./pages/ManageNotices";
 import ManageUsers from "./pages/ManageUsers";
 import Profile from "./pages/Profile";
@@ -89,6 +90,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <Exits />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/exits/:id/edit" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <EditExit />
                 </AppLayout>
               </ProtectedRoute>
             } />
