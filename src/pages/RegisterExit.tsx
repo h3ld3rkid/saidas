@@ -176,11 +176,16 @@ export default function RegisterExit() {
     const is_pem = inemOption === 'inem';
     const is_reserve = inemOption === 'reserva';
 
-    // Ensure date/time default when not editable
+    // Prepare payload and convert empty strings to null for date/time fields
     const payload = {
       ...form,
       departure_date: editDate ? form.departure_date : nowDate(),
       departure_time: editTime ? form.departure_time : nowTime(),
+      // Convert empty strings to null for optional date/time fields
+      expected_return_date: form.expected_return_date || null,
+      expected_return_time: form.expected_return_time || null,
+      // Convert empty patient_age to null
+      patient_age: form.patient_age || null,
       is_pem,
       is_reserve,
       user_id: user.id,
@@ -188,7 +193,7 @@ export default function RegisterExit() {
       observations: exitType === 'Emergencia/CODU' && coduNumber
         ? `CODU: ${coduNumber}${form.observations ? `\n${form.observations}` : ''}`
         : form.observations,
-    } as const;
+    };
 
     setLoading(true);
     
