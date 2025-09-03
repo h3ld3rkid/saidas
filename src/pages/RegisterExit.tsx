@@ -485,10 +485,6 @@ export default function RegisterExit() {
             </div>
 
             {/* Linha 8: Destino */}
-            <div className="space-y-2">
-              <Label>Destino</Label>
-              <Input value={form.destination} onChange={(e) => set('destination', e.target.value)} />
-            </div>
 
             {/* Linha 9: Tripulação com pesquisa ativa */}
             <div className="space-y-2 relative">
@@ -535,7 +531,7 @@ export default function RegisterExit() {
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" disabled={loading || !form.vehicle_id || !form.purpose || !form.destination}>
+              <Button type="submit" disabled={loading || !form.vehicle_id || !form.purpose}>
                 {loading ? 'A registar...' : 'Registar Saída'}
               </Button>
               <Button type="button" variant="outline" onClick={() => navigate('/')}>
@@ -550,7 +546,7 @@ export default function RegisterExit() {
         open={showSummary}
         onClose={() => {
           setShowSummary(false);
-          navigate('/exits');
+          navigate('/');
         }}
         serviceType={summaryData.serviceType}
         serviceNumber={summaryData.serviceNumber}

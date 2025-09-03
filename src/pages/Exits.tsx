@@ -2,11 +2,19 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, Clock, MapPin, User, Car } from 'lucide-react';
+import { ArrowLeft, Eye, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogTrigger 
+} from '@/components/ui/dialog';
+import { Separator } from '@/components/ui/separator';
 
 interface VehicleExit {
   id: string;
@@ -22,10 +30,22 @@ interface VehicleExit {
   observations: string;
   status: string;
   created_at: string;
+  exit_type: string;
+  service_number: number;
+  total_service_number: number;
+  patient_name: string;
+  patient_age: number;
+  patient_gender: string;
+  patient_contact: string;
+  crew: string;
   vehicles: {
     license_plate: string;
     make: string;
     model: string;
+  };
+  profile?: {
+    first_name: string;
+    last_name: string;
   };
 }
 
@@ -80,7 +100,7 @@ const Exits = () => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-500';
-      case 'returned': return 'bg-blue-500';
+      case 'completed': return 'bg-blue-500';
       case 'cancelled': return 'bg-red-500';
       default: return 'bg-gray-500';
     }
@@ -88,12 +108,91 @@ const Exits = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active': return 'Activa';
-      case 'returned': return 'Regressou';
-      case 'cancelled': return 'Cancelada';
+      case 'active': return 'Ativo';
+      case 'completed': return 'Concluído';
+      case 'cancelled': return 'Cancelado';
       default: return status;
     }
   };
+
+  const ExitDetailsModal = ({ exit }: { exit: VehicleExit }) => (
+    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>
+          Detalhes do Serviço #{exit.service_number} (Ficha #{exit.total_service_number})
+        </DialogTitle>
+      </DialogHeader>
+      
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <h4 className="font-medium mb-2">Informações Gerais</h4>
+            <div className="space-y-2 text-sm">
+              <p><strong>Tipo:</strong> {exit.exit_type}</p>
+              <p><strong>Motivo:</strong> {exit.purpose}</p>
+              <p><strong>Viatura:</strong> {exit.vehicles.license_plate} - {exit.vehicles.make} {exit.vehicles.model}</p>
+              <p><strong>Condutor:</strong> {exit.driver_name}</p>
+              <p><strong>Carta:</strong> {exit.driver_license}</p>
+              <p><strong>Tripulação:</strong> {exit.crew}</p>
+            </div>
+          </div>
+          
+          <div>
+            <h4 className="font-medium mb-2">Datas e Horas</h4>
+            <div className="space-y-2 text-sm">
+              <p><strong>Data de Saída:</strong> {new Date(exit.departure_date).toLocaleDateString('pt-PT')}</p>
+              <p><strong>Hora de Saída:</strong> {exit.departure_time}</p>
+              {exit.expected_return_date && (
+                <>
+                  <p><strong>Regresso Previsto:</strong> {new Date(exit.expected_return_date).toLocaleDateString('pt-PT')}</p>
+                  {exit.expected_return_time && <p><strong>Hora Prevista:</strong> {exit.expected_return_time}</p>}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {exit.patient_name && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="font-medium mb-2">Dados do Paciente</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <p><strong>Nome:</strong> {exit.patient_name}</p>
+                  {exit.patient_age && <p><strong>Idade:</strong> {exit.patient_age} anos</p>}
+                  {exit.patient_gender && <p><strong>Sexo:</strong> {exit.patient_gender}</p>}
+                </div>
+                <div className="space-y-2">
+                  {exit.patient_contact && <p><strong>Contacto:</strong> {exit.patient_contact}</p>}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+        
+        {exit.observations && (
+          <>
+            <Separator />
+            <div>
+              <h4 className="font-medium mb-2">Observações</h4>
+              <p className="text-sm text-muted-foreground">{exit.observations}</p>
+            </div>
+          </>
+        )}
+        
+        <Separator />
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            Registado por: {exit.profile?.first_name} {exit.profile?.last_name}
+          </p>
+          <Badge className={getStatusColor(exit.status)}>
+            {getStatusText(exit.status)}
+          </Badge>
+        </div>
+      </div>
+    </DialogContent>
+  );
 
   if (loading) {
     return (
@@ -115,7 +214,7 @@ const Exits = () => {
   return (
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -133,83 +232,71 @@ const Exits = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {exits.map((exit) => (
-            <Card key={exit.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Car className="h-5 w-5" />
-                      {exit.vehicles.license_plate} - {exit.vehicles.make} {exit.vehicles.model}
-                    </CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1">
-                      <User className="h-4 w-4" />
-                      {(exit as any).profile?.first_name} {(exit as any).profile?.last_name}
-                    </CardDescription>
-                  </div>
-                  <Badge className={getStatusColor(exit.status)}>
-                    {getStatusText(exit.status)}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Saída:</span>
-                    <span>{new Date(exit.departure_date).toLocaleDateString('pt-PT')}</span>
-                    <Clock className="h-4 w-4 text-muted-foreground ml-2" />
-                    <span>{exit.departure_time}</span>
-                  </div>
-                  
-                  {exit.expected_return_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">Regresso previsto:</span>
-                      <span>{new Date(exit.expected_return_date).toLocaleDateString('pt-PT')}</span>
-                      {exit.expected_return_time && (
-                        <>
-                          <Clock className="h-4 w-4 text-muted-foreground ml-2" />
-                          <span>{exit.expected_return_time}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">Destino:</span>
-                  <span>{exit.destination}</span>
-                </div>
-
-                <div>
-                  <span className="font-medium">Finalidade:</span>
-                  <span className="ml-2">{exit.purpose}</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
-                  <div>
-                    <span className="font-medium">Condutor:</span>
-                    <span className="ml-2">{exit.driver_name}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Carta:</span>
-                    <span className="ml-2">{exit.driver_license}</span>
-                  </div>
-                </div>
-
-                {exit.observations && (
-                  <div>
-                    <span className="font-medium">Observações:</span>
-                    <p className="mt-1 text-sm text-muted-foreground">{exit.observations}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Lista de Saídas</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b">
+                  <tr className="text-left">
+                    <th className="p-4 font-medium">Data</th>
+                    <th className="p-4 font-medium">Hora</th>
+                    <th className="p-4 font-medium">Tipo de Saída</th>
+                    <th className="p-4 font-medium">Nº Saída</th>
+                    <th className="p-4 font-medium">Status</th>
+                    <th className="p-4 font-medium">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {exits.map((exit) => (
+                    <tr key={exit.id} className="border-b hover:bg-muted/50">
+                      <td className="p-4">
+                        {new Date(exit.departure_date).toLocaleDateString('pt-PT')}
+                      </td>
+                      <td className="p-4">{exit.departure_time}</td>
+                      <td className="p-4">{exit.exit_type}</td>
+                      <td className="p-4">
+                        <div className="font-medium">#{exit.service_number}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Ficha #{exit.total_service_number}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge className={getStatusColor(exit.status)}>
+                          {getStatusText(exit.status)}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <ExitDetailsModal exit={exit} />
+                          </Dialog>
+                          
+                          {(exit.user_id === user?.id || hasRole('mod')) && (
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => navigate(`/exits/${exit.id}/edit`)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

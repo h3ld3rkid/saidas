@@ -114,7 +114,7 @@ export default function EditExit() {
       toast({ title: 'Erro ao atualizar saída', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Saída atualizada com sucesso' });
-      navigate('/exits');
+      navigate('/');
     }
   };
 
