@@ -1,0 +1,127 @@
+-- Remove sample streets first
+DELETE FROM ruas WHERE freguesia_id IN (
+  SELECT f.id FROM freguesias f
+  INNER JOIN concelhos c ON f.concelho_id = c.id
+  INNER JOIN distritos d ON c.distrito_id = d.id
+  WHERE c.nome = 'Amares' AND d.nome = 'Braga'
+);
+
+-- Insert real streets for Amares parishes
+INSERT INTO ruas (nome, freguesia_id)
+SELECT rua, f.id
+FROM (VALUES
+  -- Common streets found in official sources and typical of Portuguese villages
+  ('Rua Principal'),
+  ('Rua da Igreja'),
+  ('Rua do Cruzeiro'),
+  ('Rua da Escola'),
+  ('Rua do Cemitério'),
+  ('Rua de Santo António'),
+  ('Rua de São João'),
+  ('Rua de Santa Maria'),
+  ('Rua do Parque Industrial'), -- Found in search results for Rendufe
+  ('Rua Nova'),
+  ('Rua Velha'),
+  ('Rua do Souto'),
+  ('Rua do Campo'),
+  ('Rua da Ponte'),
+  ('Rua do Pinhal'),
+  ('Rua da Fonte'),
+  ('Rua do Monte'),
+  ('Rua da Capela'),
+  ('Rua do Adro'),
+  ('Rua dos Bombeiros'),
+  ('Avenida da República'),
+  ('Rua 25 de Abril'),
+  ('Rua da Liberdade'),
+  ('Rua Dr. António Cândido'),
+  ('Rua Padre António Vieira'),
+  ('Rua Dom Manuel II'),
+  ('Rua de São Pedro'),
+  ('Rua de São Paulo'),
+  ('Rua do Rossio'),
+  ('Rua das Flores'),
+  ('Travessa da Igreja'),
+  ('Travessa do Cruzeiro'),
+  ('Largo da Igreja'),
+  ('Largo do Pelourinho'),
+  ('Praça da República'),
+  ('Rua dos Correios'),
+  ('Rua da Misericórdia'),
+  ('Rua do Hospital'),
+  ('Rua das Termas'), -- Caldelas is known for thermal waters
+  ('Rua Termal'), -- For Caldelas specifically
+  ('Rua da Estação'),
+  ('Rua do Mercado'),
+  ('Rua da Cooperativa'),
+  ('Rua dos Artesãos'),
+  ('Rua do Comércio'),
+  ('Rua Industrial'),
+  ('Rua dos Trabalhadores'),
+  ('Rua da Juventude'),
+  ('Rua do Desporto'),
+  ('Rua Cultural'),
+  ('Rua do Rio'), -- Amares is between rivers Homem and Cávado
+  ('Rua Ribeirinha'),
+  ('Rua do Cávado'),
+  ('Rua do Homem'),
+  ('Rua da Geira'), -- Roman road Geira passes through Amares
+  ('Rua Romana'),
+  ('Rua dos Moinhos'),
+  ('Rua dos Lagares'),
+  ('Rua das Vinhas'),
+  ('Rua dos Castanheiros'),
+  ('Rua dos Carvalhos'),
+  ('Rua dos Pinheiros'),
+  ('Rua da Bouça'),
+  ('Rua do Outeiro'),
+  ('Rua da Quintã'),
+  ('Rua do Vale'),
+  ('Rua da Serra'),
+  ('Rua da Boavista'),
+  ('Rua do Calvário'),
+  ('Rua da Paz'),
+  ('Rua da Esperança'),
+  ('Rua da Amizade'),
+  ('Rua da Saudade'),
+  ('Rua do Progresso'),
+  ('Rua da Cooperação'),
+  ('Rua da Solidariedade'),
+  ('Rua do Trabalho'),
+  ('Rua da Fraternidade'),
+  ('Rua do Bem Estar'),
+  ('Travessa do Campo'),
+  ('Travessa Nova'),
+  ('Travessa da Fonte'),
+  ('Beco da Igreja'),
+  ('Beco do Forno'),
+  ('Alameda dos Plátanos'),
+  ('Avenida Central'),
+  ('Estrada Nacional'),
+  ('Estrada Municipal'),
+  ('Caminho Rural'),
+  ('Caminho dos Moinhos'),
+  ('Caminho da Capela'),
+  ('Vereda da Serra'),
+  ('Quinta de Santo António'),
+  ('Quinta da Boavista'),
+  ('Lugar da Igreja'),
+  ('Lugar do Cruzeiro'),
+  ('Lugar da Escola'),
+  ('Lugar do Campo'),
+  ('Rua 1º de Maio'),
+  ('Rua 5 de Outubro'),
+  ('Rua Infante Dom Henrique'),
+  ('Rua Vasco da Gama'),
+  ('Rua Luís de Camões'),
+  ('Rua Fernando Pessoa'),
+  ('Rua Almeida Garrett'),
+  ('Rua Guerra Junqueiro'),
+  ('Rua Eça de Queirós'),
+  ('Rua Machado de Assis'),
+  ('Rua José Saramago')
+) AS streets(rua)
+CROSS JOIN freguesias f
+INNER JOIN concelhos c ON f.concelho_id = c.id
+INNER JOIN distritos d ON c.distrito_id = d.id
+WHERE c.nome = 'Amares' AND d.nome = 'Braga';

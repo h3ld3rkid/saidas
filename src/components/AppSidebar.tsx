@@ -25,6 +25,7 @@ import {
   AlertTriangle,
   LogOut,
   Settings,
+  Home,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -37,6 +38,12 @@ export function AppSidebar() {
   const isActive = (path: string) => location.pathname === path;
 
   const menuItems = [
+    {
+      title: 'Home',
+      icon: Home,
+      path: '/home',
+      roles: ['user', 'mod', 'admin'],
+    },
     {
       title: 'Registar Saída',
       icon: PlusCircle,
