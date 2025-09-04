@@ -57,162 +57,96 @@ export default function Home() {
               <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">Sistema de gestão de emergências e serviços</p>
             </div>
             
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-              <Link to="/register-exit" className="group">
-                <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
-                  <div className="bg-primary/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-primary/20 transition-colors">
-                    <FilePlus2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Registar Saída</h3>
-                  <p className="text-sm text-muted-foreground">Nova saída de emergência</p>
-                </div>
-              </Link>
-              
-              <Link to="/exits" className="group">
-                <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
-                  <div className="bg-blue-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-blue-500/20 transition-colors">
-                    <ListChecks className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Ver Saídas</h3>
-                  <p className="text-sm text-muted-foreground">Histórico de serviços</p>
-                </div>
-              </Link>
-              
-              <Link to="/profile" className="group">
-                <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
-                  <div className="bg-green-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-green-500/20 transition-colors">
-                    <UserCircle2 className="h-6 w-6 text-green-600" />
-                  </div>
-                  <h3 className="font-semibold text-lg mb-2">Perfil</h3>
-                  <p className="text-sm text-muted-foreground">Dados pessoais</p>
-                </div>
-              </Link>
-              
-              {hasRole('admin') && <>
-                  <Link to="/vehicles" className="group">
-                    <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
-                      <div className="bg-orange-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-orange-500/20 transition-colors">
-                        <Car className="h-6 w-6 text-orange-600" />
-                      </div>
-                      <h3 className="font-semibold text-lg mb-2">Viaturas</h3>
-                      <p className="text-sm text-muted-foreground">Gestão de frota</p>
-                    </div>
-                  </Link>
-                  
-                  <Link to="/notices" className="group">
-                    <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
-                      <div className="bg-purple-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-purple-500/20 transition-colors">
-                        <Megaphone className="h-6 w-6 text-purple-600" />
-                      </div>
-                      <h3 className="font-semibold text-lg mb-2">Avisos</h3>
-                      <p className="text-sm text-muted-foreground">Comunicações</p>
-                    </div>
-                  </Link>
-                  
-                  <Link to="/users" className="group">
-                    <div className="bg-gradient-card backdrop-blur-sm border shadow-card rounded-2xl p-6 transition-all duration-300 hover:shadow-elegant hover:scale-105">
-                      <div className="bg-indigo-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:bg-indigo-500/20 transition-colors">
-                        <Users className="h-6 w-6 text-indigo-600" />
-                      </div>
-                      <h3 className="font-semibold text-lg mb-2">Utilizadores</h3>
-                      <p className="text-sm text-muted-foreground">Gestão de acesso</p>
-                    </div>
-                  </Link>
-                </>}
-            </div>
           </div>
         </div>
       </section>
 
       {/* Content Section */}
       <section className="px-6 pb-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Avisos Card */}
-            <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-yellow-500/10 p-2 rounded-lg">
-                    <Megaphone className="h-5 w-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Avisos Ativos</CardTitle>
-                    <CardDescription>Informações importantes em vigor</CardDescription>
-                  </div>
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Avisos Card - Now on Top */}
+          <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-yellow-500/10 p-2 rounded-lg">
+                  <Megaphone className="h-5 w-5 text-yellow-600" />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {notices && notices.length > 0 ? notices.map((n: any) => <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
-                          <p className="text-sm text-muted-foreground leading-relaxed">{n.content}</p>
-                        </div>
-                        <Badge variant="secondary" className="shrink-0">Ativo</Badge>
+                <div>
+                  <CardTitle className="text-xl">Avisos Ativos</CardTitle>
+                  <CardDescription>Informações importantes em vigor</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {notices && notices.length > 0 ? notices.map((n: any) => <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{n.content}</p>
                       </div>
-                    </div>) : <div className="text-center py-12">
-                    <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Megaphone className="h-8 w-8 text-muted-foreground" />
+                      <Badge variant="secondary" className="shrink-0">Ativo</Badge>
                     </div>
-                    <p className="text-muted-foreground">Sem avisos ativos no momento</p>
-                  </div>}
-              </CardContent>
-            </Card>
+                  </div>) : <div className="text-center py-12">
+                  <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Megaphone className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground">Sem avisos ativos no momento</p>
+                </div>}
+            </CardContent>
+          </Card>
 
-            {/* Serviços Card */}
-            <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-500/10 p-2 rounded-lg">
-                    <Car className="h-5 w-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Serviços em Curso</CardTitle>
-                    <CardDescription>Saídas ativas no terreno</CardDescription>
-                  </div>
+          {/* Serviços Card - Now Below Notices */}
+          <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-500/10 p-2 rounded-lg">
+                  <Car className="h-5 w-5 text-blue-600" />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {services && services.length > 0 ? services.map((s: any) => <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-semibold text-foreground">
-                              {s.ambulance_number ?? 'Viatura'}
-                            </h4>
-                            {s.service_number && <Badge variant="outline" className="text-xs">Nº {s.service_number}</Badge>}
-                            {s.total_service_number && <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-1">
-                            <strong>Destino:</strong> {s.destination}
-                          </p>
-                          <p className="text-xs text-muted-foreground mb-1">
-                            <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
-                          </p>
-                          {s.crew && <p className="text-xs text-muted-foreground">
-                              <strong>Tripulação:</strong> {s.crew}
-                            </p>}
+                <div>
+                  <CardTitle className="text-xl">Saídas Não Terminadas</CardTitle>
+                  <CardDescription>Serviços ativos no terreno</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {services && services.length > 0 ? services.map((s: any) => <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-foreground">
+                            {s.ambulance_number ?? 'Viatura'}
+                          </h4>
+                          {s.service_number && <Badge variant="outline" className="text-xs">Nº {s.service_number}</Badge>}
+                          {s.total_service_number && <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>}
                         </div>
-                        <div className="flex flex-col gap-2 items-end">
-                          <Badge className="shrink-0">{s.exit_type ?? 'Serviço'}</Badge>
-                          <Link to={`/exits/${s.id}/edit`}>
-                            <Button size="sm" variant="outline" className="text-xs">
-                              <Edit3 className="h-3 w-3 mr-1" />
-                              Editar
-                            </Button>
-                          </Link>
-                        </div>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          <strong>Destino:</strong> {s.destination}
+                        </p>
+                        <p className="text-xs text-muted-foreground mb-1">
+                          <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
+                        </p>
+                        {s.crew && <p className="text-xs text-muted-foreground">
+                            <strong>Tripulação:</strong> {s.crew}
+                          </p>}
                       </div>
-                    </div>) : <div className="text-center py-12">
-                    <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Car className="h-8 w-8 text-muted-foreground" />
+                      <div className="flex flex-col gap-2 items-end">
+                        <Badge className="shrink-0">{s.exit_type ?? 'Serviço'}</Badge>
+                        <Link to={`/exits/${s.id}/edit`}>
+                          <Button size="sm" variant="outline" className="text-xs">
+                            <Edit3 className="h-3 w-3 mr-1" />
+                            Editar
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                    <p className="text-muted-foreground">Sem serviços ativos no momento</p>
-                  </div>}
-              </CardContent>
-            </Card>
-          </div>
+                  </div>) : <div className="text-center py-12">
+                  <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Car className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground">Sem serviços ativos no momento</p>
+                </div>}
+            </CardContent>
+          </Card>
         </div>
       </section>
     </div>;

@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import RegisterExit from "./pages/RegisterExit";
@@ -22,11 +24,19 @@ const queryClient = new QueryClient();
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <div className="min-h-screen flex w-full">
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
-    </div>
+    <SidebarProvider collapsedWidth={56}>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <main className="flex-1 overflow-auto">
+          <header className="h-12 flex items-center border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <SidebarTrigger className="ml-2" />
+          </header>
+          <div className="flex-1">
+            {children}
+          </div>
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 
