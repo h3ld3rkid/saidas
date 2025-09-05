@@ -173,7 +173,7 @@ export function AppSidebar() {
         </div>
       </SidebarFooter>
 
-      <SidebarTrigger className="absolute -right-4 top-4 z-10" />
+      
     </Sidebar>
   );
 }

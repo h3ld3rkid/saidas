@@ -189,29 +189,352 @@ export default function EditExit() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Motivo</Label>
                   <Input 
                     value={exit.purpose || ''} 
-                    onChange={(e) => setExit({ ...exit, purpose: e.target.value })} 
+                    onChange={(e) => setExit({ ...exit, purpose: e.target.value })}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Destino</Label>
                   <Input 
                     value={exit.destination || ''} 
-                    onChange={(e) => setExit({ ...exit, destination: e.target.value })} 
+                    onChange={(e) => setExit({ ...exit, destination: e.target.value })}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
                   />
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Saída</Label>
+                  <Input 
+                    value={exit.exit_type || ''} 
+                    onChange={(e) => setExit({ ...exit, exit_type: e.target.value })}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Número da Ambulância</Label>
+                  <Input 
+                    value={exit.ambulance_number || ''} 
+                    onChange={(e) => setExit({ ...exit, ambulance_number: e.target.value })}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
+                  />
+                </div>
+              </div>
+
+              {/* Vehicle Selection */}
+              <div className="space-y-2">
+                <Label>Viatura</Label>
+                <Select 
+                  value={exit.vehicle_id || ''} 
+                  onValueChange={(value) => setExit({ ...exit, vehicle_id: value })}
+                  disabled={exit.status === 'completed' && !hasRole('admin')}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione uma viatura" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicles.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.license_plate} - {vehicle.make} {vehicle.model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Driver Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome do Condutor</Label>
+                  <Input 
+                    value={exit.driver_name || ''} 
+                    onChange={(e) => setExit({ ...exit, driver_name: e.target.value })}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Carta de Condução</Label>
+                  <Input 
+                    value={exit.driver_license || ''} 
+                    onChange={(e) => setExit({ ...exit, driver_license: e.target.value })}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
+                  />
+                </div>
+              </div>
+
+              {/* Crew */}
               <div className="space-y-2">
                 <Label>Tripulação</Label>
-                <Input 
-                  value={exit.crew || ''} 
-                  onChange={(e) => setExit({ ...exit, crew: e.target.value })} 
-                />
+                <div className="relative">
+                  <Input 
+                    value={exit.crew || ''} 
+                    onChange={(e) => {
+                      setExit({ ...exit, crew: e.target.value });
+                      setCrewSearchTerm(e.target.value);
+                      setShowCrewDropdown(e.target.value.length > 0);
+                    }}
+                    onFocus={() => setShowCrewDropdown(crewSearchTerm.length > 0)}
+                    disabled={exit.status === 'completed' && !hasRole('admin')}
+                    placeholder="Digite para pesquisar membros..."
+                  />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  
+                  {showCrewDropdown && crewMembers.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-10 bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                      {crewMembers.map((member, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onClick={() => {
+                            const currentCrew = exit.crew || '';
+                            const newCrew = currentCrew ? `${currentCrew}, ${member.display_name}` : member.display_name;
+                            setExit({ ...exit, crew: newCrew });
+                            setShowCrewDropdown(false);
+                            setCrewSearchTerm('');
+                          }}
+                        >
+                          {member.display_name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Patient Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Dados do Utente</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome do Utente</Label>
+                    <Input 
+                      value={exit.patient_name || ''} 
+                      onChange={(e) => setExit({ ...exit, patient_name: e.target.value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Idade</Label>
+                    <Input 
+                      type="number"
+                      value={exit.patient_age || ''} 
+                      onChange={(e) => setExit({ ...exit, patient_age: parseInt(e.target.value) || null })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Género</Label>
+                    <Select 
+                      value={exit.patient_gender || ''} 
+                      onValueChange={(value) => setExit({ ...exit, patient_gender: value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o género" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Contacto</Label>
+                    <Input 
+                      value={exit.patient_contact || ''} 
+                      onChange={(e) => setExit({ ...exit, patient_contact: e.target.value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                </div>
+
+                {/* Patient Address */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label>Distrito</Label>
+                    <Select 
+                      value={selectedDistrict || ''} 
+                      onValueChange={(value) => {
+                        setSelectedDistrict(value);
+                        const district = districts.find(d => d.id === value);
+                        setExit({ ...exit, patient_district: district?.nome || '' });
+                      }}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o distrito" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {districts.map((district) => (
+                          <SelectItem key={district.id} value={district.id}>
+                            {district.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Concelho</Label>
+                    <Select 
+                      value={selectedMunicipality || ''} 
+                      onValueChange={(value) => {
+                        setSelectedMunicipality(value);
+                        const municipality = municipalities.find(m => m.id === value);
+                        setExit({ ...exit, patient_municipality: municipality?.nome || '' });
+                      }}
+                      disabled={!selectedDistrict || (exit.status === 'completed' && !hasRole('admin'))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o concelho" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {municipalities.map((municipality) => (
+                          <SelectItem key={municipality.id} value={municipality.id}>
+                            {municipality.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Freguesia</Label>
+                    <Select 
+                      value={selectedParish || ''} 
+                      onValueChange={(value) => {
+                        setSelectedParish(value);
+                        const parish = parishes.find(p => p.id === value);
+                        setExit({ ...exit, patient_parish: parish?.nome || '' });
+                      }}
+                      disabled={!selectedMunicipality || (exit.status === 'completed' && !hasRole('admin'))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione a freguesia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {parishes.map((parish) => (
+                          <SelectItem key={parish.id} value={parish.id}>
+                            {parish.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Rua/Endereço</Label>
+                  <div className="relative">
+                    <Input 
+                      value={exit.patient_address || ''} 
+                      onChange={(e) => {
+                        setExit({ ...exit, patient_address: e.target.value });
+                        setStreetSearch(e.target.value);
+                        setShowStreetDropdown(e.target.value.length > 2);
+                      }}
+                      onFocus={() => setShowStreetDropdown(streetSearch.length > 2)}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                      placeholder="Digite para pesquisar ruas..."
+                    />
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    
+                    {showStreetDropdown && streets.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 z-10 bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                        {streets.slice(0, 10).map((street) => (
+                          <div
+                            key={street.id}
+                            className="px-3 py-2 hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              setExit({ ...exit, patient_address: street.nome });
+                              setShowStreetDropdown(false);
+                              setStreetSearch('');
+                            }}
+                          >
+                            {street.nome}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Service Details */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Detalhes do Serviço</h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Data de Partida</Label>
+                    <Input 
+                      type="date"
+                      value={exit.departure_date || ''} 
+                      onChange={(e) => setExit({ ...exit, departure_date: e.target.value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hora de Partida</Label>
+                    <Input 
+                      type="time"
+                      value={exit.departure_time || ''} 
+                      onChange={(e) => setExit({ ...exit, departure_time: e.target.value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Data Prevista de Retorno</Label>
+                    <Input 
+                      type="date"
+                      value={exit.expected_return_date || ''} 
+                      onChange={(e) => setExit({ ...exit, expected_return_date: e.target.value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hora Prevista de Retorno</Label>
+                    <Input 
+                      type="time"
+                      value={exit.expected_return_time || ''} 
+                      onChange={(e) => setExit({ ...exit, expected_return_time: e.target.value })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-6">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="is_pem" 
+                      checked={exit.is_pem || false}
+                      onCheckedChange={(checked) => setExit({ ...exit, is_pem: checked })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                    <Label htmlFor="is_pem">Posto de Emergência Médica</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="is_reserve" 
+                      checked={exit.is_reserve || false}
+                      onCheckedChange={(checked) => setExit({ ...exit, is_reserve: checked })}
+                      disabled={exit.status === 'completed' && !hasRole('admin')}
+                    />
+                    <Label htmlFor="is_reserve">Serviço de Reserva</Label>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -220,13 +543,27 @@ export default function EditExit() {
                   value={exit.observations || ''} 
                   onChange={(e) => setExit({ ...exit, observations: e.target.value })} 
                   rows={3}
+                  disabled={exit.status === 'completed' && !hasRole('admin')}
                 />
               </div>
 
               <div className="flex gap-4">
-                <Button type="submit" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  disabled={loading || (exit.status === 'completed' && !hasRole('admin'))}
+                >
                   {loading ? 'A guardar...' : 'Guardar Alterações'}
                 </Button>
+                {exit.status === 'active' && (
+                  <Button 
+                    type="button" 
+                    variant="default"
+                    onClick={() => handleStatusChange('completed')}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    Concluir Serviço
+                  </Button>
+                )}
                 <Button type="button" variant="outline" onClick={() => navigate('/exits')}>
                   Cancelar
                 </Button>
