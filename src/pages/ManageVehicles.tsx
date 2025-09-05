@@ -21,6 +21,7 @@ export default function ManageVehicles() {
   const { hasRole } = useUserRole();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [form, setForm] = useState({ license_plate: "", make: "", model: "", year: "", is_active: true });
 
   useEffect(() => {
@@ -37,27 +38,53 @@ export default function ManageVehicles() {
     }
   };
 
-  const addVehicle = async () => {
+  const saveVehicle = async () => {
     if (!hasRole('admin')) {
       toast({ title: 'Acesso negado', description: 'Apenas administradores', variant: 'destructive' });
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from('vehicles').insert({
+    
+    const vehicleData = {
       license_plate: form.license_plate,
       make: form.make,
       model: form.model,
       year: form.year ? Number(form.year) : null,
       is_active: form.is_active,
-    });
+    };
+    
+    let error;
+    if (editingVehicle) {
+      ({ error } = await supabase.from('vehicles').update(vehicleData).eq('id', editingVehicle.id));
+    } else {
+      ({ error } = await supabase.from('vehicles').insert(vehicleData));
+    }
+    
     setLoading(false);
     if (error) {
-      toast({ title: 'Erro ao adicionar', description: error.message, variant: 'destructive' });
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: 'Viatura adicionada' });
+      toast({ title: editingVehicle ? 'Viatura atualizada' : 'Viatura adicionada' });
       setForm({ license_plate: "", make: "", model: "", year: "", is_active: true });
+      setEditingVehicle(null);
       load();
     }
+  };
+
+  const editVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setForm({
+      license_plate: vehicle.license_plate,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year?.toString() || "",
+      is_active: vehicle.is_active,
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingVehicle(null);
+    setForm({ license_plate: "", make: "", model: "", year: "", is_active: true });
   };
 
   const toggleActive = async (v: Vehicle) => {
@@ -80,7 +107,7 @@ export default function ManageVehicles() {
       {hasRole('admin') && (
         <Card>
           <CardHeader>
-            <CardTitle>Adicionar Viatura</CardTitle>
+            <CardTitle>{editingVehicle ? 'Editar Viatura' : 'Adicionar Viatura'}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -105,7 +132,14 @@ export default function ManageVehicles() {
                   <Checkbox checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: Boolean(v) })} id="active" />
                   <Label htmlFor="active">Ativa</Label>
                 </div>
-                <Button onClick={addVehicle} disabled={loading}>Adicionar</Button>
+                <Button onClick={saveVehicle} disabled={loading}>
+                  {editingVehicle ? 'Atualizar' : 'Adicionar'}
+                </Button>
+                {editingVehicle && (
+                  <Button variant="outline" onClick={cancelEdit} disabled={loading}>
+                    Cancelar
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -126,6 +160,9 @@ export default function ManageVehicles() {
               <span>{v.make} {v.model}</span>
               <span className="text-sm text-muted-foreground">{v.year ?? '—'}</span>
               <span className="text-sm">{v.is_active ? 'Ativa' : 'Inativa'}</span>
+              <Button variant="outline" size="sm" onClick={() => editVehicle(v)}>
+                Editar
+              </Button>
               <Button variant="outline" size="sm" onClick={() => toggleActive(v)}>
                 {v.is_active ? 'Desativar' : 'Ativar'}
               </Button>

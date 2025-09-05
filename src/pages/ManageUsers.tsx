@@ -82,12 +82,13 @@ const ManageUsers = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Criar utilizador no auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: formData.email,
-      password: formData.password,
-      email_confirm: true,
-    });
+    try {
+      // Criar utilizador no auth
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: formData.email,
+        password: formData.password,
+        email_confirm: true,
+      });
 
     if (authError) {
       toast({
@@ -158,6 +159,13 @@ const ManageUsers = () => {
     });
 
     fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado: ' + error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -219,23 +227,31 @@ const ManageUsers = () => {
     }
   };
 
-  const handleResetPassword = async (userId: string, email: string) => {
+  const handleResetPassword = async (userId: string, employeeNumber: string) => {
     const newPassword = 'TempPass123!';
     
-    const { error } = await supabase.auth.admin.updateUserById(userId, {
-      password: newPassword,
-    });
+    try {
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password: newPassword,
+      });
 
-    if (error) {
+      if (error) {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao redefinir password: ' + error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Sucesso',
+          description: `Password do utilizador nº ${employeeNumber} redefinida para: ${newPassword}`,
+        });
+      }
+    } catch (error: any) {
       toast({
         title: 'Erro',
-        description: 'Erro ao redefinir password',
+        description: 'Erro inesperado ao redefinir password',
         variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Sucesso',
-        description: `Password redefinida para: ${newPassword}`,
       });
     }
   };
