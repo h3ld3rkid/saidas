@@ -14,14 +14,42 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
   const [mapUrl, setMapUrl] = useState(value || '');
 
   const openGoogleMaps = () => {
-    // Open Google Maps in a new window
-    const mapsUrl = 'https://www.google.com/maps/@40.2033145,-8.4102573,6z';
-    const newWindow = window.open(mapsUrl, '_blank', 'width=800,height=600');
+    // Use a more direct approach to open Google Maps
+    const mapsUrl = 'https://www.google.com/maps/@40.2033145,-8.4102573,10z';
     
-    if (newWindow) {
+    // Try multiple methods to ensure it opens
+    try {
+      // Method 1: Direct window.open
+      const newWindow = window.open(mapsUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      
+      if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
+        // Method 2: Create and click a link element
+        const link = document.createElement('a');
+        link.href = mapsUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
       toast({
         title: 'Google Maps aberto',
-        description: 'Clique num local no mapa e copie o URL da barra de endereços.'
+        description: 'Clique numa localização no mapa e copie o URL completo da barra de endereços.'
+      });
+    } catch (error) {
+      // Method 3: Fallback - copy URL to clipboard and show instructions
+      navigator.clipboard.writeText(mapsUrl).then(() => {
+        toast({
+          title: 'URL copiado',
+          description: 'Cole o URL no seu navegador para abrir o Google Maps.',
+        });
+      }).catch(() => {
+        toast({
+          title: 'Abrir manualmente',
+          description: `Copie este URL: ${mapsUrl}`,
+          variant: 'destructive'
+        });
       });
     }
   };
