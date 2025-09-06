@@ -160,12 +160,16 @@ export default function ManageVehicles() {
               <span>{v.make} {v.model}</span>
               <span className="text-sm text-muted-foreground">{v.year ?? '—'}</span>
               <span className="text-sm">{v.is_active ? 'Ativa' : 'Inativa'}</span>
-              <Button variant="outline" size="sm" onClick={() => editVehicle(v)}>
-                Editar
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => toggleActive(v)}>
-                {v.is_active ? 'Desativar' : 'Ativar'}
-              </Button>
+              {hasRole('admin') && (
+                <Button variant="outline" size="sm" onClick={() => editVehicle(v)}>
+                  Editar
+                </Button>
+              )}
+              {hasRole('admin') && (
+                <Button variant="outline" size="sm" onClick={() => toggleActive(v)}>
+                  {v.is_active ? 'Desativar' : 'Ativar'}
+                </Button>
+              )}
             </div>
           ))}
         </CardContent>
