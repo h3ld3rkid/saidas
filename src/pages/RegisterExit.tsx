@@ -16,6 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Search } from 'lucide-react';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
+import { MapLocationPicker } from '@/components/MapLocationPicker';
 
 interface Vehicle {
   id: string;
@@ -83,6 +84,7 @@ export default function RegisterExit() {
   const [inemOption, setInemOption] = useState<'inem' | 'inem_s_iteams' | 'reserva' | ''>('');
   const [showCrewDropdown, setShowCrewDropdown] = useState(false);
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
+  const [mapLocation, setMapLocation] = useState('');
 
   // Form data mapping 1:1 to DB where possible
   const [form, setForm] = useState({
@@ -168,6 +170,60 @@ export default function RegisterExit() {
     [crewOptions]
   );
 
+  const sendTelegramNotification = async (data: {
+    serviceType: string;
+    serviceNumber: number;
+    departureTime: string;
+    contact: string;
+    coduNumber?: string;
+    address: string;
+    mapLocation?: string;
+    crew: string;
+  }) => {
+    // Get chat IDs from localStorage
+    const chatIdsString = localStorage.getItem('telegram_chat_ids');
+    if (!chatIdsString) {
+      console.log('No Telegram chat IDs configured');
+      return;
+    }
+
+    const chatIds = chatIdsString.split('\n').map(id => id.trim()).filter(Boolean);
+    if (chatIds.length === 0) {
+      console.log('No valid Telegram chat IDs found');
+      return;
+    }
+
+    const message = `
+🚨 <b>Nova Saída Registrada</b>
+
+📋 <b>Tipo:</b> ${data.serviceType}
+🔢 <b>Número:</b> ${data.serviceNumber}
+⏰ <b>Hora:</b> ${data.departureTime}
+📞 <b>Contacto:</b> ${data.contact}
+${data.coduNumber ? `🆘 <b>CODU:</b> ${data.coduNumber}\n` : ''}📍 <b>Morada:</b> ${data.address}
+👥 <b>Tripulação:</b> ${data.crew}
+${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
+    `;
+
+    try {
+      const response = await supabase.functions.invoke('telegram-notify', {
+        body: {
+          chatIds,
+          message: message.trim()
+        }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      console.log('Telegram notification sent successfully');
+    } catch (error) {
+      console.error('Failed to send Telegram notification:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -191,8 +247,8 @@ export default function RegisterExit() {
       user_id: user.id,
       // If CODU selected, prepend to observations for now (no dedicated column yet)
       observations: exitType === 'Emergencia/CODU' && coduNumber
-        ? `CODU: ${coduNumber}${form.observations ? `\n${form.observations}` : ''}`
-        : form.observations,
+        ? `CODU: ${coduNumber}${form.observations ? `\n${form.observations}` : ''}${mapLocation ? `\nMapa: ${mapLocation}` : ''}`
+        : `${form.observations}${mapLocation ? `${form.observations ? '\n' : ''}Mapa: ${mapLocation}` : ''}`,
     };
 
     setLoading(true);
@@ -224,6 +280,25 @@ export default function RegisterExit() {
         totalServiceNumber 
       });
       setShowSummary(true);
+
+      // Send Telegram notification if crew is selected
+      if (form.crew && form.crew.trim()) {
+        try {
+          await sendTelegramNotification({
+            serviceType: exitType,
+            serviceNumber,
+            departureTime: `${form.departure_date} ${form.departure_time}`,
+            contact: form.patient_contact,
+            coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
+            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            mapLocation,
+            crew: form.crew
+          });
+        } catch (telegramError) {
+          console.error('Failed to send Telegram notification:', telegramError);
+          // Don't fail the main process for telegram errors
+        }
+      }
       
     } catch (error: any) {
       toast({ title: 'Erro ao registar saída', description: error.message, variant: 'destructive' });
@@ -524,6 +599,12 @@ export default function RegisterExit() {
                 <Textarea value={form.crew} onChange={(e) => set('crew', e.target.value)} placeholder="Ex.: João Silva, Maria Santos" rows={2} />
               </div>
             </div>
+
+            {/* Mapa para localização */}
+            <MapLocationPicker
+              value={mapLocation}
+              onLocationSelect={setMapLocation}
+            />
 
             <div className="space-y-2">
               <Label>Observações</Label>

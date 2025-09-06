@@ -26,6 +26,7 @@ import {
   LogOut,
   Settings,
   Home,
+  MessageCircle,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -81,6 +82,12 @@ export function AppSidebar() {
       title: 'Gerir Avisos',
       icon: AlertTriangle,
       path: '/notices',
+      roles: ['admin'],
+    },
+    {
+      title: 'Telegram',
+      icon: MessageCircle,
+      path: '/telegram',
       roles: ['admin'],
     },
   ];

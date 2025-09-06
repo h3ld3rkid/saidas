@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import ManageVehicles from "./pages/ManageVehicles";
+import TelegramSettings from "./pages/TelegramSettings";
 
 const queryClient = new QueryClient();
 
@@ -128,6 +129,13 @@ const App = () => (
               <ProtectedRoute>
                 <AppLayout>
                   <ManageUsers />
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/telegram" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <TelegramSettings />
                 </AppLayout>
               </ProtectedRoute>
             } />
