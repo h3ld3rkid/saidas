@@ -143,6 +143,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_name: string
+          telegram_chat_id: string | null
           updated_at: string
           user_id: string
         }
@@ -153,6 +154,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name: string
+          telegram_chat_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -163,6 +165,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string
+          telegram_chat_id?: string | null
           updated_at?: string
           user_id?: string
         }

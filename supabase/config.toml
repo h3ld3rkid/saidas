@@ -2,3 +2,6 @@ project_id = "mubuncckmiyxxnlxnecn"
 
 [functions.telegram-notify]
 verify_jwt = false
+
+[functions.telegram-setup]
+verify_jwt = false

@@ -180,20 +180,39 @@ export default function RegisterExit() {
     mapLocation?: string;
     crew: string;
   }) => {
-    // Get chat IDs from localStorage
-    const chatIdsString = localStorage.getItem('telegram_chat_ids');
-    if (!chatIdsString) {
-      console.log('No Telegram chat IDs configured');
-      return;
-    }
+    try {
+      // Get crew members' Telegram chat IDs from the database
+      const crewNames = data.crew.split(',').map(name => name.trim());
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('telegram_chat_id, first_name, last_name')
+        .not('telegram_chat_id', 'is', null);
 
-    const chatIds = chatIdsString.split('\n').map(id => id.trim()).filter(Boolean);
-    if (chatIds.length === 0) {
-      console.log('No valid Telegram chat IDs found');
-      return;
-    }
+      if (!profiles || profiles.length === 0) {
+        console.log('No Telegram configurations found');
+        return;
+      }
 
-    const message = `
+      // Match crew names with profiles
+      const matchedChatIds: string[] = [];
+      crewNames.forEach(crewName => {
+        const matchedProfile = profiles.find(p => {
+          const fullName = `${p.first_name} ${p.last_name}`.toLowerCase();
+          return fullName.includes(crewName.toLowerCase()) || crewName.toLowerCase().includes(fullName);
+        });
+        
+        if (matchedProfile && matchedProfile.telegram_chat_id) {
+          matchedChatIds.push(matchedProfile.telegram_chat_id);
+        }
+      });
+
+      if (matchedChatIds.length === 0) {
+        console.log('No matching crew members with Telegram configured');
+        return;
+      }
+
+      const message = `
 🚨 <b>Nova Saída Registrada</b>
 
 📋 <b>Tipo:</b> ${data.serviceType}
@@ -203,12 +222,11 @@ export default function RegisterExit() {
 ${data.coduNumber ? `🆘 <b>CODU:</b> ${data.coduNumber}\n` : ''}📍 <b>Morada:</b> ${data.address}
 👥 <b>Tripulação:</b> ${data.crew}
 ${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
-    `;
+      `;
 
-    try {
       const response = await supabase.functions.invoke('telegram-notify', {
         body: {
-          chatIds,
+          chatIds: matchedChatIds,
           message: message.trim()
         }
       });

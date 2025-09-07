@@ -3,40 +3,106 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/hooks/use-toast';
-import { MessageCircle, Users } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, CheckCircle } from 'lucide-react';
+
+interface Profile {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  telegram_chat_id: string | null;
+}
 
 export default function TelegramSettings() {
   const { hasRole } = useUserRole();
-  const [chatIds, setChatIds] = useState('');
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [setupFirstName, setSetupFirstName] = useState('');
+  const [setupLastName, setSetupLastName] = useState('');
   const [testMessage, setTestMessage] = useState('🧪 Teste de notificação Telegram');
   const [loading, setLoading] = useState(false);
+  const [setupLoading, setSetupLoading] = useState(false);
 
   useEffect(() => {
     document.title = 'Configurações Telegram';
-    // Load existing chat IDs from localStorage for now
-    const saved = localStorage.getItem('telegram_chat_ids');
-    if (saved) {
-      setChatIds(saved);
-    }
+    loadProfiles();
   }, []);
 
-  const saveChatIds = () => {
-    localStorage.setItem('telegram_chat_ids', chatIds);
-    toast({
-      title: 'Chat IDs guardados',
-      description: 'As configurações foram guardadas localmente.'
-    });
+  const loadProfiles = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_id, first_name, last_name, telegram_chat_id')
+      .eq('is_active', true)
+      .order('first_name');
+
+    if (error) {
+      toast({
+        title: 'Erro ao carregar perfis',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } else {
+      setProfiles(data || []);
+    }
+  };
+
+  const setupTelegramForUser = async () => {
+    if (!setupFirstName.trim() || !setupLastName.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha o primeiro e último nome.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSetupLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-setup', {
+        body: {
+          firstName: setupFirstName.trim(),
+          lastName: setupLastName.trim()
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: 'Configuração concluída!',
+          description: `Telegram configurado para ${setupFirstName} ${setupLastName}`
+        });
+        setSetupFirstName('');
+        setSetupLastName('');
+        loadProfiles(); // Reload to show updated data
+      } else {
+        toast({
+          title: 'Usuário não encontrado',
+          description: data.instructions || 'Certifique-se de que o usuário enviou uma mensagem para o bot primeiro.',
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro na configuração',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setSetupLoading(false);
+    }
   };
 
   const sendTestMessage = async () => {
-    if (!chatIds.trim()) {
+    const activeChatIds = profiles
+      .filter(p => p.telegram_chat_id)
+      .map(p => p.telegram_chat_id!);
+
+    if (activeChatIds.length === 0) {
       toast({
         title: 'Erro',
-        description: 'Por favor, adicione pelo menos um Chat ID.',
+        description: 'Nenhum usuário com Telegram configurado.',
         variant: 'destructive'
       });
       return;
@@ -44,11 +110,9 @@ export default function TelegramSettings() {
 
     setLoading(true);
     try {
-      const chatIdList = chatIds.split('\n').map(id => id.trim()).filter(Boolean);
-      
       const { data, error } = await supabase.functions.invoke('telegram-notify', {
         body: {
-          chatIds: chatIdList,
+          chatIds: activeChatIds,
           message: testMessage
         }
       });
@@ -56,7 +120,7 @@ export default function TelegramSettings() {
       if (error) throw error;
 
       const successCount = data?.results?.filter((r: any) => r.success).length || 0;
-      const totalCount = chatIdList.length;
+      const totalCount = activeChatIds.length;
 
       toast({
         title: 'Mensagem de teste enviada',
@@ -97,34 +161,84 @@ export default function TelegramSettings() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Chat IDs da Tripulação
+            <UserPlus className="h-5 w-5" />
+            Configurar Telegram para Utilizador
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="chat-ids">
-              Chat IDs (um por linha)
-            </Label>
-            <Textarea
-              id="chat-ids"
-              placeholder="123456789&#10;987654321&#10;..."
-              value={chatIds}
-              onChange={(e) => setChatIds(e.target.value)}
-              rows={5}
-            />
-            <p className="text-sm text-muted-foreground">
-              Para obter o Chat ID: 
-              <br />1. Adicione o bot @userinfobot ao Telegram
-              <br />2. Envie /start para o bot
-              <br />3. O bot irá responder com o seu Chat ID
-              <br />4. Cole os Chat IDs aqui, um por linha
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="first-name">Primeiro Nome</Label>
+              <Input
+                id="first-name"
+                placeholder="João"
+                value={setupFirstName}
+                onChange={(e) => setSetupFirstName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last-name">Último Nome</Label>
+              <Input
+                id="last-name"
+                placeholder="Silva"
+                value={setupLastName}
+                onChange={(e) => setSetupLastName(e.target.value)}
+              />
+            </div>
           </div>
 
-          <Button onClick={saveChatIds}>
-            Guardar Chat IDs
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">
+              <strong>Instruções:</strong>
+            </p>
+            <ol className="text-sm text-muted-foreground space-y-1">
+              <li>1. O utilizador deve enviar uma mensagem para o bot Telegram primeiro</li>
+              <li>2. Digite o nome completo do utilizador aqui</li>
+              <li>3. Clique em "Configurar" para associar automaticamente</li>
+            </ol>
+          </div>
+
+          <Button 
+            onClick={setupTelegramForUser} 
+            disabled={setupLoading || !setupFirstName.trim() || !setupLastName.trim()}
+          >
+            {setupLoading ? 'Configurando...' : 'Configurar Telegram'}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Utilizadores Configurados
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {profiles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nenhum utilizador encontrado.</p>
+            ) : (
+              profiles.map((profile) => (
+                <div
+                  key={profile.user_id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
+                  <div>
+                    <p className="font-medium">
+                      {profile.first_name} {profile.last_name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {profile.telegram_chat_id ? 'Telegram configurado' : 'Telegram não configurado'}
+                    </p>
+                  </div>
+                  {profile.telegram_chat_id && (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  )}
+                </div>
+              ))
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -145,10 +259,10 @@ export default function TelegramSettings() {
 
           <Button 
             onClick={sendTestMessage} 
-            disabled={loading || !chatIds.trim()}
+            disabled={loading || profiles.filter(p => p.telegram_chat_id).length === 0}
             variant="outline"
           >
-            {loading ? 'Enviando...' : 'Enviar Teste'}
+            {loading ? 'Enviando...' : `Enviar Teste (${profiles.filter(p => p.telegram_chat_id).length} destinatários)`}
           </Button>
         </CardContent>
       </Card>
@@ -160,10 +274,10 @@ export default function TelegramSettings() {
         <CardContent>
           <div className="space-y-2 text-sm">
             <p><strong>1.</strong> Crie um bot no Telegram usando @BotFather</p>
-            <p><strong>2.</strong> Copie o token do bot</p>
-            <p><strong>3.</strong> O token já foi configurado nas configurações do sistema</p>
-            <p><strong>4.</strong> Adicione o bot aos grupos ou conversas onde quer receber notificações</p>
-            <p><strong>5.</strong> Use @userinfobot para obter os Chat IDs necessários</p>
+            <p><strong>2.</strong> Copie o token do bot e configure nas secrets do sistema</p>
+            <p><strong>3.</strong> Cada utilizador deve enviar uma mensagem para o bot</p>
+            <p><strong>4.</strong> Use o formulário acima para configurar automaticamente cada utilizador</p>
+            <p><strong>5.</strong> As notificações serão enviadas apenas para a tripulação selecionada</p>
           </div>
         </CardContent>
       </Card>
