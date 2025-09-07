@@ -14,8 +14,8 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
   const [mapUrl, setMapUrl] = useState(value || '');
 
   const openGoogleMaps = () => {
-    // Use a more direct approach to open Google Maps
-    const mapsUrl = 'https://www.google.com/maps/@40.2033145,-8.4102573,10z';
+    // Open Google Maps without specific coordinates so user can navigate freely
+    const mapsUrl = 'https://www.google.com/maps/';
     
     // Try multiple methods to ensure it opens
     try {
@@ -35,7 +35,8 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
       
       toast({
         title: 'Google Maps aberto',
-        description: 'Clique numa localização no mapa e copie o URL completo da barra de endereços.'
+        description: 'Navegue até à localização desejada, clique no local e copie o URL completo.',
+        duration: 5000
       });
     } catch (error) {
       // Method 3: Fallback - copy URL to clipboard and show instructions
@@ -131,7 +132,12 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
           />
         </div>
         <p className="text-xs text-muted-foreground">
-          No Google Maps, clique numa localização, depois copie o URL da barra de endereços e cole aqui.
+          <strong>Como usar:</strong><br/>
+          1. Clique em "Abrir Google Maps"<br/>
+          2. Navegue até à localização desejada<br/>
+          3. Clique no local exacto no mapa<br/>
+          4. Copie o URL completo da barra de endereços<br/>
+          5. Cole o URL no campo abaixo
         </p>
       </div>
 
