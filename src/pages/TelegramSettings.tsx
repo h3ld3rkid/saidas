@@ -333,6 +333,7 @@ export default function TelegramSettings() {
           >
             {setupLoading ? 'Configurando...' : 'Configuração Manual (apenas se necessário)'}
           </Button>
+          </div>
         </CardContent>
       </Card>
 
