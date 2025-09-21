@@ -20,10 +20,13 @@ export default function TelegramSettings() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [setupFirstName, setSetupFirstName] = useState('');
   const [setupLastName, setSetupLastName] = useState('');
+  const [manualChatId, setManualChatId] = useState('');
+  const [selectedProfileId, setSelectedProfileId] = useState('');
   const [testMessage, setTestMessage] = useState('🧪 Teste de notificação Telegram');
   const [loading, setLoading] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
   const [webhookLoading, setWebhookLoading] = useState(false);
+  const [manualLoading, setManualLoading] = useState(false);
 
   useEffect(() => {
     document.title = 'Configurações Telegram';
@@ -92,6 +95,44 @@ export default function TelegramSettings() {
       });
     } finally {
       setSetupLoading(false);
+    }
+  };
+
+  const setupManualChatId = async () => {
+    if (!selectedProfileId || !manualChatId.trim()) {
+      toast({
+        title: 'Erro',
+        description: 'Selecione um utilizador e insira o Chat ID.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setManualLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ telegram_chat_id: manualChatId.trim() })
+        .eq('user_id', selectedProfileId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Configuração manual concluída!',
+        description: 'Chat ID configurado com sucesso.'
+      });
+      
+      setManualChatId('');
+      setSelectedProfileId('');
+      loadProfiles();
+    } catch (error: any) {
+      toast({
+        title: 'Erro na configuração',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setManualLoading(false);
     }
   };
 
@@ -197,15 +238,61 @@ export default function TelegramSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg">
-            <p className="text-sm text-muted-foreground mb-2">
-              <strong>Configuração Automática:</strong>
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm text-blue-800 mb-2">
+              <strong>📋 Instruções para obter o Chat ID:</strong>
             </p>
-            <p className="text-sm text-muted-foreground">
-              Agora os utilizadores são automaticamente configurados quando enviam /start para o bot do Telegram.
-              O sistema tenta encontrar o perfil do utilizador pelo nome e configura automaticamente as notificações.
-            </p>
+            <ol className="text-sm text-blue-700 space-y-1">
+              <li>1. Envie /start para o bot do Telegram</li>
+              <li>2. O bot enviará automaticamente o seu Chat ID</li>
+              <li>3. Copie o número do Chat ID e cole abaixo</li>
+            </ol>
           </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="profile-select">Selecionar Utilizador</Label>
+              <select
+                id="profile-select"
+                className="w-full p-2 border rounded-md"
+                value={selectedProfileId}
+                onChange={(e) => setSelectedProfileId(e.target.value)}
+              >
+                <option value="">Selecione um utilizador...</option>
+                {profiles.filter(p => !p.telegram_chat_id).map((profile) => (
+                  <option key={profile.user_id} value={profile.user_id}>
+                    {profile.first_name} {profile.last_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="manual-chat-id">Chat ID do Telegram</Label>
+              <Input
+                id="manual-chat-id"
+                placeholder="Ex: 123456789"
+                value={manualChatId}
+                onChange={(e) => setManualChatId(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <Button 
+            onClick={setupManualChatId} 
+            disabled={manualLoading || !selectedProfileId || !manualChatId.trim()}
+            variant="default"
+          >
+            {manualLoading ? 'Configurando...' : 'Configurar Chat ID Manualmente'}
+          </Button>
+
+          <div className="border-t pt-4">
+            <p className="text-sm text-muted-foreground mb-2">
+              <strong>Configuração automática (Recomendado):</strong>
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Os utilizadores podem também ser automaticamente configurados enviando /start para o bot do Telegram.
+            </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

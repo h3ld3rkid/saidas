@@ -26,11 +26,17 @@ serve(async (req) => {
     if (action === 'create') {
       console.log('Creating new user...');
       
+      // Generate temporary password
+      const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
+      
       // Create user in auth
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
         email: userData.email,
-        password: userData.password,
+        password: tempPassword,
         email_confirm: true,
+        user_metadata: {
+          force_password_change: true
+        }
       });
 
       if (authError) {
@@ -130,7 +136,11 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true, message: 'Utilizador criado com sucesso' }),
+        JSON.stringify({ 
+          success: true, 
+          message: 'Utilizador criado com sucesso',
+          tempPassword: tempPassword
+        }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }

@@ -90,13 +90,13 @@ serve(async (req) => {
         }
 
         if (!userFound) {
-          // Send message asking to contact admin
+          // Send message with chat_id for manual configuration
           await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               chat_id: chatId,
-              text: `Olá ${firstName}! Não consegui encontrar o seu perfil automaticamente. Por favor contacte o administrador para configurar as suas notificações.`
+              text: `Olá ${firstName}! Para configurar as notificações:\n\n🆔 Seu Chat ID: ${chatId}\n\n1. Copie este número\n2. Cole na aplicação web em Configurações > Telegram\n3. Contacte o administrador se precisar de ajuda`
             })
           });
         }

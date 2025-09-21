@@ -102,7 +102,9 @@ const ManageUsers = () => {
       if (data.success) {
         toast({
           title: 'Sucesso',
-          description: 'Utilizador criado com sucesso',
+          description: data.tempPassword 
+            ? `Utilizador criado! Senha temporária: ${data.tempPassword}` 
+            : 'Utilizador criado com sucesso',
         });
 
         setFormData({
