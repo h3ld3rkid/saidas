@@ -17,21 +17,24 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
     // Open Google Maps without specific coordinates so user can navigate freely
     const mapsUrl = 'https://www.google.com/maps/';
     
-    // Try multiple methods to ensure it opens
     try {
-      // Method 1: Direct window.open
-      const newWindow = window.open(mapsUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+      // Create and click a link element - this avoids popup blockers
+      const link = document.createElement('a');
+      link.href = mapsUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       
-      if (!newWindow || newWindow.closed || typeof newWindow.closed == 'undefined') {
-        // Method 2: Create and click a link element
-        const link = document.createElement('a');
-        link.href = mapsUrl;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        document.body.appendChild(link);
-        link.click();
+      // Add some user-friendly attributes
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // Trigger the click
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
         document.body.removeChild(link);
-      }
+      }, 100);
       
       toast({
         title: 'Google Maps aberto',
@@ -39,16 +42,16 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
         duration: 5000
       });
     } catch (error) {
-      // Method 3: Fallback - copy URL to clipboard and show instructions
+      // Fallback - copy URL to clipboard and show instructions
       navigator.clipboard.writeText(mapsUrl).then(() => {
         toast({
-          title: 'URL copiado',
-          description: 'Cole o URL no seu navegador para abrir o Google Maps.',
+          title: 'URL copiado para área de transferência',
+          description: 'Cole o URL numa nova aba do navegador para abrir o Google Maps.',
         });
       }).catch(() => {
         toast({
           title: 'Abrir manualmente',
-          description: `Copie este URL: ${mapsUrl}`,
+          description: `Vá para: ${mapsUrl}`,
           variant: 'destructive'
         });
       });

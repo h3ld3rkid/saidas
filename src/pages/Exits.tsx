@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, Edit } from 'lucide-react';
+import { ArrowLeft, Eye, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Dialog, 
@@ -14,7 +14,19 @@ import {
   DialogTitle,
   DialogTrigger 
 } from '@/components/ui/dialog';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
+import { toast } from '@/hooks/use-toast';
 
 interface VehicleExit {
   id: string;
@@ -55,6 +67,7 @@ const Exits = () => {
   const navigate = useNavigate();
   const [exits, setExits] = useState<VehicleExit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchExits = async () => {
@@ -96,6 +109,34 @@ const Exits = () => {
 
     fetchExits();
   }, [user, hasRole]);
+
+  const handleDeleteExit = async (exitId: string) => {
+    setDeleting(exitId);
+    try {
+      const { error } = await supabase
+        .from('vehicle_exits')
+        .delete()
+        .eq('id', exitId);
+        
+      if (error) throw error;
+      
+      // Refresh the list
+      setExits(exits.filter(exit => exit.id !== exitId));
+      
+      toast({
+        title: 'Serviço eliminado',
+        description: 'O serviço foi eliminado e os números foram atualizados.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao eliminar serviço',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -287,6 +328,34 @@ const Exits = () => {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
+                          )}
+                          
+                          {hasRole('admin') && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm" disabled={deleting === exit.id}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Eliminar Serviço</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem a certeza que pretende eliminar este serviço? Esta ação não pode ser desfeita. 
+                                    Todos os números de serviços posteriores serão atualizados.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => handleDeleteExit(exit.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Eliminar
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           )}
                         </div>
                       </td>

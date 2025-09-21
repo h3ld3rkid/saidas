@@ -177,6 +177,7 @@ export default function RegisterExit() {
     contact: string;
     coduNumber?: string;
     address: string;
+    observations?: string;
     mapLocation?: string;
     crew: string;
   }) => {
@@ -221,7 +222,7 @@ export default function RegisterExit() {
 📞 <b>Contacto:</b> ${data.contact}
 ${data.coduNumber ? `🆘 <b>CODU:</b> ${data.coduNumber}\n` : ''}📍 <b>Morada:</b> ${data.address}
 👥 <b>Tripulação:</b> ${data.crew}
-${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
+${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
       `;
 
       const response = await supabase.functions.invoke('telegram-notify', {
@@ -309,6 +310,7 @@ ${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
             contact: form.patient_contact,
             coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
             address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            observations: form.observations,
             mapLocation,
             crew: form.crew
           });
