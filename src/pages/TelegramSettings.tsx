@@ -197,9 +197,19 @@ export default function TelegramSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">
+              <strong>Configuração Automática:</strong>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Agora os utilizadores são automaticamente configurados quando enviam /start para o bot do Telegram.
+              O sistema tenta encontrar o perfil do utilizador pelo nome e configura automaticamente as notificações.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="first-name">Primeiro Nome</Label>
+              <Label htmlFor="first-name">Primeiro Nome (configuração manual)</Label>
               <Input
                 id="first-name"
                 placeholder="João"
@@ -208,7 +218,7 @@ export default function TelegramSettings() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="last-name">Último Nome</Label>
+              <Label htmlFor="last-name">Último Nome (configuração manual)</Label>
               <Input
                 id="last-name"
                 placeholder="Silva"
@@ -220,20 +230,21 @@ export default function TelegramSettings() {
 
           <div className="p-4 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground mb-2">
-              <strong>Instruções:</strong>
+              <strong>Instruções para configuração manual:</strong>
             </p>
             <ol className="text-sm text-muted-foreground space-y-1">
               <li>1. O utilizador deve enviar uma mensagem para o bot Telegram primeiro</li>
               <li>2. Digite o nome completo do utilizador aqui</li>
-              <li>3. Clique em "Configurar" para associar automaticamente</li>
+              <li>3. Clique em "Configurar" para associar manualmente (apenas se a configuração automática falhar)</li>
             </ol>
           </div>
 
           <Button 
             onClick={setupTelegramForUser} 
             disabled={setupLoading || !setupFirstName.trim() || !setupLastName.trim()}
+            variant="secondary"
           >
-            {setupLoading ? 'Configurando...' : 'Configurar Telegram'}
+            {setupLoading ? 'Configurando...' : 'Configuração Manual (apenas se necessário)'}
           </Button>
         </CardContent>
       </Card>
@@ -334,9 +345,10 @@ export default function TelegramSettings() {
           <div className="space-y-2 text-sm">
             <p><strong>1.</strong> Crie um bot no Telegram usando @BotFather</p>
             <p><strong>2.</strong> Copie o token do bot e configure nas secrets do sistema</p>
-            <p><strong>3.</strong> Cada utilizador deve enviar uma mensagem para o bot</p>
-            <p><strong>4.</strong> Use o formulário acima para configurar automaticamente cada utilizador</p>
-            <p><strong>5.</strong> As notificações serão enviadas apenas para a tripulação selecionada</p>
+            <p><strong>3.</strong> Configure o webhook clicando no botão "Configurar Webhook Telegram"</p>
+            <p><strong>4.</strong> Os utilizadores enviam /start para o bot e são automaticamente configurados</p>
+            <p><strong>5.</strong> As notificações são enviadas automaticamente para toda a tripulação configurada</p>
+            <p className="text-green-600"><strong>✅ Configuração automática ativa!</strong> Os utilizadores só precisam de enviar /start.</p>
           </div>
         </CardContent>
       </Card>

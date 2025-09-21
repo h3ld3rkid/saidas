@@ -41,19 +41,69 @@ serve(async (req) => {
 
       // Check if this is a /start command or first interaction
       if (message.text === '/start') {
-        // Send welcome message
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `Olá ${firstName}! Para receber notificações, contacte o administrador para configurar a sua conta.`
-          })
-        });
-      }
+        // Auto-setup user for notifications
+        console.log(`Auto-setting up user: ${firstName} ${lastName} with chat ID: ${chatId}`);
+        
+        // Try to find and update user profile
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, first_name, last_name')
+          .ilike('first_name', firstName)
+          .ilike('last_name', lastName || '');
 
-      // Log the interaction for potential user linking
-      console.log(`User interaction logged: ${firstName} ${lastName} - Chat ID: ${chatId}`);
+        if (profileError) {
+          console.error('Error finding profile:', profileError);
+        }
+
+        let userFound = false;
+        if (profiles && profiles.length > 0) {
+          // Find best match (exact match preferred)
+          const exactMatch = profiles.find(p => 
+            p.first_name.toLowerCase() === firstName.toLowerCase() && 
+            (p.last_name || '').toLowerCase() === (lastName || '').toLowerCase()
+          );
+          
+          const profile = exactMatch || profiles[0];
+          
+          // Update profile with telegram chat ID
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ telegram_chat_id: chatId.toString() })
+            .eq('user_id', profile.user_id);
+
+          if (!updateError) {
+            userFound = true;
+            console.log(`Successfully linked ${firstName} ${lastName} to chat ID ${chatId}`);
+            
+            // Send confirmation message
+            await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `✅ Olá ${firstName}! A sua conta foi configurada automaticamente para receber notificações. Irá receber alertas sobre novas saídas de serviço.`
+              })
+            });
+          } else {
+            console.error('Error updating profile:', updateError);
+          }
+        }
+
+        if (!userFound) {
+          // Send message asking to contact admin
+          await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              text: `Olá ${firstName}! Não consegui encontrar o seu perfil automaticamente. Por favor contacte o administrador para configurar as suas notificações.`
+            })
+          });
+        }
+      } else {
+        // For other messages, just acknowledge
+        console.log(`Message from ${firstName}: ${message.text}`);
+      }
     }
 
     // Always return success to Telegram

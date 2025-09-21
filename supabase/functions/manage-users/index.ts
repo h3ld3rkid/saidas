@@ -57,49 +57,92 @@ serve(async (req) => {
 
       console.log('User created in auth:', authData.user.id);
 
-      // Create profile
-      const { error: profileError } = await supabase
+      // Check if profile already exists
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          first_name: userData.first_name,
-          last_name: userData.last_name,
-          employee_number: userData.employee_number,
-        });
+        .select('id')
+        .eq('user_id', authData.user.id)
+        .single();
 
-      if (profileError) {
-        console.error('Profile error:', profileError);
-        return new Response(
-          JSON.stringify({ error: 'Erro ao criar perfil: ' + profileError.message }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+      if (!existingProfile) {
+        // Create profile only if it doesn't exist
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            employee_number: userData.employee_number,
+          });
+
+        if (profileError) {
+          console.error('Profile error:', profileError);
+          return new Response(
+            JSON.stringify({ error: 'Erro ao criar perfil: ' + profileError.message }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
+        console.log('Profile created');
+      } else {
+        console.log('Profile already exists, updating...');
+        // Update existing profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            employee_number: userData.employee_number,
+          })
+          .eq('user_id', authData.user.id);
+
+        if (profileError) {
+          console.error('Profile update error:', profileError);
+          return new Response(
+            JSON.stringify({ error: 'Erro ao atualizar perfil: ' + profileError.message }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
       }
 
-      console.log('Profile created');
-
-      // Create role
-      const { error: roleError } = await supabase
+      // Check if role already exists
+      const { data: existingRole } = await supabase
         .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: userData.role,
-        });
+        .select('id')
+        .eq('user_id', authData.user.id)
+        .eq('role', userData.role)
+        .single();
 
-      if (roleError) {
-        console.error('Role error:', roleError);
-        return new Response(
-          JSON.stringify({ error: 'Erro ao atribuir role: ' + roleError.message }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
-        );
+      if (!existingRole) {
+        // Create role only if it doesn't exist
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role: userData.role,
+          });
+
+        if (roleError) {
+          console.error('Role error:', roleError);
+          return new Response(
+            JSON.stringify({ error: 'Erro ao atribuir role: ' + roleError.message }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+
+        console.log('Role created');
+      } else {
+        console.log('Role already exists');
       }
-
-      console.log('Role created');
 
       return new Response(
         JSON.stringify({ success: true, message: 'Utilizador criado com sucesso' }),
