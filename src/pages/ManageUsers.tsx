@@ -83,82 +83,45 @@ const ManageUsers = () => {
     e.preventDefault();
 
     try {
-      // Criar utilizador no auth
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        email_confirm: true,
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+          action: 'create',
+          userData: {
+            email: formData.email,
+            password: formData.password,
+            first_name: formData.first_name,
+            last_name: formData.last_name,
+            employee_number: formData.employee_number,
+            role: formData.role,
+          }
+        }
       });
 
-    if (authError) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao criar utilizador: ' + authError.message,
-        variant: 'destructive',
-      });
-      return;
-    }
+      if (error) throw error;
 
-    if (!authData.user) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao criar utilizador',
-        variant: 'destructive',
-      });
-      return;
-    }
+      if (data.success) {
+        toast({
+          title: 'Sucesso',
+          description: 'Utilizador criado com sucesso',
+        });
 
-    // Criar perfil
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: authData.user.id,
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        employee_number: formData.employee_number,
-      });
+        setFormData({
+          email: '',
+          password: '',
+          first_name: '',
+          last_name: '',
+          employee_number: '',
+          role: 'user',
+        });
 
-    if (profileError) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao criar perfil: ' + profileError.message,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Criar role
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: authData.user.id,
-        role: formData.role,
-      });
-
-    if (roleError) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atribuir role: ' + roleError.message,
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    toast({
-      title: 'Sucesso',
-      description: 'Utilizador criado com sucesso',
-    });
-
-    setFormData({
-      email: '',
-      password: '',
-      first_name: '',
-      last_name: '',
-      employee_number: '',
-      role: 'user',
-    });
-
-    fetchUsers();
+        fetchUsers();
+      } else {
+        toast({
+          title: 'Erro',
+          description: data.error || 'Erro ao criar utilizador',
+          variant: 'destructive',
+        });
+      }
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -228,23 +191,26 @@ const ManageUsers = () => {
   };
 
   const handleResetPassword = async (userId: string, employeeNumber: string) => {
-    const newPassword = 'TempPass123!';
-    
     try {
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
-        password: newPassword,
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+          action: 'reset-password',
+          userId: userId
+        }
       });
 
-      if (error) {
+      if (error) throw error;
+
+      if (data.success) {
         toast({
-          title: 'Erro',
-          description: 'Erro ao redefinir password: ' + error.message,
-          variant: 'destructive',
+          title: 'Sucesso',
+          description: `Password do utilizador nº ${employeeNumber} redefinida para: ${data.newPassword}`,
         });
       } else {
         toast({
-          title: 'Sucesso',
-          description: `Password do utilizador nº ${employeeNumber} redefinida para: ${newPassword}`,
+          title: 'Erro',
+          description: data.error || 'Erro ao redefinir password',
+          variant: 'destructive',
         });
       }
     } catch (error: any) {
