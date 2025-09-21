@@ -36,22 +36,16 @@ serve(async (req) => {
       if (authError) {
         console.error('Auth error:', authError);
         return new Response(
-          JSON.stringify({ error: 'Erro ao criar utilizador: ' + authError.message }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
+          JSON.stringify({ success: false, error: 'Erro ao criar utilizador: ' + authError.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       if (!authData.user) {
         console.error('No user returned from auth');
         return new Response(
-          JSON.stringify({ error: 'Erro ao criar utilizador' }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
+          JSON.stringify({ success: false, error: 'Erro ao criar utilizador' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -78,11 +72,8 @@ serve(async (req) => {
         if (profileError) {
           console.error('Profile error:', profileError);
           return new Response(
-            JSON.stringify({ error: 'Erro ao criar perfil: ' + profileError.message }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
+            JSON.stringify({ success: false, error: 'Erro ao criar perfil: ' + profileError.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
@@ -102,11 +93,8 @@ serve(async (req) => {
         if (profileError) {
           console.error('Profile update error:', profileError);
           return new Response(
-            JSON.stringify({ error: 'Erro ao atualizar perfil: ' + profileError.message }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
+            JSON.stringify({ success: false, error: 'Erro ao atualizar perfil: ' + profileError.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
       }
@@ -131,11 +119,8 @@ serve(async (req) => {
         if (roleError) {
           console.error('Role error:', roleError);
           return new Response(
-            JSON.stringify({ error: 'Erro ao atribuir role: ' + roleError.message }),
-            { 
-              status: 400, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-            }
+            JSON.stringify({ success: false, error: 'Erro ao atribuir role: ' + roleError.message }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
@@ -163,11 +148,8 @@ serve(async (req) => {
       if (error) {
         console.error('Password reset error:', error);
         return new Response(
-          JSON.stringify({ error: 'Erro ao redefinir password: ' + error.message }),
-          { 
-            status: 400, 
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-          }
+          JSON.stringify({ success: false, error: 'Erro ao redefinir password: ' + error.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -195,11 +177,8 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in manage-users function:', error);
     return new Response(
-      JSON.stringify({ error: `Erro interno: ${error.message}` }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: false, error: `Erro interno: ${error.message}` }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
