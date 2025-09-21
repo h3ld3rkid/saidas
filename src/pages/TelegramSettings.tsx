@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/hooks/use-toast';
-import { MessageCircle, Users, UserPlus, CheckCircle } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, CheckCircle, Settings } from 'lucide-react';
 
 interface Profile {
   user_id: string;
@@ -23,6 +23,7 @@ export default function TelegramSettings() {
   const [testMessage, setTestMessage] = useState('🧪 Teste de notificação Telegram');
   const [loading, setLoading] = useState(false);
   const [setupLoading, setSetupLoading] = useState(false);
+  const [webhookLoading, setWebhookLoading] = useState(false);
 
   useEffect(() => {
     document.title = 'Configurações Telegram';
@@ -134,6 +135,36 @@ export default function TelegramSettings() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const setupWebhook = async () => {
+    setWebhookLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-webhook-setup');
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: 'Webhook configurado!',
+          description: 'O webhook do Telegram foi configurado com sucesso.'
+        });
+      } else {
+        toast({
+          title: 'Erro na configuração',
+          description: data.error || 'Erro desconhecido',
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao configurar webhook',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setWebhookLoading(false);
     }
   };
 
@@ -263,6 +294,34 @@ export default function TelegramSettings() {
             variant="outline"
           >
             {loading ? 'Enviando...' : `Enviar Teste (${profiles.filter(p => p.telegram_chat_id).length} destinatários)`}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Configuração do Webhook
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-4 bg-muted rounded-lg">
+            <p className="text-sm text-muted-foreground mb-2">
+              <strong>Configuração Automática do Webhook:</strong>
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Configure automaticamente o webhook do Telegram para receber mensagens dos utilizadores. 
+              Isto permite que o bot detecte automaticamente quando novos utilizadores enviam mensagens.
+            </p>
+          </div>
+
+          <Button 
+            onClick={setupWebhook} 
+            disabled={webhookLoading}
+            variant="secondary"
+          >
+            {webhookLoading ? 'Configurando webhook...' : 'Configurar Webhook Telegram'}
           </Button>
         </CardContent>
       </Card>
