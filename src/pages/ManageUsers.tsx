@@ -163,16 +163,17 @@ const handleCreateUser = async (e: React.FormEvent) => {
       // Update role if changed
       const currentRole = getUserRole(editingProfile.user_id);
       if (formData.role !== currentRole) {
-        const { error: roleError } = await supabase
+        // Remover papéis anteriores e definir apenas o novo
+        const { error: delErr } = await supabase
           .from('user_roles')
-          .upsert({ 
-            user_id: editingProfile.user_id, 
-            role: formData.role 
-          }, {
-            onConflict: 'user_id'
-          });
+          .delete()
+          .eq('user_id', editingProfile.user_id);
+        if (delErr) throw delErr;
 
-        if (roleError) throw roleError;
+        const { error: insErr } = await supabase
+          .from('user_roles')
+          .insert({ user_id: editingProfile.user_id, role: formData.role });
+        if (insErr) throw insErr;
       }
 
       toast({

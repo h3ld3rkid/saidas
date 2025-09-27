@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Search, X } from 'lucide-react';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 import { MapLocationPicker } from '@/components/MapLocationPicker';
 
@@ -85,7 +85,8 @@ export default function RegisterExit() {
   const [showCrewDropdown, setShowCrewDropdown] = useState(false);
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
   const [mapLocation, setMapLocation] = useState('');
-  const [selectedCrewNames, setSelectedCrewNames] = useState<string[]>([]);
+  type SelectedCrew = { user_id: string; display_name: string };
+  const [selectedCrew, setSelectedCrew] = useState<SelectedCrew[]>([]);
 
   // Form data mapping 1:1 to DB where possible
   const [form, setForm] = useState({
@@ -597,31 +598,47 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               {showCrewDropdown && crewMembers.length > 0 && (
                 <div className="absolute z-10 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                   {crewMembers.map((member) => (
-                    <div
-                      key={member.user_id}
-                      className="px-3 py-2 hover:bg-accent cursor-pointer"
+                      <div
+                        key={member.user_id}
+                        className="px-3 py-2 hover:bg-accent cursor-pointer"
                         onClick={() => {
-                          const ids = (form.crew || '').split(',').map(s => s.trim()).filter(Boolean);
-                          if (!ids.includes(member.user_id)) {
-                            const newIds = ids.concat(member.user_id).join(', ');
-                            set('crew', newIds);
-                          }
-                          setSelectedCrewNames(prev => prev.includes(member.display_name) ? prev : [...prev, member.display_name]);
+                          setSelectedCrew((prev) => {
+                            if (prev.some(m => m.user_id === member.user_id)) return prev;
+                            const updated = [...prev, { user_id: member.user_id, display_name: member.display_name }];
+                            set('crew', updated.map(m => m.user_id).join(', '));
+                            return updated;
+                          });
                           setCrewSearchTerm('');
                           setShowCrewDropdown(false);
                         }}
-                    >
-                      {member.display_name}
-                    </div>
+                      >
+                        {member.display_name}
+                      </div>
                   ))}
                 </div>
               )}
                 <div className="space-y-2">
                   <Label>Tripulação selecionada</Label>
-                  {selectedCrewNames.length > 0 ? (
+                  {selectedCrew.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
-                      {selectedCrewNames.map((name) => (
-                        <span key={name} className="px-2 py-1 rounded bg-muted text-foreground text-xs">{name}</span>
+                      {selectedCrew.map((m) => (
+                        <div key={m.user_id} className="flex items-center gap-1 rounded-full bg-muted text-foreground text-xs px-2 py-1">
+                          <span>{m.display_name}</span>
+                          <button
+                            type="button"
+                            aria-label={`Remover ${m.display_name}`}
+                            className="hover:text-destructive"
+                            onClick={() => {
+                              setSelectedCrew((prev) => {
+                                const updated = prev.filter(x => x.user_id !== m.user_id);
+                                set('crew', updated.map(x => x.user_id).join(', '));
+                                return updated;
+                              });
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   ) : (

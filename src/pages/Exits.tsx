@@ -12,6 +12,7 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle,
+  DialogDescription,
   DialogTrigger 
 } from '@/components/ui/dialog';
 import { 
@@ -81,10 +82,8 @@ const Exits = () => {
         `)
         .order('created_at', { ascending: false });
 
-      // Se não for mod ou admin, só mostra as próprias saídas
-      if (!hasRole('mod')) {
-        query = query.eq('user_id', user.id);
-      }
+      // Confiar nas RLS para devolver apenas as saídas às quais o utilizador tem acesso
+      // (próprias e onde está na tripulação).
 
       const { data, error } = await query;
 
@@ -158,11 +157,12 @@ const Exits = () => {
 
   const ExitDetailsModal = ({ exit }: { exit: VehicleExit }) => (
     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-      <DialogHeader>
-        <DialogTitle>
-          Detalhes do Serviço #{exit?.service_number || 'N/A'} (Ficha #{exit?.total_service_number || 'N/A'})
-        </DialogTitle>
-      </DialogHeader>
+    <DialogHeader>
+      <DialogTitle>
+        Detalhes do Serviço #{exit?.service_number || 'N/A'} (Ficha #{exit?.total_service_number || 'N/A'})
+      </DialogTitle>
+      <DialogDescription>Informações detalhadas do serviço</DialogDescription>
+    </DialogHeader>
       
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
@@ -320,15 +320,15 @@ const Exits = () => {
                             <ExitDetailsModal exit={exit} />
                           </Dialog>
                           
-                          {(exit.user_id === user?.id || hasRole('mod')) && (
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              onClick={() => navigate(`/exits/${exit.id}/edit`)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          )}
+{(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
+  <Button 
+    variant="ghost" 
+    size="sm" 
+    onClick={() => navigate(`/exits/${exit.id}/edit`)}
+  >
+    <Edit className="h-4 w-4" />
+  </Button>
+)}
                           
                           {hasRole('admin') && (
                             <AlertDialog>
