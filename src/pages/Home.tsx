@@ -6,6 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3 } from "lucide-react";
 const fetchNotices = async () => {
   const {
@@ -21,7 +23,7 @@ const fetchActiveServices = async () => {
   const {
     data,
     error
-  } = await supabase.from('vehicle_exits').select('id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number').eq('status', 'active').order('departure_date', {
+  } = await supabase.from('vehicle_exits').select('id, user_id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number').eq('status', 'active').order('departure_date', {
     ascending: false
   });
   if (error) throw error;
@@ -43,9 +45,8 @@ export default function Home() {
     queryKey: ['services-active'],
     queryFn: fetchActiveServices
   });
-  const {
-    hasRole
-  } = useUserRole();
+  const { hasRole } = useUserRole();
+  const { user } = useAuth();
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -137,6 +138,11 @@ export default function Home() {
                             variant="default"
                             className="text-xs"
                             onClick={async () => {
+                              const canConclude = hasRole('mod') || hasRole('admin') || s.user_id === user?.id;
+                              if (!canConclude) {
+                                toast({ title: 'Sem permissão', description: 'Apenas o autor, moderadores ou administradores podem concluir.', variant: 'destructive' });
+                                return;
+                              }
                               try {
                                 const { error } = await supabase
                                   .from('vehicle_exits')
@@ -144,12 +150,13 @@ export default function Home() {
                                   .eq('id', s.id);
                                 
                                 if (error) {
-                                  console.error('Erro ao concluir serviço:', error);
+                                  toast({ title: 'Erro', description: error.message, variant: 'destructive' });
                                 } else {
+                                  toast({ title: 'Concluído', description: 'Serviço marcado como concluído.' });
                                   window.location.reload();
                                 }
-                              } catch (error) {
-                                console.error('Erro:', error);
+                              } catch (e: any) {
+                                toast({ title: 'Erro inesperado', description: e.message, variant: 'destructive' });
                               }
                             }}
                           >

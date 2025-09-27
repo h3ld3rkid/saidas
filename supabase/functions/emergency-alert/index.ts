@@ -83,7 +83,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     const chatIds = profiles
       .map(p => p.telegram_chat_id)
-      .filter(id => id !== null) as string[];
+      .filter((id: string | null) => !!id && String(id).trim().length > 0) as string[];
+
+    console.log(`Preparing to send ${alertType} alert to ${chatIds.length} recipients`);
 
     if (chatIds.length === 0) {
       return new Response(

@@ -1,7 +1,7 @@
 project_id = "mubuncckmiyxxnlxnecn"
 
 [functions.emergency-alert]
-verify_jwt = true
+verify_jwt = false
 
 [functions.telegram-notify]
 verify_jwt = false
