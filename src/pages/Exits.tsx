@@ -63,7 +63,7 @@ interface VehicleExit {
 
 const Exits = () => {
   const { user } = useAuth();
-  const { hasRole } = useUserRole();
+  const { hasRole, role } = useUserRole();
   const navigate = useNavigate();
   const [exits, setExits] = useState<VehicleExit[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +108,7 @@ const Exits = () => {
     };
 
     fetchExits();
-  }, [user, hasRole]);
+  }, [user, role]);
 
   const handleDeleteExit = async (exitId: string) => {
     setDeleting(exitId);

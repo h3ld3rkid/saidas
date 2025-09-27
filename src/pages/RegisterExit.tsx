@@ -85,6 +85,7 @@ export default function RegisterExit() {
   const [showCrewDropdown, setShowCrewDropdown] = useState(false);
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
   const [mapLocation, setMapLocation] = useState('');
+  const [selectedCrewNames, setSelectedCrewNames] = useState<string[]>([]);
 
   // Form data mapping 1:1 to DB where possible
   const [form, setForm] = useState({
@@ -276,9 +277,15 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
       const serviceNumber = numberData[0]?.service_num || 1;
       const totalServiceNumber = numberData[0]?.total_num || 1;
       
-      // Insert the exit with the numbers
+      // Build crew IDs including current user
+      const existingCrewIds = (form.crew || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (!existingCrewIds.includes(user.id)) existingCrewIds.push(user.id);
+      const crewIdsForDb = existingCrewIds.join(', ');
+      
+      // Insert the exit with the numbers and crew
       const { error } = await supabase.from('vehicle_exits').insert({
         ...payload,
+        crew: crewIdsForDb,
         service_number: serviceNumber,
         total_service_number: totalServiceNumber
       } as any);
@@ -304,7 +311,7 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
           address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
           observations: form.observations,
           mapLocation,
-          crewUserIds: form.crew || ''
+          crewUserIds: crewIdsForDb
         });
       } catch (telegramError) {
         console.error('Failed to send Telegram notification:', telegramError);
@@ -593,23 +600,36 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                     <div
                       key={member.user_id}
                       className="px-3 py-2 hover:bg-accent cursor-pointer"
-                       onClick={() => {
-                         const currentCrew = form.crew ? `${form.crew}, ${member.user_id}` : member.user_id;
-                         set('crew', currentCrew);
-                         setCrewSearchTerm('');
-                         setShowCrewDropdown(false);
-                       }}
+                        onClick={() => {
+                          const ids = (form.crew || '').split(',').map(s => s.trim()).filter(Boolean);
+                          if (!ids.includes(member.user_id)) {
+                            const newIds = ids.concat(member.user_id).join(', ');
+                            set('crew', newIds);
+                          }
+                          setSelectedCrewNames(prev => prev.includes(member.display_name) ? prev : [...prev, member.display_name]);
+                          setCrewSearchTerm('');
+                          setShowCrewDropdown(false);
+                        }}
                     >
                       {member.display_name}
                     </div>
                   ))}
                 </div>
               )}
-              <div className="space-y-2">
-                <Label>Tripulação selecionada (IDs)</Label>
-                <Textarea value={form.crew} onChange={(e) => set('crew', e.target.value)} placeholder="IDs dos membros separados por vírgulas" rows={2} />
-                <p className="text-xs text-muted-foreground">Nota: Quem regista o serviço é incluído automaticamente</p>
-              </div>
+                <div className="space-y-2">
+                  <Label>Tripulação selecionada</Label>
+                  {selectedCrewNames.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCrewNames.map((name) => (
+                        <span key={name} className="px-2 py-1 rounded bg-muted text-foreground text-xs">{name}</span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sem membros selecionados ainda.</p>
+                  )}
+                  <input type="hidden" value={form.crew} readOnly />
+                  <p className="text-xs text-muted-foreground">Nota: Quem regista o serviço é incluído automaticamente</p>
+                </div>
             </div>
 
             {/* Mapa para localização */}
