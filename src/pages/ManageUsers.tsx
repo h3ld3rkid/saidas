@@ -146,26 +146,34 @@ const handleCreateUser = async (e: React.FormEvent) => {
     
     if (!editingProfile) return;
 
-    const { error } = await supabase
-      .from('profiles')
-.update({
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        employee_number: formData.employee_number,
-        function_role: formData.function_role || null,
-      })
-      .eq('id', editingProfile.id);
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          employee_number: formData.employee_number,
+          function_role: formData.function_role || null,
+        })
+        .eq('id', editingProfile.id);
 
-    if (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar perfil',
-        variant: 'destructive',
-      });
-    } else {
+      if (profileError) throw profileError;
+
+      // Update role if changed
+      const currentRole = getUserRole(editingProfile.user_id);
+      if (formData.role !== currentRole) {
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .update({ role: formData.role })
+          .eq('user_id', editingProfile.user_id);
+
+        if (roleError) throw roleError;
+      }
+
       toast({
         title: 'Sucesso',
-        description: 'Perfil atualizado com sucesso',
+        description: 'Utilizador atualizado com sucesso',
       });
       setEditingProfile(null);
       setFormData({
@@ -178,6 +186,12 @@ const handleCreateUser = async (e: React.FormEvent) => {
         role: 'user',
       });
       fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao atualizar utilizador: ' + error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -236,14 +250,14 @@ const handleCreateUser = async (e: React.FormEvent) => {
 
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile);
-setFormData({
+    setFormData({
       email: '',
       password: '',
       first_name: profile.first_name,
       last_name: profile.last_name,
       employee_number: profile.employee_number,
       function_role: profile.function_role || '',
-      role: 'user',
+      role: getUserRole(profile.user_id),
     });
   };
 
@@ -355,21 +369,19 @@ setFormData({
                   </Select>
                 </div>
 
-                {!editingProfile && (
-                  <div>
-                    <Label htmlFor="role">Role</Label>
-                    <Select value={formData.role} onValueChange={(value: 'user' | 'mod' | 'admin') => setFormData({ ...formData, role: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">Utilizador</SelectItem>
-                        <SelectItem value="mod">Moderador</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                 <div>
+                   <Label htmlFor="role">Role</Label>
+                   <Select value={formData.role} onValueChange={(value: 'user' | 'mod' | 'admin') => setFormData({ ...formData, role: value })}>
+                     <SelectTrigger>
+                       <SelectValue />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="user">Utilizador</SelectItem>
+                       <SelectItem value="mod">Moderador</SelectItem>
+                       <SelectItem value="admin">Administrador</SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
 
                 <div className="flex gap-2">
                   <Button type="submit">

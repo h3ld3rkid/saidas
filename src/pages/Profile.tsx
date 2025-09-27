@@ -15,6 +15,7 @@ interface ProfileRow {
   first_name: string;
   last_name: string;
   employee_number: string;
+  telegram_chat_id: string | null;
 }
 
 const Profile = () => {
@@ -28,7 +29,8 @@ const Profile = () => {
     first_name: '',
     last_name: '',
     employee_number: '',
-    email: ''
+    email: '',
+    telegram_chat_id: ''
   });
 
   useEffect(() => {
@@ -50,7 +52,7 @@ const Profile = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, first_name, last_name, employee_number')
+        .select('id, user_id, first_name, last_name, employee_number, telegram_chat_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -62,7 +64,8 @@ const Profile = () => {
           first_name: data.first_name ?? '',
           last_name: data.last_name ?? '',
           employee_number: data.employee_number ?? '',
-          email: user?.email ?? ''
+          email: user?.email ?? '',
+          telegram_chat_id: data.telegram_chat_id ?? ''
         });
       }
       setLoading(false);
@@ -85,8 +88,7 @@ const Profile = () => {
     const profileUpdate = await supabase
       .from('profiles')
       .update({
-        first_name: form.first_name,
-        last_name: form.last_name,
+        telegram_chat_id: form.telegram_chat_id || null,
       })
       .eq('user_id', user.id);
 
@@ -129,16 +131,30 @@ const Profile = () => {
                 <p>A carregar…</p>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="first_name">Primeiro Nome</Label>
-                      <Input id="first_name" name="first_name" value={form.first_name} onChange={handleChange} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="last_name">Último Nome</Label>
-                      <Input id="last_name" name="last_name" value={form.last_name} onChange={handleChange} required />
-                    </div>
-                  </div>
+                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                     <div className="space-y-2">
+                       <Label htmlFor="first_name">Primeiro Nome</Label>
+                       <Input 
+                         id="first_name" 
+                         name="first_name" 
+                         value={form.first_name} 
+                         disabled 
+                         className="bg-muted"
+                       />
+                       <p className="text-xs text-muted-foreground">Apenas editável por administradores</p>
+                     </div>
+                     <div className="space-y-2">
+                       <Label htmlFor="last_name">Último Nome</Label>
+                       <Input 
+                         id="last_name" 
+                         name="last_name" 
+                         value={form.last_name} 
+                         disabled 
+                         className="bg-muted"
+                       />
+                       <p className="text-xs text-muted-foreground">Apenas editável por administradores</p>
+                     </div>
+                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="employee_number">Número de Colaborador</Label>
                     <Input 
@@ -150,16 +166,29 @@ const Profile = () => {
                     />
                     <p className="text-xs text-muted-foreground">Apenas editável por administradores</p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      name="email" 
-                      type="email"
-                      value={form.email} 
-                      onChange={handleChange}
-                    />
-                  </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="email">Email</Label>
+                     <Input 
+                       id="email" 
+                       name="email" 
+                       type="email"
+                       value={form.email} 
+                       onChange={handleChange}
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
+                     <Input 
+                       id="telegram_chat_id" 
+                       name="telegram_chat_id" 
+                       value={form.telegram_chat_id} 
+                       onChange={handleChange}
+                       placeholder="Digite o seu Chat ID do Telegram"
+                     />
+                     <p className="text-xs text-muted-foreground">
+                       Para obter o seu Chat ID, envie uma mensagem para @userinfobot no Telegram
+                     </p>
+                   </div>
                   <div className="flex justify-end">
                     <Button type="submit" disabled={saving}>{saving ? 'A guardar…' : 'Guardar Alterações'}</Button>
                   </div>
