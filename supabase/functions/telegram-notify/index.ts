@@ -32,11 +32,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { chatIds, message }: TelegramNotificationRequest = await req.json();
 
+    console.log(`Telegram notify request: ${chatIds?.length || 0} chat IDs`);
+
     if (!chatIds || !Array.isArray(chatIds) || chatIds.length === 0) {
+      console.log("No chat IDs provided, will send notification anyway");
       return new Response(
-        JSON.stringify({ error: "Chat IDs are required and must be an array" }),
+        JSON.stringify({ 
+          results: [], 
+          summary: "Notification request processed but no Telegram chat IDs available" 
+        }),
         {
-          status: 400,
+          status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
         }
       );

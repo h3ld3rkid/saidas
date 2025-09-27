@@ -46,12 +46,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Obter chat IDs baseado no tipo de alerta
+    // Obter chat IDs baseado no tipo de alerta (incluir TODOS os users ativos, não apenas os com chatId)
     let query = supabase
       .from('profiles')
-      .select('telegram_chat_id')
-      .eq('is_active', true)
-      .not('telegram_chat_id', 'is', null);
+      .select('first_name, last_name, telegram_chat_id')
+      .eq('is_active', true);
 
     if (alertType === 'condutores') {
       query = query.eq('function_role', 'Condutor');
@@ -71,9 +70,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    console.log(`Found ${profiles?.length || 0} active users for ${alertType}`);
+
     if (!profiles || profiles.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No active users with Telegram found" }),
+        JSON.stringify({ message: "No active users found" }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -81,15 +82,21 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const chatIds = profiles
+    // Separar users com e sem chat ID
+    const usersWithTelegram = profiles.filter(p => p.telegram_chat_id);
+    const usersWithoutTelegram = profiles.filter(p => !p.telegram_chat_id);
+
+    console.log(`Users with Telegram: ${usersWithTelegram.length}, without: ${usersWithoutTelegram.length}`);
+
+    const chatIds = usersWithTelegram
       .map(p => p.telegram_chat_id)
       .filter((id: string | null) => !!id && String(id).trim().length > 0) as string[];
 
-    console.log(`Preparing to send ${alertType} alert to ${chatIds.length} recipients`);
+    console.log(`Preparing to send ${alertType} alert to ${chatIds.length} Telegram recipients`);
 
-    if (chatIds.length === 0) {
+    if (chatIds.length === 0 && usersWithoutTelegram.length === 0) {
       return new Response(
-        JSON.stringify({ message: "No Telegram chat IDs found" }),
+        JSON.stringify({ message: "No users found for this alert type" }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -134,10 +141,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const successCount = results.filter(r => r.success).length;
+    const usersNotifiedCount = usersWithTelegram.length;
+    const usersNotNotifiedCount = usersWithoutTelegram.length;
     
     return new Response(JSON.stringify({ 
       results, 
-      summary: `Emergency alert sent to ${successCount}/${chatIds.length} recipients`
+      summary: `Emergency alert sent to ${successCount}/${chatIds.length} Telegram users. ${usersNotifiedCount} users with Telegram, ${usersNotNotifiedCount} users without Telegram configured.`,
+      usersWithTelegram: usersWithTelegram.length,
+      usersWithoutTelegram: usersWithoutTelegram.length
     }), {
       status: 200,
       headers: {
