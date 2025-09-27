@@ -21,6 +21,7 @@ interface Profile {
   function_role: string | null;
   is_active: boolean;
   created_at: string;
+  email: string;
 }
 
 interface UserRole {
@@ -54,7 +55,7 @@ const ManageUsers = () => {
 
   const fetchUsers = async () => {
     const [profilesResult, rolesResult] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.rpc('get_users_with_email'),
       supabase.from('user_roles').select('*')
     ]);
 
@@ -443,8 +444,16 @@ const handleCreateUser = async (e: React.FormEvent) => {
                             {profile.first_name} {profile.last_name}
                           </h3>
                           <p className="text-sm text-muted-foreground">
+                            Email: {profile.email}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
                             Nº Mecanográfico: {profile.employee_number}
                           </p>
+                          {profile.function_role && (
+                            <p className="text-sm text-muted-foreground">
+                              Função: {profile.function_role}
+                            </p>
+                          )}
                           <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                             <span className={`px-2 py-1 rounded text-xs ${
                               getUserRole(profile.user_id) === 'admin' ? 'bg-red-100 text-red-800' :
