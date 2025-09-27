@@ -242,6 +242,11 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
     e.preventDefault();
     if (!user) return;
 
+    if (!exitType) {
+      toast({ title: 'Tipo de saída obrigatório', description: 'Selecione o tipo de saída.', variant: 'destructive' });
+      return;
+    }
+
     // Map INEM options to flags
     const is_pem = inemOption === 'inem';
     const is_reserve = inemOption === 'reserva';

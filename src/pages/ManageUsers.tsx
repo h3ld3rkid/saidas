@@ -146,7 +146,7 @@ const ManageUsers = () => {
   const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!editingUser || !formData.first_name || !formData.last_name || !formData.employee_number || !formData.function_role) {
+    if (!editingUser || !formData.first_name || !formData.last_name || !formData.employee_number || !formData.function_role || !formData.email) {
       toast({
         title: 'Erro',
         description: 'Todos os campos são obrigatórios',
@@ -155,8 +155,29 @@ const ManageUsers = () => {
       return;
     }
 
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({ title: 'Email inválido', description: 'Introduza um email válido.', variant: 'destructive' });
+      return;
+    }
+
     try {
-      // Update profile
+      // 1) Update email in auth if changed
+      if (formData.email !== editingUser.email) {
+        const { data, error } = await supabase.functions.invoke('manage-users', {
+          body: {
+            action: 'update-email',
+            userId: editingUser.user_id,
+            newEmail: formData.email,
+          },
+        });
+        if (error || !data?.success) {
+          throw new Error(data?.error || error?.message || 'Falha ao atualizar email');
+        }
+      }
+
+      // 2) Update profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
@@ -169,36 +190,22 @@ const ManageUsers = () => {
 
       if (profileError) throw profileError;
 
-      // Update role if changed
+      // 3) Update role se mudou
       const currentRole = getUserRole(editingUser.user_id);
       if (formData.role !== currentRole) {
-        // Remove old role and add new one
-        await supabase
-          .from('user_roles')
-          .delete()
-          .eq('user_id', editingUser.user_id);
-
+        await supabase.from('user_roles').delete().eq('user_id', editingUser.user_id);
         const { error: roleError } = await supabase
           .from('user_roles')
           .insert({ user_id: editingUser.user_id, role: formData.role });
-
         if (roleError) throw roleError;
       }
 
-      toast({
-        title: 'Sucesso',
-        description: 'Utilizador atualizado com sucesso',
-      });
-      
+      toast({ title: 'Sucesso', description: 'Utilizador atualizado com sucesso' });
       resetForm();
       fetchUsers();
       setActiveTab('list');
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao atualizar utilizador: ' + error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Erro ao atualizar utilizador: ' + error.message, variant: 'destructive' });
     }
   };
 
@@ -348,22 +355,20 @@ const ManageUsers = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser} className="space-y-6">
-              {!editingUser && (
-                <div>
-                  <Label htmlFor="email" className="flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="exemplo@email.com"
-                    required
-                  />
-                </div>
-              )}
+              <div>
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="exemplo@email.com"
+                  required
+                />
+              </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>

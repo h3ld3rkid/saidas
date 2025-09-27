@@ -15,14 +15,40 @@ serve(async (req) => {
   try {
     console.log('Managing user request...');
 
-    const { action, userData, userId } = await req.json();
-    console.log('Action:', action, 'UserData:', userData);
+    const { action, userData, userId, newEmail } = await req.json();
+    console.log('Action:', action, 'UserData:', userData, 'UserId:', userId);
 
-    // Initialize Supabase client with service role key
+    // Initialize Supabase clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+    // Admin client (service role)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Authenticated client (from caller) to verify permissions
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: authUserData, error: authUserError } = await supabaseAuth.auth.getUser();
+    if (authUserError || !authUserData.user) {
+      return new Response(JSON.stringify({ success: false, error: 'Sessão inválida' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Check admin role using SECURITY DEFINER function
+    const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', { _user_id: authUserData.user.id, _role: 'admin' });
+    if (roleError) {
+      console.error('Role check error:', roleError);
+      return new Response(JSON.stringify({ success: false, error: 'Erro ao verificar permissões' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ success: false, error: 'Sem permissão' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     if (action === 'create') {
       console.log('Creating new user...');
       
@@ -174,6 +200,36 @@ serve(async (req) => {
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
+      );
+
+    } else if (action === 'update-email') {
+      console.log('Updating email for user:', userId, 'to', newEmail);
+
+      // Basic validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!newEmail || typeof newEmail !== 'string' || !emailRegex.test(newEmail)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Email inválido' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+        email: newEmail,
+        email_confirm: true,
+      });
+
+      if (updateError) {
+        console.error('Email update error:', updateError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Erro ao atualizar email: ' + updateError.message }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Email atualizado com sucesso' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
     } else {
