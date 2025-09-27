@@ -160,7 +160,7 @@ const Exits = () => {
     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle>
-          Detalhes do Serviço #{exit.service_number} (Ficha #{exit.total_service_number})
+          Detalhes do Serviço #{exit?.service_number || 'N/A'} (Ficha #{exit?.total_service_number || 'N/A'})
         </DialogTitle>
       </DialogHeader>
       
@@ -169,12 +169,12 @@ const Exits = () => {
           <div>
             <h4 className="font-medium mb-2">Informações Gerais</h4>
             <div className="space-y-2 text-sm">
-              <p><strong>Tipo:</strong> {exit.exit_type}</p>
-              <p><strong>Motivo:</strong> {exit.purpose}</p>
-              <p><strong>Viatura:</strong> {exit.vehicles.license_plate} - {exit.vehicles.make} {exit.vehicles.model}</p>
-              <p><strong>Condutor:</strong> {exit.driver_name}</p>
-              <p><strong>Carta:</strong> {exit.driver_license}</p>
-              <p><strong>Tripulação:</strong> {exit.crew}</p>
+              <p><strong>Tipo:</strong> {exit?.exit_type || 'N/A'}</p>
+              <p><strong>Motivo:</strong> {exit?.purpose || 'N/A'}</p>
+              <p><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
+              <p><strong>Condutor:</strong> {exit?.driver_name || 'N/A'}</p>
+              <p><strong>Carta:</strong> {exit?.driver_license || 'N/A'}</p>
+              <p><strong>Tripulação:</strong> {exit?.crew || 'N/A'}</p>
             </div>
           </div>
           

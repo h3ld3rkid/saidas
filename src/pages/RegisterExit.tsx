@@ -179,39 +179,32 @@ export default function RegisterExit() {
     address: string;
     observations?: string;
     mapLocation?: string;
-    crew: string;
+    crewUserIds: string;
   }) => {
     try {
-      // Get crew members' Telegram chat IDs from the database
-      const crewNames = data.crew.split(',').map(name => name.trim());
+      // Parse crew IDs (now UUIDs)
+      const crewIds = data.crewUserIds.split(',').map(id => id.trim()).filter(Boolean);
       
+      // Add current user ID if not already included
+      if (user && !crewIds.includes(user.id)) {
+        crewIds.push(user.id);
+      }
+
+      // Get crew members' Telegram chat IDs and names
       const { data: profiles } = await supabase
         .from('profiles')
-        .select('telegram_chat_id, first_name, last_name')
+        .select('user_id, telegram_chat_id, first_name, last_name')
+        .in('user_id', crewIds)
         .not('telegram_chat_id', 'is', null);
 
       if (!profiles || profiles.length === 0) {
-        console.log('No Telegram configurations found');
+        console.log('No Telegram configurations found for crew');
         return;
       }
 
-      // Match crew names with profiles
-      const matchedChatIds: string[] = [];
-      crewNames.forEach(crewName => {
-        const matchedProfile = profiles.find(p => {
-          const fullName = `${p.first_name} ${p.last_name}`.toLowerCase();
-          return fullName.includes(crewName.toLowerCase()) || crewName.toLowerCase().includes(fullName);
-        });
-        
-        if (matchedProfile && matchedProfile.telegram_chat_id) {
-          matchedChatIds.push(matchedProfile.telegram_chat_id);
-        }
-      });
-
-      if (matchedChatIds.length === 0) {
-        console.log('No matching crew members with Telegram configured');
-        return;
-      }
+      // Extract chat IDs and create crew names string
+      const chatIds = profiles.map(p => p.telegram_chat_id!);
+      const crewNames = profiles.map(p => `${p.first_name} ${p.last_name}`).join(', ');
 
       const message = `
 🚨 <b>Nova Saída Registrada</b>
@@ -221,13 +214,13 @@ export default function RegisterExit() {
 ⏰ <b>Hora:</b> ${data.departureTime}
 📞 <b>Contacto:</b> ${data.contact}
 ${data.coduNumber ? `🆘 <b>CODU:</b> ${data.coduNumber}\n` : ''}📍 <b>Morada:</b> ${data.address}
-👥 <b>Tripulação:</b> ${data.crew}
+👥 <b>Tripulação:</b> ${crewNames}
 ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
       `;
 
       const response = await supabase.functions.invoke('telegram-notify', {
         body: {
-          chatIds: matchedChatIds,
+          chatIds: chatIds,
           message: message.trim()
         }
       });
@@ -300,24 +293,22 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
       });
       setShowSummary(true);
 
-      // Send Telegram notification if crew is selected
-      if (form.crew && form.crew.trim()) {
-        try {
-          await sendTelegramNotification({
-            serviceType: exitType,
-            serviceNumber,
-            departureTime: `${form.departure_date} ${form.departure_time}`,
-            contact: form.patient_contact,
-            coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
-            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
-            observations: form.observations,
-            mapLocation,
-            crew: form.crew
-          });
-        } catch (telegramError) {
-          console.error('Failed to send Telegram notification:', telegramError);
-          // Don't fail the main process for telegram errors
-        }
+      // Send Telegram notification (always include current user)
+      try {
+        await sendTelegramNotification({
+          serviceType: exitType,
+          serviceNumber,
+          departureTime: `${form.departure_date} ${form.departure_time}`,
+          contact: form.patient_contact,
+          coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
+          address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+          observations: form.observations,
+          mapLocation,
+          crewUserIds: form.crew || ''
+        });
+      } catch (telegramError) {
+        console.error('Failed to send Telegram notification:', telegramError);
+        // Don't fail the main process for telegram errors
       }
       
     } catch (error: any) {
@@ -602,12 +593,12 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                     <div
                       key={member.user_id}
                       className="px-3 py-2 hover:bg-accent cursor-pointer"
-                      onClick={() => {
-                        const currentCrew = form.crew ? `${form.crew}, ${member.display_name}` : member.display_name;
-                        set('crew', currentCrew);
-                        setCrewSearchTerm('');
-                        setShowCrewDropdown(false);
-                      }}
+                       onClick={() => {
+                         const currentCrew = form.crew ? `${form.crew}, ${member.user_id}` : member.user_id;
+                         set('crew', currentCrew);
+                         setCrewSearchTerm('');
+                         setShowCrewDropdown(false);
+                       }}
                     >
                       {member.display_name}
                     </div>
@@ -615,8 +606,9 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                 </div>
               )}
               <div className="space-y-2">
-                <Label>Tripulação selecionada</Label>
-                <Textarea value={form.crew} onChange={(e) => set('crew', e.target.value)} placeholder="Ex.: João Silva, Maria Santos" rows={2} />
+                <Label>Tripulação selecionada (IDs)</Label>
+                <Textarea value={form.crew} onChange={(e) => set('crew', e.target.value)} placeholder="IDs dos membros separados por vírgulas" rows={2} />
+                <p className="text-xs text-muted-foreground">Nota: Quem regista o serviço é incluído automaticamente</p>
               </div>
             </div>
 

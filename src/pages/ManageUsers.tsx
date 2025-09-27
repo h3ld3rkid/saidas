@@ -169,7 +169,7 @@ const handleCreateUser = async (e: React.FormEvent) => {
             user_id: editingProfile.user_id, 
             role: formData.role 
           }, {
-            onConflict: 'user_id,role'
+            onConflict: 'user_id'
           });
 
         if (roleError) throw roleError;
