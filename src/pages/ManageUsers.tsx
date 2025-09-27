@@ -165,8 +165,12 @@ const handleCreateUser = async (e: React.FormEvent) => {
       if (formData.role !== currentRole) {
         const { error: roleError } = await supabase
           .from('user_roles')
-          .update({ role: formData.role })
-          .eq('user_id', editingProfile.user_id);
+          .upsert({ 
+            user_id: editingProfile.user_id, 
+            role: formData.role 
+          }, {
+            onConflict: 'user_id,role'
+          });
 
         if (roleError) throw roleError;
       }
