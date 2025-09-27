@@ -70,7 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.error(`Failed to send message to chat ${chatId}:`, result);
           results.push({ chatId, success: false, error: result.description });
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error(`Error sending message to chat ${chatId}:`, error);
         results.push({ chatId, success: false, error: error.message });
       }

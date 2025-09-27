@@ -15,7 +15,7 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
 
   const openGoogleMaps = () => {
     // Open Google Maps without specific coordinates so user can navigate freely
-    const mapsUrl = 'https://www.google.com/maps/';
+    const mapsUrl = 'https://maps.google.com/';
     
     try {
       // Create and click a link element - this avoids popup blockers
@@ -73,7 +73,7 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
         const coordMatch = mapUrl.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
         if (coordMatch) {
           const [, lat, lng] = coordMatch;
-          const cleanUrl = `https://www.google.com/maps/@${lat},${lng},17z`;
+          const cleanUrl = `https://maps.google.com/@${lat},${lng},17z`;
           setMapUrl(cleanUrl);
           onLocationSelect(cleanUrl);
           toast({
@@ -128,7 +128,7 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
         <div className="flex gap-2">
           <Input
             id="map-url"
-            placeholder="https://www.google.com/maps/@..."
+            placeholder="https://maps.google.com/@..."
             value={mapUrl}
             onChange={(e) => handleUrlChange(e.target.value)}
             onBlur={validateAndFormatUrl}

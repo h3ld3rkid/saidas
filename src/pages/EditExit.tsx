@@ -468,15 +468,7 @@ export default function EditExit() {
                 </div>
               </div>
 
-              {/* Destino */}
-              <div className="space-y-2">
-                <Label>Destino</Label>
-                <Input 
-                  value={exit.destination || ''} 
-                  onChange={(e) => setExit({ ...exit, destination: e.target.value })}
-                  disabled={!canEdit}
-                />
-              </div>
+              {/* Campo Destino removido conforme solicitado */}
 
               {/* Tripulação */}
               <div className="space-y-2">

@@ -73,6 +73,7 @@ serve(async (req) => {
             first_name: userData.first_name,
             last_name: userData.last_name,
             employee_number: userData.employee_number,
+            function_role: userData.function_role,
           });
 
         if (profileError) {
@@ -93,6 +94,7 @@ serve(async (req) => {
             first_name: userData.first_name,
             last_name: userData.last_name,
             employee_number: userData.employee_number,
+            function_role: userData.function_role,
           })
           .eq('user_id', authData.user.id);
 
@@ -184,7 +186,7 @@ serve(async (req) => {
       );
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in manage-users function:', error);
     return new Response(
       JSON.stringify({ success: false, error: `Erro interno: ${error.message}` }),

@@ -16,6 +16,8 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import {
   Car,
   PlusCircle,
@@ -27,6 +29,9 @@ import {
   Settings,
   Home,
   MessageCircle,
+  Shield,
+  UserCheck,
+  Zap,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -37,6 +42,41 @@ export function AppSidebar() {
   const location = useLocation();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const sendEmergencyAlert = async (alertType: 'condutores' | 'socorristas') => {
+    try {
+      // Buscar o nome do utilizador
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      const requesterName = profile 
+        ? `${profile.first_name} ${profile.last_name}`.trim()
+        : user?.email || 'Utilizador';
+
+      const { data, error } = await supabase.functions.invoke('emergency-alert', {
+        body: {
+          alertType,
+          requesterName
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Alerta enviado',
+        description: `Notificação de prontidão enviada para ${alertType}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Falha ao enviar alerta: ' + error.message,
+        variant: 'destructive',
+      });
+    }
+  };
 
   const menuItems = [
     {
@@ -130,6 +170,32 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Prontidão</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => sendEmergencyAlert('condutores')}
+                  className="hover:bg-orange-500/10 text-orange-600 hover:text-orange-700"
+                >
+                  <UserCheck className="h-4 w-4" />
+                  {open && <span>Condutores</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => sendEmergencyAlert('socorristas')}
+                  className="hover:bg-red-500/10 text-red-600 hover:text-red-700"
+                >
+                  <Zap className="h-4 w-4" />
+                  {open && <span>Socorristas</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

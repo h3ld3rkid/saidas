@@ -1,0 +1,158 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface EmergencyAlertRequest {
+  alertType: 'condutores' | 'socorristas';
+  requesterName: string;
+}
+
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!botToken || !supabaseUrl || !supabaseKey) {
+      console.error("Missing required environment variables");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { alertType, requesterName }: EmergencyAlertRequest = await req.json();
+
+    if (!alertType || !requesterName) {
+      return new Response(
+        JSON.stringify({ error: "alertType and requesterName are required" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Obter chat IDs baseado no tipo de alerta
+    let query = supabase
+      .from('profiles')
+      .select('telegram_chat_id')
+      .eq('is_active', true)
+      .not('telegram_chat_id', 'is', null);
+
+    if (alertType === 'condutores') {
+      query = query.eq('function_role', 'Condutor');
+    }
+    // Para socorristas, enviar para todos os users ativos
+
+    const { data: profiles, error } = await query;
+
+    if (error) {
+      console.error("Error fetching profiles:", error);
+      return new Response(
+        JSON.stringify({ error: "Database query failed" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (!profiles || profiles.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No active users with Telegram found" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const chatIds = profiles
+      .map(p => p.telegram_chat_id)
+      .filter(id => id !== null) as string[];
+
+    if (chatIds.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "No Telegram chat IDs found" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const message = `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${new Date().toLocaleString('pt-PT')}`;
+
+    const results = [];
+
+    // Enviar mensagem para cada chat ID
+    for (const chatId of chatIds) {
+      try {
+        const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+        
+        const response = await fetch(telegramUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: "HTML",
+          }),
+        });
+
+        const result = await response.json();
+        
+        if (response.ok) {
+          console.log(`Emergency alert sent successfully to chat ${chatId}`);
+          results.push({ chatId, success: true, messageId: result.result?.message_id });
+        } else {
+          console.error(`Failed to send emergency alert to chat ${chatId}:`, result);
+          results.push({ chatId, success: false, error: result.description });
+        }
+      } catch (error: any) {
+        console.error(`Error sending emergency alert to chat ${chatId}:`, error);
+        results.push({ chatId, success: false, error: error.message });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    
+    return new Response(JSON.stringify({ 
+      results, 
+      summary: `Emergency alert sent to ${successCount}/${chatIds.length} recipients`
+    }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error in emergency-alert function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+};
+
+serve(handler);

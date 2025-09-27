@@ -131,12 +131,37 @@ export default function Home() {
                       </div>
                       <div className="flex flex-col gap-2 items-end">
                         <Badge className="shrink-0">{s.exit_type ?? 'Serviço'}</Badge>
-                        <Link to={`/exits/${s.id}/edit`}>
-                          <Button size="sm" variant="outline" className="text-xs">
-                            <Edit3 className="h-3 w-3 mr-1" />
-                            Editar
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="default"
+                            className="text-xs"
+                            onClick={async () => {
+                              try {
+                                const { error } = await supabase
+                                  .from('vehicle_exits')
+                                  .update({ status: 'completed' })
+                                  .eq('id', s.id);
+                                
+                                if (error) {
+                                  console.error('Erro ao concluir serviço:', error);
+                                } else {
+                                  window.location.reload();
+                                }
+                              } catch (error) {
+                                console.error('Erro:', error);
+                              }
+                            }}
+                          >
+                            Concluir
                           </Button>
-                        </Link>
+                          <Link to={`/exits/${s.id}/edit`}>
+                            <Button size="sm" variant="outline" className="text-xs">
+                              <Edit3 className="h-3 w-3 mr-1" />
+                              Editar
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>) : <div className="text-center py-12">

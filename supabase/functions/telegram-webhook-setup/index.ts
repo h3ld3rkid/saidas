@@ -91,7 +91,7 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error setting up webhook:', error);
     return new Response(
       JSON.stringify({ error: `Erro interno: ${error.message}` }),

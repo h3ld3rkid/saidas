@@ -140,6 +140,7 @@ export type Database = {
           created_at: string
           employee_number: string
           first_name: string
+          function_role: string | null
           id: string
           is_active: boolean
           last_name: string
@@ -151,6 +152,7 @@ export type Database = {
           created_at?: string
           employee_number: string
           first_name: string
+          function_role?: string | null
           id?: string
           is_active?: boolean
           last_name: string
@@ -162,6 +164,7 @@ export type Database = {
           created_at?: string
           employee_number?: string
           first_name?: string
+          function_role?: string | null
           id?: string
           is_active?: boolean
           last_name?: string
@@ -414,6 +417,22 @@ export type Database = {
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_limited_exit_data: {
+        Args: { exit_id: string }
+        Returns: {
+          created_at: string
+          departure_date: string
+          departure_time: string
+          exit_type: string
+          id: string
+          service_number: number
+          status: string
+          total_service_number: number
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }[]
       }
       get_next_service_number: {
         Args: { p_service_type: string }

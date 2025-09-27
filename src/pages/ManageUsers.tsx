@@ -41,6 +41,7 @@ const ManageUsers = () => {
     first_name: '',
     last_name: '',
     employee_number: '',
+    function_role: '',
     role: 'user' as 'user' | 'mod' | 'admin',
   });
 
@@ -92,6 +93,7 @@ const ManageUsers = () => {
             first_name: formData.first_name,
             last_name: formData.last_name,
             employee_number: formData.employee_number,
+            function_role: formData.function_role,
             role: formData.role,
           }
         }
@@ -113,6 +115,7 @@ const ManageUsers = () => {
           first_name: '',
           last_name: '',
           employee_number: '',
+          function_role: '',
           role: 'user',
         });
 
@@ -165,6 +168,7 @@ const ManageUsers = () => {
         first_name: '',
         last_name: '',
         employee_number: '',
+        function_role: '',
         role: 'user',
       });
       fetchUsers();
@@ -232,6 +236,7 @@ const ManageUsers = () => {
       first_name: profile.first_name,
       last_name: profile.last_name,
       employee_number: profile.employee_number,
+      function_role: '',
       role: 'user',
     });
   };
@@ -295,16 +300,7 @@ const ManageUsers = () => {
                       />
                     </div>
 
-                    <div>
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type="password"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        required
-                      />
-                    </div>
+                    {/* Password removido - será gerada automaticamente */}
                   </>
                 )}
 
@@ -340,6 +336,19 @@ const ManageUsers = () => {
                   />
                 </div>
 
+                <div>
+                  <Label htmlFor="function_role">Função</Label>
+                  <Select value={formData.function_role || ''} onValueChange={(value) => setFormData({ ...formData, function_role: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a função" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Condutor">Condutor</SelectItem>
+                      <SelectItem value="Socorrista">Socorrista</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {!editingProfile && (
                   <div>
                     <Label htmlFor="role">Role</Label>
@@ -372,6 +381,7 @@ const ManageUsers = () => {
                           first_name: '',
                           last_name: '',
                           employee_number: '',
+                          function_role: '',
                           role: 'user',
                         });
                       }}

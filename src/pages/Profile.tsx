@@ -27,7 +27,8 @@ const Profile = () => {
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
-    employee_number: ''
+    employee_number: '',
+    email: ''
   });
 
   useEffect(() => {
@@ -60,7 +61,8 @@ const Profile = () => {
         setForm({
           first_name: data.first_name ?? '',
           last_name: data.last_name ?? '',
-          employee_number: data.employee_number ?? ''
+          employee_number: data.employee_number ?? '',
+          email: user?.email ?? ''
         });
       }
       setLoading(false);
@@ -79,14 +81,21 @@ const Profile = () => {
     if (!user) return;
     setSaving(true);
 
-    const { error } = await supabase
+    // Atualizar perfil
+    const profileUpdate = await supabase
       .from('profiles')
       .update({
         first_name: form.first_name,
         last_name: form.last_name,
-        employee_number: form.employee_number,
       })
       .eq('user_id', user.id);
+
+    // Atualizar email no auth
+    const emailUpdate = await supabase.auth.updateUser({
+      email: form.email
+    });
+
+    const error = profileUpdate.error || emailUpdate.error;
 
     setSaving(false);
 
@@ -132,7 +141,24 @@ const Profile = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="employee_number">Número de Colaborador</Label>
-                    <Input id="employee_number" name="employee_number" value={form.employee_number} onChange={handleChange} required />
+                    <Input 
+                      id="employee_number" 
+                      name="employee_number" 
+                      value={form.employee_number} 
+                      disabled 
+                      className="bg-muted"
+                    />
+                    <p className="text-xs text-muted-foreground">Apenas editável por administradores</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      name="email" 
+                      type="email"
+                      value={form.email} 
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="flex justify-end">
                     <Button type="submit" disabled={saving}>{saving ? 'A guardar…' : 'Guardar Alterações'}</Button>
