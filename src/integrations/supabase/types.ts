@@ -441,6 +441,20 @@ export type Database = {
           total_num: number
         }[]
       }
+      get_users_with_email: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          employee_number: string
+          first_name: string
+          function_role: string
+          id: string
+          is_active: boolean
+          last_name: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
