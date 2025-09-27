@@ -18,6 +18,7 @@ interface Profile {
   first_name: string;
   last_name: string;
   employee_number: string;
+  function_role: string | null;
   is_active: boolean;
   created_at: string;
 }
@@ -80,10 +81,14 @@ const ManageUsers = () => {
     setLoading(false);
   };
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleCreateUser = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!formData.function_role) {
+    toast({ title: 'Erro', description: 'Selecione a função do utilizador', variant: 'destructive' });
+    return;
+  }
 
-    try {
+  try {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: {
           action: 'create',
@@ -143,10 +148,11 @@ const ManageUsers = () => {
 
     const { error } = await supabase
       .from('profiles')
-      .update({
+.update({
         first_name: formData.first_name,
         last_name: formData.last_name,
         employee_number: formData.employee_number,
+        function_role: formData.function_role || null,
       })
       .eq('id', editingProfile.id);
 
@@ -230,13 +236,13 @@ const ManageUsers = () => {
 
   const handleEdit = (profile: Profile) => {
     setEditingProfile(profile);
-    setFormData({
+setFormData({
       email: '',
       password: '',
       first_name: profile.first_name,
       last_name: profile.last_name,
       employee_number: profile.employee_number,
-      function_role: '',
+      function_role: profile.function_role || '',
       role: 'user',
     });
   };
