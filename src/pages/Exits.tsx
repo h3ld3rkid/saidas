@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useUserNames } from '@/hooks/useUserNames';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -69,6 +70,17 @@ const Exits = () => {
   const [exits, setExits] = useState<VehicleExit[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+
+  // Component to display crew names
+  const CrewDisplay = ({ crewString }: { crewString: string }) => {
+    const crewIds = crewString.split(',').map(id => id.trim()).filter(Boolean);
+    const { formatCrewNames, loading } = useUserNames(crewIds);
+    
+    if (loading) return <span>Carregando...</span>;
+    if (!crewString) return <span>N/A</span>;
+    
+    return <span>{formatCrewNames(crewString)}</span>;
+  };
 
   useEffect(() => {
     const fetchExits = async () => {
@@ -174,7 +186,7 @@ const Exits = () => {
               <p><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
               <p><strong>Condutor:</strong> {exit?.driver_name || 'N/A'}</p>
               <p><strong>Carta:</strong> {exit?.driver_license || 'N/A'}</p>
-              <p><strong>Tripulação:</strong> {exit?.crew || 'N/A'}</p>
+              <p><strong>Tripulação:</strong> <CrewDisplay crewString={exit?.crew || ''} /></p>
             </div>
           </div>
           

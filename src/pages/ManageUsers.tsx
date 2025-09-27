@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Plus, Edit, UserX, Key } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 
 interface Profile {
@@ -36,10 +36,11 @@ const ManageUsers = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
+  const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
+  const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
     first_name: '',
     last_name: '',
     employee_number: '',
@@ -54,54 +55,63 @@ const ManageUsers = () => {
   }, [hasRole]);
 
   const fetchUsers = async () => {
-    const [profilesResult, rolesResult] = await Promise.all([
-      supabase.rpc('get_users_with_email'),
-      supabase.from('user_roles').select('*')
-    ]);
+    setLoading(true);
+    try {
+      const [profilesResult, rolesResult] = await Promise.all([
+        supabase.rpc('get_users_with_email'),
+        supabase.from('user_roles').select('*')
+      ]);
 
-    if (profilesResult.error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao carregar utilizadores',
-        variant: 'destructive',
-      });
-    } else {
+      if (profilesResult.error) {
+        throw profilesResult.error;
+      }
+      
+      if (rolesResult.error) {
+        throw rolesResult.error;
+      }
+
       setProfiles(profilesResult.data || []);
-    }
-
-    if (rolesResult.error) {
+      setUserRoles(rolesResult.data || []);
+    } catch (error: any) {
       toast({
         title: 'Erro',
-        description: 'Erro ao carregar roles dos utilizadores',
+        description: 'Erro ao carregar utilizadores: ' + error.message,
         variant: 'destructive',
       });
-    } else {
-      setUserRoles(rolesResult.data || []);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-const handleCreateUser = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!formData.function_role) {
-    toast({ title: 'Erro', description: 'Selecione a função do utilizador', variant: 'destructive' });
-    return;
-  }
+  const resetForm = () => {
+    setFormData({
+      email: '',
+      first_name: '',
+      last_name: '',
+      employee_number: '',
+      function_role: '',
+      role: 'user',
+    });
+    setEditingUser(null);
+  };
 
-  try {
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.email || !formData.first_name || !formData.last_name || !formData.employee_number || !formData.function_role) {
+      toast({
+        title: 'Erro',
+        description: 'Todos os campos são obrigatórios',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: {
           action: 'create',
-          userData: {
-            email: formData.email,
-            password: formData.password,
-            first_name: formData.first_name,
-            last_name: formData.last_name,
-            employee_number: formData.employee_number,
-            function_role: formData.function_role,
-            role: formData.role,
-          }
+          userData: formData
         }
       });
 
@@ -114,18 +124,9 @@ const handleCreateUser = async (e: React.FormEvent) => {
             ? `Utilizador criado! Senha temporária: ${data.tempPassword}` 
             : 'Utilizador criado com sucesso',
         });
-
-        setFormData({
-          email: '',
-          password: '',
-          first_name: '',
-          last_name: '',
-          employee_number: '',
-          function_role: '',
-          role: 'user',
-        });
-
+        resetForm();
         fetchUsers();
+        setActiveTab('list');
       } else {
         toast({
           title: 'Erro',
@@ -142,10 +143,17 @@ const handleCreateUser = async (e: React.FormEvent) => {
     }
   };
 
-  const handleUpdateProfile = async (e: React.FormEvent) => {
+  const handleUpdateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!editingProfile) return;
+    if (!editingUser || !formData.first_name || !formData.last_name || !formData.employee_number || !formData.function_role) {
+      toast({
+        title: 'Erro',
+        description: 'Todos os campos são obrigatórios',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     try {
       // Update profile
@@ -155,43 +163,36 @@ const handleCreateUser = async (e: React.FormEvent) => {
           first_name: formData.first_name,
           last_name: formData.last_name,
           employee_number: formData.employee_number,
-          function_role: formData.function_role || null,
+          function_role: formData.function_role,
         })
-        .eq('id', editingProfile.id);
+        .eq('id', editingUser.id);
 
       if (profileError) throw profileError;
 
       // Update role if changed
-      const currentRole = getUserRole(editingProfile.user_id);
+      const currentRole = getUserRole(editingUser.user_id);
       if (formData.role !== currentRole) {
-        // Remover papéis anteriores e definir apenas o novo
-        const { error: delErr } = await supabase
+        // Remove old role and add new one
+        await supabase
           .from('user_roles')
           .delete()
-          .eq('user_id', editingProfile.user_id);
-        if (delErr) throw delErr;
+          .eq('user_id', editingUser.user_id);
 
-        const { error: insErr } = await supabase
+        const { error: roleError } = await supabase
           .from('user_roles')
-          .insert({ user_id: editingProfile.user_id, role: formData.role });
-        if (insErr) throw insErr;
+          .insert({ user_id: editingUser.user_id, role: formData.role });
+
+        if (roleError) throw roleError;
       }
 
       toast({
         title: 'Sucesso',
         description: 'Utilizador atualizado com sucesso',
       });
-      setEditingProfile(null);
-      setFormData({
-        email: '',
-        password: '',
-        first_name: '',
-        last_name: '',
-        employee_number: '',
-        function_role: '',
-        role: 'user',
-      });
+      
+      resetForm();
       fetchUsers();
+      setActiveTab('list');
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -201,24 +202,39 @@ const handleCreateUser = async (e: React.FormEvent) => {
     }
   };
 
-  const handleToggleActive = async (profileId: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from('profiles')
-      .update({ is_active: !currentStatus })
-      .eq('id', profileId);
+  const handleEditUser = (profile: Profile) => {
+    setEditingUser(profile);
+    setFormData({
+      email: profile.email,
+      first_name: profile.first_name,
+      last_name: profile.last_name,
+      employee_number: profile.employee_number,
+      function_role: profile.function_role || '',
+      role: getUserRole(profile.user_id),
+    });
+    setActiveTab('create');
+  };
 
-    if (error) {
-      toast({
-        title: 'Erro',
-        description: 'Erro ao alterar estado do utilizador',
-        variant: 'destructive',
-      });
-    } else {
+  const handleToggleActive = async (profileId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_active: !currentStatus })
+        .eq('id', profileId);
+
+      if (error) throw error;
+
       toast({
         title: 'Sucesso',
         description: `Utilizador ${!currentStatus ? 'ativado' : 'desativado'} com sucesso`,
       });
       fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao alterar estado do utilizador: ' + error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -248,23 +264,10 @@ const handleCreateUser = async (e: React.FormEvent) => {
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: 'Erro inesperado ao redefinir password',
+        description: 'Erro inesperado ao redefinir password: ' + error.message,
         variant: 'destructive',
       });
     }
-  };
-
-  const handleEdit = (profile: Profile) => {
-    setEditingProfile(profile);
-    setFormData({
-      email: '',
-      password: '',
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      employee_number: profile.employee_number,
-      function_role: profile.function_role || '',
-      role: getUserRole(profile.user_id),
-    });
   };
 
   const getUserRole = (userId: string) => {
@@ -272,13 +275,35 @@ const handleCreateUser = async (e: React.FormEvent) => {
     return userRole?.role || 'user';
   };
 
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'admin': return 'Administrador';
+      case 'mod': return 'Moderador';
+      default: return 'Utilizador';
+    }
+  };
+
+  const getRoleBadgeVariant = (role: string) => {
+    switch (role) {
+      case 'admin': return 'destructive' as const;
+      case 'mod': return 'secondary' as const;
+      default: return 'outline' as const;
+    }
+  };
+
   if (!hasRole('admin')) {
     return (
       <div className="p-6">
         <Card>
-          <CardContent className="p-6">
-            <p className="text-center text-muted-foreground">
-              Acesso negado. Apenas administradores podem gerir utilizadores.
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-6 w-6" />
+              Acesso Negado
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              Apenas administradores podem gerir utilizadores.
             </p>
           </CardContent>
         </Card>
@@ -288,83 +313,95 @@ const handleCreateUser = async (e: React.FormEvent) => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Users className="h-6 w-6" />
-        <h1 className="text-3xl font-bold">Gerir Utilizadores</h1>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6" />
+          <h1 className="text-3xl font-bold">Gestão de Utilizadores</h1>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant={activeTab === 'create' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('create')}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {editingUser ? 'Editar' : 'Criar'}
+          </Button>
+          <Button 
+            variant={activeTab === 'list' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('list')}
+          >
+            <Users className="h-4 w-4 mr-2" />
+            Listar
+          </Button>
+        </div>
       </div>
 
-      <Tabs defaultValue="create" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="create">
-            {editingProfile ? 'Editar Utilizador' : 'Criar Utilizador'}
-          </TabsTrigger>
-          <TabsTrigger value="list">Listar Utilizadores</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="create">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                {editingProfile ? 'Editar Utilizador' : 'Criar Novo Utilizador'}
-              </CardTitle>
-              <CardDescription>
-                {editingProfile ? 'Atualize as informações do utilizador' : 'Preencha os dados para criar um novo utilizador'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={editingProfile ? handleUpdateProfile : handleCreateUser} className="space-y-4">
-                {!editingProfile && (
-                  <>
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        required
-                      />
-                    </div>
-
-                    {/* Password removido - será gerada automaticamente */}
-                  </>
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="first_name">Nome</Label>
-                    <Input
-                      id="first_name"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="last_name">Apelido</Label>
-                    <Input
-                      id="last_name"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                      required
-                    />
-                  </div>
+      {activeTab === 'create' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {editingUser ? 'Editar Utilizador' : 'Criar Novo Utilizador'}
+            </CardTitle>
+            <CardDescription>
+              {editingUser ? 'Atualize as informações do utilizador' : 'Preencha todos os campos para criar um novo utilizador'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser} className="space-y-6">
+              {!editingUser && (
+                <div>
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="exemplo@email.com"
+                    required
+                  />
                 </div>
+              )}
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="first_name">Nome</Label>
+                  <Input
+                    id="first_name"
+                    value={formData.first_name}
+                    onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                    placeholder="Nome"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="last_name">Apelido</Label>
+                  <Input
+                    id="last_name"
+                    value={formData.last_name}
+                    onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                    placeholder="Apelido"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="employee_number">Número Mecanográfico</Label>
                   <Input
                     id="employee_number"
                     value={formData.employee_number}
                     onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
+                    placeholder="12345"
                     required
                   />
                 </div>
-
                 <div>
                   <Label htmlFor="function_role">Função</Label>
-                  <Select value={formData.function_role || ''} onValueChange={(value) => setFormData({ ...formData, function_role: value })}>
+                  <Select value={formData.function_role} onValueChange={(value) => setFormData({ ...formData, function_role: value })}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione a função" />
                     </SelectTrigger>
@@ -374,132 +411,118 @@ const handleCreateUser = async (e: React.FormEvent) => {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
 
-                 <div>
-                   <Label htmlFor="role">Role</Label>
-                   <Select value={formData.role} onValueChange={(value: 'user' | 'mod' | 'admin') => setFormData({ ...formData, role: value })}>
-                     <SelectTrigger>
-                       <SelectValue />
-                     </SelectTrigger>
-                     <SelectContent>
-                       <SelectItem value="user">Utilizador</SelectItem>
-                       <SelectItem value="mod">Moderador</SelectItem>
-                       <SelectItem value="admin">Administrador</SelectItem>
-                     </SelectContent>
-                   </Select>
-                 </div>
+              <div>
+                <Label htmlFor="role" className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  Nível de Acesso
+                </Label>
+                <Select value={formData.role} onValueChange={(value: 'user' | 'mod' | 'admin') => setFormData({ ...formData, role: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">Utilizador</SelectItem>
+                    <SelectItem value="mod">Moderador</SelectItem>
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                <div className="flex gap-2">
-                  <Button type="submit">
-                    {editingProfile ? 'Atualizar' : 'Criar'} Utilizador
+              <div className="flex gap-2">
+                <Button type="submit">
+                  {editingUser ? 'Atualizar Utilizador' : 'Criar Utilizador'}
+                </Button>
+                {editingUser && (
+                  <Button type="button" variant="outline" onClick={resetForm}>
+                    Cancelar
                   </Button>
-                  {editingProfile && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setEditingProfile(null);
-                        setFormData({
-                          email: '',
-                          password: '',
-                          first_name: '',
-                          last_name: '',
-                          employee_number: '',
-                          function_role: '',
-                          role: 'user',
-                        });
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                )}
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
 
-        <TabsContent value="list">
-          <Card>
-            <CardHeader>
-              <CardTitle>Utilizadores Existentes</CardTitle>
-              <CardDescription>
-                Lista de todos os utilizadores registados
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <p>Carregando...</p>
-              ) : profiles.length === 0 ? (
-                <p className="text-center text-muted-foreground">
-                  Nenhum utilizador encontrado
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {profiles.map((profile) => (
-                    <div key={profile.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h3 className="font-semibold">
+      {activeTab === 'list' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Utilizadores Registados ({profiles.length})</CardTitle>
+            <CardDescription>
+              Lista de todos os utilizadores do sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                <span className="ml-2">Carregando...</span>
+              </div>
+            ) : profiles.length === 0 ? (
+              <div className="text-center py-8">
+                <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">Nenhum utilizador encontrado</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {profiles.map((profile) => (
+                  <div key={profile.id} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-lg">
                             {profile.first_name} {profile.last_name}
                           </h3>
-                          <p className="text-sm text-muted-foreground">
-                            Email: {profile.email}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Nº Mecanográfico: {profile.employee_number}
-                          </p>
-                          {profile.function_role && (
-                            <p className="text-sm text-muted-foreground">
-                              Função: {profile.function_role}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
-                            <span className={`px-2 py-1 rounded text-xs ${
-                              getUserRole(profile.user_id) === 'admin' ? 'bg-red-100 text-red-800' :
-                              getUserRole(profile.user_id) === 'mod' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-blue-100 text-blue-800'
-                            }`}>
-                              {getUserRole(profile.user_id) === 'admin' ? 'Administrador' :
-                               getUserRole(profile.user_id) === 'mod' ? 'Moderador' : 'Utilizador'}
-                            </span>
-                            <span className={profile.is_active ? 'text-green-600' : 'text-red-600'}>
-                              {profile.is_active ? 'Ativo' : 'Inativo'}
-                            </span>
-                          </div>
+                          <Badge variant={getRoleBadgeVariant(getUserRole(profile.user_id))}>
+                            {getRoleLabel(getUserRole(profile.user_id))}
+                          </Badge>
+                          <Badge variant={profile.is_active ? 'default' : 'secondary'}>
+                            {profile.is_active ? 'Ativo' : 'Inativo'}
+                          </Badge>
                         </div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(profile)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant={profile.is_active ? "destructive" : "default"}
-                            onClick={() => handleToggleActive(profile.id, profile.is_active)}
-                          >
-                            <UserX className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleResetPassword(profile.user_id, profile.employee_number)}
-                          >
-                            <Key className="h-4 w-4" />
-                          </Button>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
+                          <p><strong>Email:</strong> {profile.email}</p>
+                          <p><strong>Nº Mecanográfico:</strong> {profile.employee_number}</p>
+                          {profile.function_role && (
+                            <p><strong>Função:</strong> {profile.function_role}</p>
+                          )}
+                          <p><strong>Criado em:</strong> {new Date(profile.created_at).toLocaleDateString('pt-PT')}</p>
                         </div>
                       </div>
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditUser(profile)}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={profile.is_active ? "destructive" : "default"}
+                          onClick={() => handleToggleActive(profile.id, profile.is_active)}
+                        >
+                          <UserX className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleResetPassword(profile.user_id, profile.employee_number)}
+                        >
+                          <Key className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
