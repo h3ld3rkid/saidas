@@ -35,14 +35,40 @@ export const useAddressHierarchy = () => {
   const [selectedParish, setSelectedParish] = useState('');
   const [streetSearch, setStreetSearch] = useState('');
   
+  // Search states
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [municipalitySearch, setMunicipalitySearch] = useState('');
+  const [parishSearch, setParishSearch] = useState('');
+  
+  // Filtered data
+  const [filteredDistricts, setFilteredDistricts] = useState<District[]>([]);
+  const [filteredMunicipalities, setFilteredMunicipalities] = useState<Municipality[]>([]);
+  const [filteredParishes, setFilteredParishes] = useState<Parish[]>([]);
+  
   // Load districts on mount
   useEffect(() => {
     supabase
       .from('distritos')
       .select('id, nome')
       .order('nome')
-      .then(({ data }) => setDistricts(data || []));
+      .then(({ data }) => {
+        setDistricts(data || []);
+        setFilteredDistricts(data || []);
+      });
   }, []);
+
+  // Filter districts based on search
+  useEffect(() => {
+    if (districtSearch) {
+      setFilteredDistricts(
+        districts.filter(d => 
+          d.nome.toLowerCase().includes(districtSearch.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredDistricts(districts);
+    }
+  }, [districts, districtSearch]);
 
   // Load municipalities when district changes
   useEffect(() => {
@@ -52,12 +78,30 @@ export const useAddressHierarchy = () => {
         .select('id, nome, distrito_id')
         .eq('distrito_id', selectedDistrict)
         .order('nome')
-        .then(({ data }) => setMunicipalities(data || []));
+        .then(({ data }) => {
+          setMunicipalities(data || []);
+          setFilteredMunicipalities(data || []);
+        });
     } else {
       setMunicipalities([]);
+      setFilteredMunicipalities([]);
     }
     setSelectedMunicipality('');
+    setMunicipalitySearch('');
   }, [selectedDistrict]);
+
+  // Filter municipalities based on search
+  useEffect(() => {
+    if (municipalitySearch) {
+      setFilteredMunicipalities(
+        municipalities.filter(m => 
+          m.nome.toLowerCase().includes(municipalitySearch.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredMunicipalities(municipalities);
+    }
+  }, [municipalities, municipalitySearch]);
 
   // Load parishes when municipality changes
   useEffect(() => {
@@ -67,12 +111,30 @@ export const useAddressHierarchy = () => {
         .select('id, nome, concelho_id')
         .eq('concelho_id', selectedMunicipality)
         .order('nome')
-        .then(({ data }) => setParishes(data || []));
+        .then(({ data }) => {
+          setParishes(data || []);
+          setFilteredParishes(data || []);
+        });
     } else {
       setParishes([]);
+      setFilteredParishes([]);
     }
     setSelectedParish('');
+    setParishSearch('');
   }, [selectedMunicipality]);
+
+  // Filter parishes based on search
+  useEffect(() => {
+    if (parishSearch) {
+      setFilteredParishes(
+        parishes.filter(p => 
+          p.nome.toLowerCase().includes(parishSearch.toLowerCase())
+        )
+      );
+    } else {
+      setFilteredParishes(parishes);
+    }
+  }, [parishes, parishSearch]);
 
   // Load streets when parish changes or search term updates
   useEffect(() => {
@@ -107,18 +169,24 @@ export const useAddressHierarchy = () => {
   };
 
   return {
-    districts,
-    municipalities,
-    parishes,
+    districts: filteredDistricts,
+    municipalities: filteredMunicipalities,
+    parishes: filteredParishes,
     streets,
     selectedDistrict,
     selectedMunicipality,
     selectedParish,
     streetSearch,
+    districtSearch,
+    municipalitySearch,
+    parishSearch,
     setSelectedDistrict,
     setSelectedMunicipality,
     setSelectedParish,
     setStreetSearch,
+    setDistrictSearch,
+    setMunicipalitySearch,
+    setParishSearch,
     getSelectedNames
   };
 };

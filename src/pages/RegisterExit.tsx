@@ -58,10 +58,16 @@ export default function RegisterExit() {
     selectedMunicipality,
     selectedParish,
     streetSearch,
+    districtSearch,
+    municipalitySearch,
+    parishSearch,
     setSelectedDistrict,
     setSelectedMunicipality,
     setSelectedParish,
     setStreetSearch,
+    setDistrictSearch,
+    setMunicipalitySearch,
+    setParishSearch,
     getSelectedNames
   } = useAddressHierarchy();
 
@@ -501,6 +507,15 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Distrito</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                    <Input
+                      value={districtSearch}
+                      onChange={(e) => setDistrictSearch(e.target.value)}
+                      placeholder="Procurar distrito..."
+                      className="pl-10"
+                    />
+                  </div>
                   <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione o distrito" />
@@ -517,6 +532,16 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
 
                 <div className="space-y-2">
                   <Label>Concelho</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                    <Input
+                      value={municipalitySearch}
+                      onChange={(e) => setMunicipalitySearch(e.target.value)}
+                      placeholder="Procurar concelho..."
+                      className="pl-10"
+                      disabled={!selectedDistrict}
+                    />
+                  </div>
                   <Select value={selectedMunicipality} onValueChange={setSelectedMunicipality} disabled={!selectedDistrict}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione o concelho" />
@@ -533,6 +558,16 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
 
                 <div className="space-y-2">
                   <Label>Freguesia</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
+                    <Input
+                      value={parishSearch}
+                      onChange={(e) => setParishSearch(e.target.value)}
+                      placeholder="Procurar freguesia..."
+                      className="pl-10"
+                      disabled={!selectedMunicipality}
+                    />
+                  </div>
                   <Select value={selectedParish} onValueChange={setSelectedParish} disabled={!selectedMunicipality}>
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccione a freguesia" />
