@@ -169,7 +169,7 @@ serve(async (req) => {
     } else if (action === 'reset-password') {
       console.log('Resetting password for user:', userId);
       
-      const newPassword = 'TempPass123!';
+      const newPassword = 'Admin123!';
       
       const { error } = await supabase.auth.admin.updateUserById(userId, {
         password: newPassword,

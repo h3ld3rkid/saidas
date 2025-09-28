@@ -39,33 +39,6 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handleBootstrapAdmin = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.functions.invoke('manage-users', {
-        body: {
-          action: 'create',
-          userData: {
-            email: 'admin@cvamares.pt',
-            first_name: 'Admin',
-            last_name: 'Sistema',
-            employee_number: 'ADMIN001',
-            function_role: 'Condutor',
-            role: 'admin',
-          },
-        },
-      });
-      if (error || !data?.success) {
-        throw new Error(data?.error || error?.message || 'Falha ao criar admin');
-      }
-      toast({ title: 'Admin criado', description: `Password temporária: ${data.tempPassword}` });
-      setEmail('admin@cvamares.pt');
-    } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
@@ -105,14 +78,6 @@ const Auth = () => {
               {loading ? 'A entrar...' : 'Entrar'}
             </Button>
           </form>
-
-          <div className="mt-6 text-center space-y-2">
-            <p className="text-sm text-muted-foreground">Primeira utilização?</p>
-            <Button type="button" variant="outline" className="w-full" disabled={loading} onClick={handleBootstrapAdmin}>
-              Criar admin inicial
-            </Button>
-          </div>
-
         </CardContent>
       </Card>
     </div>
