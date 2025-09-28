@@ -22,7 +22,7 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!botToken || !supabaseUrl || !supabaseKey) {
-      console.error("Missing required environment variables (bot token or supabase creds)");
+      console.error("Missing required environment variables");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
         {
@@ -37,8 +37,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get positive responders and their Telegram chat IDs from the database
-    console.log('Fetching responders data...');
+    // FIRST: Get positive responders BEFORE deleting anything
+    console.log('Fetching responders data before deletion...');
     const { data: respondersData, error: respondersError } = await supabase
       .from('readiness_responses')
       .select(`
@@ -54,23 +54,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (respondersError) {
       console.error('Error fetching responders:', respondersError);
-    } else {
-      console.log('Raw responders data:', JSON.stringify(respondersData, null, 2));
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch responders" }),
+        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
     }
+
+    console.log('Raw responders data:', JSON.stringify(respondersData, null, 2));
 
     const responders = (respondersData || [])
       .map((r: any) => ({
         chatId: r?.profiles?.telegram_chat_id || '',
-        name: `${r?.profiles?.first_name || ''} ${r?.profiles?.last_name || ''}`.trim() || 'Desconhecido'
+        name: `${r?.profiles?.first_name || ''} ${r?.profiles?.last_name || ''}`.trim() || 'Utilizador'
       }))
       .filter(r => !!r.chatId);
 
-    console.log(`Processing ${responders.length} responders:`, responders);
+    console.log(`Found ${responders.length} responders with Telegram chat IDs:`, responders);
 
-    // Notify each positive responder via Telegram
-    const notificationPromises = responders.map(async (responder) => {
-      if (!responder.chatId) return;
-
+    // SECOND: Send notifications to responders
+    let notificationsSent = 0;
+    for (const responder of responders) {
       const message = `✅ O alerta de ${alertType} foi resolvido. Obrigado pela sua disponibilidade!`;
 
       try {
@@ -84,20 +87,20 @@ const handler = async (req: Request): Promise<Response> => {
           }),
         });
 
+        const responseText = await response.text();
+        
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Failed to send message to ${responder.name}: ${response.status} ${response.statusText} - ${errorText}`);
+          console.error(`Failed to send message to ${responder.name}: ${response.status} ${response.statusText} - ${responseText}`);
         } else {
           console.log(`Notification sent successfully to ${responder.name}`);
+          notificationsSent++;
         }
       } catch (error) {
         console.error(`Error sending message to ${responder.name}:`, error);
       }
-    });
+    }
 
-    await Promise.all(notificationPromises);
-
-    // Delete all responses for this alert
+    // THIRD: Delete responses and alert
     console.log(`Deleting responses for alert ${alertId}`);
     const { error: delRespError, count: delRespCount } = await supabase
       .from('readiness_responses')
@@ -110,7 +113,6 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Deleted ${delRespCount} responses`);
     }
 
-    // Delete the alert itself
     console.log(`Deleting alert ${alertId}`);
     const { error: delAlertError, count: delAlertCount } = await supabase
       .from('readiness_alerts')
@@ -125,7 +127,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const result = {
       success: true, 
-      notificationsSent: responders.length,
+      notificationsSent: notificationsSent,
+      totalResponders: responders.length,
       deletedResponses: delRespCount ?? 0,
       deletedAlerts: delAlertCount ?? 0
     };

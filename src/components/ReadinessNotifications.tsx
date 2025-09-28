@@ -71,10 +71,10 @@ export function ReadinessNotifications() {
         <div className="space-y-3 max-h-96 overflow-y-auto">
           {notifications.map((notification) => (
             <div key={notification.id} className="flex items-start justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-green-800">
-                  {notification.message}
-                </p>
+               <div className="flex-1">
+                 <p className="text-sm font-medium text-green-800">
+                   {notification.responder_name || notification.message}
+                 </p>
                 <p className="text-xs text-green-600 mt-1">
                   {new Date(notification.created_at).toLocaleString('pt-PT')}
                 </p>
