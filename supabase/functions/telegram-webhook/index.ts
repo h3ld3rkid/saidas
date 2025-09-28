@@ -33,8 +33,11 @@ serve(async (req) => {
     if (update.callback_query) {
       // Handle button callbacks for readiness responses
       const callbackQuery = update.callback_query;
+      console.log('Received callback query:', callbackQuery.data);
       
       if (callbackQuery.data && callbackQuery.data.startsWith('readiness_')) {
+        console.log('Processing readiness callback:', callbackQuery.data);
+        
         // Forward to readiness callback handler
         const callbackResponse = await fetch(`${supabaseUrl}/functions/v1/telegram-readiness-callback`, {
           method: 'POST',
@@ -45,7 +48,8 @@ serve(async (req) => {
           body: JSON.stringify({ callback_query: callbackQuery })
         });
         
-        console.log(`Readiness callback processed: ${callbackResponse.status}`);
+        const responseText = await callbackResponse.text();
+        console.log(`Readiness callback processed: ${callbackResponse.status} - ${responseText}`);
       }
     } else if (update.message) {
       const message = update.message;

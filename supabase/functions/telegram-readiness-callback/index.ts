@@ -58,6 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Parse callback data: readiness_yes/no_alertId_chatId
     const [, response, alertId, chatId] = callbackQuery.data.split('_');
+    console.log(`Processing callback: response=${response}, alertId=${alertId}, chatId=${chatId}`);
     
     // Get user profile from chat_id
     const { data: profile } = await supabase
@@ -65,6 +66,8 @@ const handler = async (req: Request): Promise<Response> => {
       .select('user_id, first_name, last_name')
       .eq('telegram_chat_id', chatId)
       .single();
+
+    console.log('Found profile:', profile);
 
     if (!profile) {
       console.error(`No profile found for chat_id: ${chatId}`);
@@ -77,15 +80,29 @@ const handler = async (req: Request): Promise<Response> => {
     const userName = `${profile.first_name} ${profile.last_name || ''}`.trim();
     const isAvailable = response === 'yes';
 
+    console.log(`User ${userName} responded: ${isAvailable ? 'Available' : 'Not Available'}`);
+
     // Store the response
-    await supabase
+    const { data: insertedResponse, error: insertError } = await supabase
       .from('readiness_responses')
       .insert({
         alert_id: alertId,
         user_id: profile.user_id,
         response: isAvailable,
         responded_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting response:', insertError);
+      return new Response(JSON.stringify({ error: insertError.message }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+
+    console.log('Response inserted:', insertedResponse);
 
     // Get the original alert details
     const { data: alert } = await supabase

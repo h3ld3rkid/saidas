@@ -47,65 +47,63 @@ const fetchNotices = async () => {
 };
 
 const fetchReadinessResponses = async () => {
-  // Buscar alertas dos últimos 30 minutos
+  // Buscar apenas o alerta mais recente dos últimos 30 minutos
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
   
   const { data: alerts, error: alertsError } = await supabase
     .from('readiness_alerts')
     .select('alert_id, alert_type, requester_name, created_at')
     .gte('created_at', thirtyMinutesAgo)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(1); // Apenas o mais recente
 
   if (alertsError) throw alertsError;
   
   if (!alerts || alerts.length === 0) return [];
 
-  // Para cada alerta, buscar as respostas
-  const alertsWithResponses = await Promise.all(alerts.map(async (alert) => {
-    const { data: responses, error: responsesError } = await supabase
-      .from('readiness_responses')
-      .select('user_id, response, responded_at')
-      .eq('alert_id', alert.alert_id);
+  // Para o alerta mais recente, buscar as respostas
+  const alert = alerts[0];
+  const { data: responses, error: responsesError } = await supabase
+    .from('readiness_responses')
+    .select('user_id, response, responded_at')
+    .eq('alert_id', alert.alert_id);
 
-    if (responsesError) throw responsesError;
+  if (responsesError) throw responsesError;
 
-    if (!responses || responses.length === 0) {
-      return {
-        ...alert,
-        yesResponses: [],
-        noResponses: [],
-        totalResponses: 0
-      };
-    }
-
-    // Buscar perfis dos utilizadores que responderam
-    const userIds = responses.map(r => r.user_id);
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, first_name, last_name, telegram_chat_id')
-      .in('user_id', userIds);
-
-    // Combinar respostas com perfis
-    const responsesWithProfiles = responses.map(response => {
-      const profile = profiles?.find(p => p.user_id === response.user_id);
-      return {
-        ...response,
-        profiles: profile || { first_name: 'Desconhecido', last_name: '', telegram_chat_id: null }
-      };
-    });
-
-    const yesResponses = responsesWithProfiles.filter(r => r.response === true);
-    const noResponses = responsesWithProfiles.filter(r => r.response === false);
-
-    return {
+  if (!responses || responses.length === 0) {
+    return [{
       ...alert,
-      yesResponses,
-      noResponses,
-      totalResponses: responses.length
-    };
-  }));
+      yesResponses: [],
+      noResponses: [],
+      totalResponses: 0
+    }];
+  }
 
-  return alertsWithResponses;
+  // Buscar perfis dos utilizadores que responderam
+  const userIds = responses.map(r => r.user_id);
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('user_id, first_name, last_name, telegram_chat_id')
+    .in('user_id', userIds);
+
+  // Combinar respostas com perfis
+  const responsesWithProfiles = responses.map(response => {
+    const profile = profiles?.find(p => p.user_id === response.user_id);
+    return {
+      ...response,
+      profiles: profile || { first_name: 'Desconhecido', last_name: '', telegram_chat_id: null }
+    };
+  });
+
+  const yesResponses = responsesWithProfiles.filter(r => r.response === true);
+  const noResponses = responsesWithProfiles.filter(r => r.response === false);
+
+  return [{
+    ...alert,
+    yesResponses,
+    noResponses,
+    totalResponses: responses.length
+  }];
 };
 export default function Home() {
   useEffect(() => {
@@ -127,7 +125,7 @@ export default function Home() {
   const { data: readinessData, refetch: refetchReadiness } = useQuery({
     queryKey: ['readiness-responses'],
     queryFn: fetchReadinessResponses,
-    refetchInterval: 10000 // Atualizar a cada 10 segundos
+    refetchInterval: 5000 // Atualizar a cada 5 segundos para respostas mais rápidas
   });
 
   const { hasRole } = useUserRole();
@@ -262,6 +260,11 @@ export default function Home() {
                         <p className="text-xs text-muted-foreground">
                           {new Date(alert.created_at).toLocaleString('pt-PT')}
                         </p>
+                        {alert.totalResponses === 0 && (
+                          <p className="text-xs text-orange-600 mt-1">
+                            Aguardando respostas...
+                          </p>
+                        )}
                       </div>
                       {(hasRole('admin') || hasRole('mod')) && (
                         <Button
@@ -276,61 +279,63 @@ export default function Home() {
                       )}
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {/* Disponíveis */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-700">
-                            Disponíveis ({alert.yesResponses.length})
-                          </span>
-                        </div>
-                        {alert.yesResponses.length > 0 ? (
-                          <div className="space-y-1">
-                            {alert.yesResponses.map((response: any, idx: number) => (
-                              <div key={idx} className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
-                                {response.profiles.first_name} {response.profiles.last_name}
-                                <span className="text-green-600 ml-2">
-                                  {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </span>
-                              </div>
-                            ))}
+                    {alert.totalResponses > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Disponíveis */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <span className="text-sm font-medium text-green-700">
+                              Disponíveis ({alert.yesResponses.length})
+                            </span>
                           </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Nenhuma resposta positiva</p>
-                        )}
-                      </div>
+                          {alert.yesResponses.length > 0 ? (
+                            <div className="space-y-1">
+                              {alert.yesResponses.map((response: any, idx: number) => (
+                                <div key={idx} className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
+                                  {response.profiles.first_name} {response.profiles.last_name}
+                                  <span className="text-green-600 ml-2">
+                                    {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Nenhuma resposta positiva</p>
+                          )}
+                        </div>
 
-                      {/* Não Disponíveis */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <XCircle className="h-4 w-4 text-red-600" />
-                          <span className="text-sm font-medium text-red-700">
-                            Não Disponíveis ({alert.noResponses.length})
-                          </span>
-                        </div>
-                        {alert.noResponses.length > 0 ? (
-                          <div className="space-y-1">
-                            {alert.noResponses.map((response: any, idx: number) => (
-                              <div key={idx} className="text-xs bg-red-50 text-red-800 px-2 py-1 rounded">
-                                {response.profiles.first_name} {response.profiles.last_name}
-                                <span className="text-red-600 ml-2">
-                                  {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit' 
-                                  })}
-                                </span>
-                              </div>
-                            ))}
+                        {/* Não Disponíveis */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <XCircle className="h-4 w-4 text-red-600" />
+                            <span className="text-sm font-medium text-red-700">
+                              Não Disponíveis ({alert.noResponses.length})
+                            </span>
                           </div>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">Nenhuma resposta negativa</p>
-                        )}
+                          {alert.noResponses.length > 0 ? (
+                            <div className="space-y-1">
+                              {alert.noResponses.map((response: any, idx: number) => (
+                                <div key={idx} className="text-xs bg-red-50 text-red-800 px-2 py-1 rounded">
+                                  {response.profiles.first_name} {response.profiles.last_name}
+                                  <span className="text-red-600 ml-2">
+                                    {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit' 
+                                    })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">Nenhuma resposta negativa</p>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </CardContent>
