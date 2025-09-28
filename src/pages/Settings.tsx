@@ -11,8 +11,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { hasRole, loading } = useUserRole();
-  const [loading, setLoading] = useState(false);
+  const { hasRole, loading: roleLoading } = useUserRole();
+  const [uploading, setUploading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [currentLogo, setCurrentLogo] = useState<string>('');
@@ -23,7 +23,7 @@ export default function Settings() {
   useEffect(() => {
     document.title = 'Configurações | CV Amares';
     
-    if (loading) return;
+    if (roleLoading) return;
     if (!hasRole('admin')) {
       navigate('/home');
       return;
@@ -31,7 +31,7 @@ export default function Settings() {
 
     // Load current logo if exists
     loadCurrentLogo();
-  }, [navigate, hasRole, loading]);
+  }, [navigate, hasRole, roleLoading]);
 
   const loadCurrentLogo = async () => {
     try {
@@ -88,7 +88,7 @@ export default function Settings() {
   const handleUploadLogo = async () => {
     if (!logoFile) return;
 
-    setLoading(true);
+    setUploading(true);
     try {
       // Upload the logo (overwrites if exists)
       const { error: uploadError } = await supabase.storage
@@ -117,7 +117,7 @@ export default function Settings() {
         variant: 'destructive'
       });
     } finally {
-      setLoading(false);
+      setUploading(false);
     }
   };
 
@@ -170,7 +170,7 @@ export default function Settings() {
     }
   };
 
-  if (loading) {
+  if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
@@ -244,11 +244,11 @@ export default function Settings() {
                 </div>
                 <Button 
                   onClick={handleUploadLogo}
-                  disabled={loading}
+                  disabled={uploading}
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {loading ? 'A fazer upload...' : 'Actualizar Logotipo'}
+                  {uploading ? 'A fazer upload...' : 'Actualizar Logotipo'}
                 </Button>
               </div>
             )}
