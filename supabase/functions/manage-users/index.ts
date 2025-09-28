@@ -73,6 +73,21 @@ serve(async (req) => {
     
     if (action === 'create') {
       console.log('Creating new user with data:', userData);
+
+      // Basic validation
+      if (!userData || !userData.email || !userData.first_name || !userData.last_name || !userData.employee_number || !userData.function_role || !userData.role) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Dados inválidos: preencha todos os campos' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(userData.email)) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Email inválido' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
       // Generate temporary password
       const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
@@ -89,8 +104,69 @@ serve(async (req) => {
 
       if (authError) {
         console.error('Auth error:', authError);
+        // If user already exists, upsert profile and return success
+        const msg = (authError as any)?.message?.toLowerCase() || '';
+        if (msg.includes('already') || msg.includes('exists') || msg.includes('registered') || msg.includes('duplicate')) {
+          const { data: list, error: listErr } = await supabase.auth.admin.listUsers();
+          if (!listErr) {
+            const found = list.users?.find((u: any) => (u.email || '').toLowerCase() === userData.email.toLowerCase());
+            if (found) {
+              const uid = found.id as string;
+
+              const { data: existingProfile2 } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('user_id', uid)
+                .maybeSingle();
+
+              if (!existingProfile2) {
+                const { error: profileCreateErr } = await supabase
+                  .from('profiles')
+                  .insert({
+                    user_id: uid,
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    employee_number: userData.employee_number,
+                    function_role: userData.function_role,
+                    role: userData.role,
+                  });
+                if (profileCreateErr) {
+                  console.error('Profile create (existing user) error:', profileCreateErr);
+                  return new Response(
+                    JSON.stringify({ success: false, error: 'Erro ao criar perfil: ' + profileCreateErr.message }),
+                    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                  );
+                }
+              } else {
+                const { error: profileUpdateErr } = await supabase
+                  .from('profiles')
+                  .update({
+                    first_name: userData.first_name,
+                    last_name: userData.last_name,
+                    employee_number: userData.employee_number,
+                    function_role: userData.function_role,
+                    role: userData.role,
+                  })
+                  .eq('user_id', uid);
+                if (profileUpdateErr) {
+                  console.error('Profile update (existing user) error:', profileUpdateErr);
+                  return new Response(
+                    JSON.stringify({ success: false, error: 'Erro ao atualizar perfil: ' + profileUpdateErr.message }),
+                    { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+                  );
+                }
+              }
+
+              return new Response(
+                JSON.stringify({ success: true, message: 'Utilizador já existia. Perfil atualizado.' }),
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+
+        }
         return new Response(
-          JSON.stringify({ success: false, error: 'Erro ao criar utilizador: ' + authError.message }),
+          JSON.stringify({ success: false, error: 'Erro ao criar utilizador: ' + (authError as any)?.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
