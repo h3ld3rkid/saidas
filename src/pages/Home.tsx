@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3 } from "lucide-react";
+import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
 const fetchNotices = async () => {
   const {
     data,
@@ -45,6 +45,68 @@ const fetchNotices = async () => {
   
   return servicesWithCrewNames;
 };
+
+const fetchReadinessResponses = async () => {
+  // Buscar alertas dos últimos 30 minutos
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  
+  const { data: alerts, error: alertsError } = await supabase
+    .from('readiness_alerts')
+    .select('alert_id, alert_type, requester_name, created_at')
+    .gte('created_at', thirtyMinutesAgo)
+    .order('created_at', { ascending: false });
+
+  if (alertsError) throw alertsError;
+  
+  if (!alerts || alerts.length === 0) return [];
+
+  // Para cada alerta, buscar as respostas
+  const alertsWithResponses = await Promise.all(alerts.map(async (alert) => {
+    const { data: responses, error: responsesError } = await supabase
+      .from('readiness_responses')
+      .select('user_id, response, responded_at')
+      .eq('alert_id', alert.alert_id);
+
+    if (responsesError) throw responsesError;
+
+    if (!responses || responses.length === 0) {
+      return {
+        ...alert,
+        yesResponses: [],
+        noResponses: [],
+        totalResponses: 0
+      };
+    }
+
+    // Buscar perfis dos utilizadores que responderam
+    const userIds = responses.map(r => r.user_id);
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('user_id, first_name, last_name, telegram_chat_id')
+      .in('user_id', userIds);
+
+    // Combinar respostas com perfis
+    const responsesWithProfiles = responses.map(response => {
+      const profile = profiles?.find(p => p.user_id === response.user_id);
+      return {
+        ...response,
+        profiles: profile || { first_name: 'Desconhecido', last_name: '', telegram_chat_id: null }
+      };
+    });
+
+    const yesResponses = responsesWithProfiles.filter(r => r.response === true);
+    const noResponses = responsesWithProfiles.filter(r => r.response === false);
+
+    return {
+      ...alert,
+      yesResponses,
+      noResponses,
+      totalResponses: responses.length
+    };
+  }));
+
+  return alertsWithResponses;
+};
 export default function Home() {
   useEffect(() => {
     document.title = 'Home | CV Amares';
@@ -61,8 +123,71 @@ export default function Home() {
     queryKey: ['services-active'],
     queryFn: fetchActiveServices
   });
+
+  const { data: readinessData, refetch: refetchReadiness } = useQuery({
+    queryKey: ['readiness-responses'],
+    queryFn: fetchReadinessResponses,
+    refetchInterval: 10000 // Atualizar a cada 10 segundos
+  });
+
   const { hasRole } = useUserRole();
   const { user } = useAuth();
+
+  const handleClearReadiness = async (alertId: string, alertType: string) => {
+    try {
+      // Buscar quem respondeu "sim" para notificar
+      const { data: yesResponders } = await supabase
+        .from('readiness_responses')
+        .select('user_id')
+        .eq('alert_id', alertId)
+        .eq('response', true);
+
+      let respondersToNotify: Array<{ chatId: string; name: string }> = [];
+      
+      if (yesResponders && yesResponders.length > 0) {
+        const userIds = yesResponders.map(r => r.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, telegram_chat_id')
+          .in('user_id', userIds);
+          
+        respondersToNotify = profiles?.map(p => ({
+          chatId: p.telegram_chat_id,
+          name: `${p.first_name} ${p.last_name}`
+        })).filter(r => r.chatId) || [];
+      }
+
+      // Chamar edge function para notificar via Telegram
+      if (respondersToNotify.length > 0) {
+        await supabase.functions.invoke('clear-readiness-alert', {
+          body: {
+            alertId,
+            alertType,
+            responders: respondersToNotify
+          }
+        });
+      }
+
+      // Remover o alerta (cascade vai remover as respostas)
+      await supabase
+        .from('readiness_alerts')
+        .delete()
+        .eq('alert_id', alertId);
+
+      toast({
+        title: "Prontidão limpa",
+        description: `Alerta de ${alertType} foi removido e notificações enviadas.`,
+      });
+
+      refetchReadiness();
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
   return <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
@@ -111,6 +236,106 @@ export default function Home() {
                 </div>}
             </CardContent>
           </Card>
+
+          {/* Prontidão Card */}
+          {readinessData && readinessData.length > 0 && (
+            <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-green-500/10 p-2 rounded-lg">
+                    <Users className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Respostas de Prontidão</CardTitle>
+                    <CardDescription>Quem respondeu aos alertas recentes</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {readinessData.map((alert: any) => (
+                  <div key={alert.alert_id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-foreground mb-1">
+                          Alerta de {alert.alert_type} - {alert.requester_name}
+                        </h4>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(alert.created_at).toLocaleString('pt-PT')}
+                        </p>
+                      </div>
+                      {(hasRole('admin') || hasRole('mod')) && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
+                          className="text-xs"
+                        >
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          Limpar
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Disponíveis */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-700">
+                            Disponíveis ({alert.yesResponses.length})
+                          </span>
+                        </div>
+                        {alert.yesResponses.length > 0 ? (
+                          <div className="space-y-1">
+                            {alert.yesResponses.map((response: any, idx: number) => (
+                              <div key={idx} className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
+                                {response.profiles.first_name} {response.profiles.last_name}
+                                <span className="text-green-600 ml-2">
+                                  {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Nenhuma resposta positiva</p>
+                        )}
+                      </div>
+
+                      {/* Não Disponíveis */}
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="h-4 w-4 text-red-600" />
+                          <span className="text-sm font-medium text-red-700">
+                            Não Disponíveis ({alert.noResponses.length})
+                          </span>
+                        </div>
+                        {alert.noResponses.length > 0 ? (
+                          <div className="space-y-1">
+                            {alert.noResponses.map((response: any, idx: number) => (
+                              <div key={idx} className="text-xs bg-red-50 text-red-800 px-2 py-1 rounded">
+                                {response.profiles.first_name} {response.profiles.last_name}
+                                <span className="text-red-600 ml-2">
+                                  {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
+                                    hour: '2-digit', 
+                                    minute: '2-digit' 
+                                  })}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">Nenhuma resposta negativa</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Serviços Card - Now Below Notices */}
           <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">

@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.telegram-readiness-callback]
 verify_jwt = false
 
+[functions.clear-readiness-alert]
+verify_jwt = true
+
 [functions.telegram-setup]
 verify_jwt = false
 
