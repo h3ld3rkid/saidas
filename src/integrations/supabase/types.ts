@@ -144,6 +144,7 @@ export type Database = {
           id: string
           is_active: boolean
           last_name: string
+          role: Database["public"]["Enums"]["app_role"]
           telegram_chat_id: string | null
           updated_at: string
           user_id: string
@@ -156,6 +157,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name: string
+          role?: Database["public"]["Enums"]["app_role"]
           telegram_chat_id?: string | null
           updated_at?: string
           user_id: string
@@ -168,6 +170,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           last_name?: string
+          role?: Database["public"]["Enums"]["app_role"]
           telegram_chat_id?: string | null
           updated_at?: string
           user_id?: string
@@ -245,27 +248,6 @@ export type Database = {
           current_number?: number
           id?: string
           updated_at?: string | null
-        }
-        Relationships: []
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
         }
         Relationships: []
       }
