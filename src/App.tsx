@@ -21,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
 import ManageVehicles from "./pages/ManageVehicles";
 import TelegramSettings from "./pages/TelegramSettings";
+import Settings from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -157,6 +158,13 @@ const AppContent = () => {
         <ProtectedRoute>
           <AppLayout>
             <Profile />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/settings" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <Settings />
           </AppLayout>
         </ProtectedRoute>
       } />
