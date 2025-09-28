@@ -3,11 +3,52 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Car, PlusCircle, List, Users, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import { Car, PlusCircle, List, Users, AlertTriangle, Siren } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { role, hasRole } = useUserRole();
+  const { user } = useAuth();
+
+  const handleReadinessAlert = async (alertType: 'condutores' | 'socorristas') => {
+    if (!user) return;
+
+    try {
+      // Get user name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const requesterName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utilizador Desconhecido';
+
+      // Call the emergency alert function
+      const { error } = await supabase.functions.invoke('emergency-alert', {
+        body: {
+          alertType,
+          requesterName
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Alerta de prontidão enviado",
+        description: `Alerta para ${alertType} foi enviado via Telegram.`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Erro ao enviar alerta",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   const quickActions = [
     {
@@ -19,11 +60,11 @@ const Dashboard = () => {
       roles: ['user', 'mod', 'admin'],
     },
     {
-      title: 'Ver Saídas',
-      description: 'Consultar registos de saídas',
-      icon: List,
-      path: '/exits',
-      color: 'bg-blue-500/10 hover:bg-blue-500/20',
+      title: 'Alerta de Prontidão',
+      description: 'Enviar alerta de prontidão',
+      icon: Siren,
+      action: 'readiness',
+      color: 'bg-red-500/10 hover:bg-red-500/20',
       roles: ['user', 'mod', 'admin'],
     },
     {
@@ -70,9 +111,17 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {availableActions.map((action) => (
           <Card 
-            key={action.path} 
+            key={action.path || action.action} 
             className={`cursor-pointer transition-colors ${action.color}`}
-            onClick={() => navigate(action.path)}
+            onClick={() => {
+              if (action.path) {
+                navigate(action.path);
+              } else if (action.action === 'readiness') {
+                // Show readiness alert options
+                const alertType = window.confirm('Seleccionar tipo de alerta:\nOK = Condutores\nCancelar = Socorristas');
+                handleReadinessAlert(alertType ? 'condutores' : 'socorristas');
+              }
+            }}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
@@ -96,14 +145,25 @@ const Dashboard = () => {
             Acções mais utilizadas
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex gap-4">
-          <Button onClick={() => navigate('/register-exit')} className="flex-1">
+        <CardContent className="flex gap-4 flex-wrap">
+          <Button onClick={() => navigate('/register-exit')} className="flex-1 min-w-[150px]">
             <PlusCircle className="h-4 w-4 mr-2" />
             Registar Saída
           </Button>
-          <Button variant="outline" onClick={() => navigate('/exits')} className="flex-1">
+          <Button variant="outline" onClick={() => navigate('/exits')} className="flex-1 min-w-[150px]">
             <List className="h-4 w-4 mr-2" />
             Ver Saídas
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={() => {
+              const alertType = window.confirm('Seleccionar tipo de alerta:\nOK = Condutores\nCancelar = Socorristas');
+              handleReadinessAlert(alertType ? 'condutores' : 'socorristas');
+            }}
+            className="flex-1 min-w-[150px]"
+          >
+            <Siren className="h-4 w-4 mr-2" />
+            Alerta de Prontidão
           </Button>
         </CardContent>
       </Card>
