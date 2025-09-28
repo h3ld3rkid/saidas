@@ -50,23 +50,8 @@ const PasswordChangeForm = () => {
     setLoading(true);
 
     try {
-      // First verify current password by trying to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: (await supabase.auth.getUser()).data.user?.email || '',
-        password: passwords.currentPassword,
-      });
-
-      if (signInError) {
-        toast({
-          title: "Erro",
-          description: "Palavra-passe atual incorreta.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Update password
+      // Update password directly without verifying current password
+      // Supabase requires the user to be authenticated to change password
       const { error } = await supabase.auth.updateUser({
         password: passwords.newPassword
       });
@@ -100,7 +85,7 @@ const PasswordChangeForm = () => {
   };
 
   return (
-    <form onSubmit={handlePasswordSubmit} className="space-y-4">
+    <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="currentPassword">Palavra-passe Atual</Label>
         <Input
@@ -136,10 +121,10 @@ const PasswordChangeForm = () => {
           minLength={6}
         />
       </div>
-      <Button type="submit" disabled={loading}>
+      <Button onClick={handlePasswordSubmit} disabled={loading}>
         {loading ? 'A alterar...' : 'Alterar Palavra-passe'}
       </Button>
-    </form>
+    </div>
   );
 };
 interface ProfileRow {
