@@ -20,7 +20,7 @@ export const useUserNames = (userIds: string[] = []) => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .rpc('get_user_names_by_ids', { _user_ids: userIds });
+          .rpc('get_user_names_by_ids', { _user_ids: userIds.map(id => id) });
 
         if (error) throw error;
 

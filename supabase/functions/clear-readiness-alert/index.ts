@@ -33,10 +33,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const { alertId, alertType }: ClearAlertRequest = await req.json();
+    console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType: ${alertType}`);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get positive responders and their Telegram chat IDs from the database
+    console.log('Fetching responders data...');
     const { data: respondersData, error: respondersError } = await supabase
       .from('readiness_responses')
       .select(`
@@ -52,6 +54,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (respondersError) {
       console.error('Error fetching responders:', respondersError);
+    } else {
+      console.log('Raw responders data:', JSON.stringify(respondersData, null, 2));
     }
 
     const responders = (respondersData || [])
@@ -61,7 +65,7 @@ const handler = async (req: Request): Promise<Response> => {
       }))
       .filter(r => !!r.chatId);
 
-    console.log(`Clearing alert ${alertId} for ${responders.length} responders`);
+    console.log(`Processing ${responders.length} responders:`, responders);
 
     // Notify each positive responder via Telegram
     const notificationPromises = responders.map(async (responder) => {
@@ -70,6 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
       const message = `✅ O alerta de ${alertType} foi resolvido. Obrigado pela sua disponibilidade!`;
 
       try {
+        console.log(`Sending notification to ${responder.name} (${responder.chatId})`);
         const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -80,9 +85,10 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         if (!response.ok) {
-          console.error(`Failed to send message to ${responder.name}: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error(`Failed to send message to ${responder.name}: ${response.status} ${response.statusText} - ${errorText}`);
         } else {
-          console.log(`Notification sent to ${responder.name}`);
+          console.log(`Notification sent successfully to ${responder.name}`);
         }
       } catch (error) {
         console.error(`Error sending message to ${responder.name}:`, error);
@@ -92,6 +98,7 @@ const handler = async (req: Request): Promise<Response> => {
     await Promise.all(notificationPromises);
 
     // Delete all responses for this alert
+    console.log(`Deleting responses for alert ${alertId}`);
     const { error: delRespError, count: delRespCount } = await supabase
       .from('readiness_responses')
       .delete({ count: 'exact' })
@@ -99,9 +106,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (delRespError) {
       console.error('Error deleting responses:', delRespError);
+    } else {
+      console.log(`Deleted ${delRespCount} responses`);
     }
 
     // Delete the alert itself
+    console.log(`Deleting alert ${alertId}`);
     const { error: delAlertError, count: delAlertCount } = await supabase
       .from('readiness_alerts')
       .delete({ count: 'exact' })
@@ -109,15 +119,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (delAlertError) {
       console.error('Error deleting alert:', delAlertError);
+    } else {
+      console.log(`Deleted ${delAlertCount} alerts`);
     }
 
+    const result = {
+      success: true, 
+      notificationsSent: responders.length,
+      deletedResponses: delRespCount ?? 0,
+      deletedAlerts: delAlertCount ?? 0
+    };
+
+    console.log('Final result:', result);
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        notificationsSent: responders.length,
-        deletedResponses: delRespCount ?? 0,
-        deletedAlerts: delAlertCount ?? 0
-      }),
+      JSON.stringify(result),
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
