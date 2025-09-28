@@ -59,8 +59,8 @@ Deno.serve(async (req) => {
         is_pem,
         is_reserve,
         created_at,
-        profiles!inner(first_name, last_name, employee_number),
-        vehicles!inner(license_plate, make, model)
+        profiles(first_name, last_name, employee_number),
+        vehicles(license_plate, make, model)
       `)
       .gte('departure_date', startDate)
       .lte('departure_date', endDate)
@@ -141,11 +141,11 @@ Deno.serve(async (req) => {
         exit.status || '',
         exit.is_pem ? 'Sim' : 'Não',
         exit.is_reserve ? 'Sim' : 'Não',
-        `"${(exit.profiles?.first_name || '')} ${(exit.profiles?.last_name || '')}".trim()`,
-        exit.profiles?.employee_number || '',
-        exit.vehicles?.license_plate || '',
-        exit.vehicles?.make || '',
-        exit.vehicles?.model || '',
+        `"${((exit.profiles?.[0]?.first_name || '') + ' ' + (exit.profiles?.[0]?.last_name || '')).trim()}"`,
+        exit.profiles?.[0]?.employee_number || '',
+        exit.vehicles?.[0]?.license_plate || '',
+        exit.vehicles?.[0]?.make || '',
+        exit.vehicles?.[0]?.model || '',
         exit.created_at || ''
       ]
       csvRows.push(row.join(','))
