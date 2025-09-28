@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,14 +20,30 @@ const fetchNotices = async () => {
   return data ?? [];
 };
 const fetchActiveServices = async () => {
-  const {
-    data,
-    error
-  } = await supabase.from('vehicle_exits').select('id, user_id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number').eq('status', 'active').order('departure_date', {
-    ascending: false
-  });
+  const { data, error } = await supabase
+    .from('vehicle_exits')
+    .select('id, user_id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
+    .eq('status', 'active')
+    .order('departure_date', { ascending: false });
+  
   if (error) throw error;
-  return data ?? [];
+  
+  // Para cada serviço, buscar os nomes da tripulação
+  const servicesWithCrewNames = await Promise.all((data || []).map(async (service) => {
+    if (service.crew) {
+      const crewIds = service.crew.split(',').map((id: string) => id.trim());
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', crewIds);
+      
+      const crewNames = profiles?.map(p => `${p.first_name} ${p.last_name}`).join(', ') || service.crew;
+      return { ...service, crewNames };
+    }
+    return { ...service, crewNames: '' };
+  }));
+  
+  return servicesWithCrewNames;
 };
 export default function Home() {
   useEffect(() => {
@@ -126,8 +142,8 @@ export default function Home() {
                         <p className="text-xs text-muted-foreground mb-1">
                           <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
                         </p>
-                        {s.crew && <p className="text-xs text-muted-foreground">
-                            <strong>Tripulação:</strong> {s.crew}
+                        {s.crewNames && <p className="text-xs text-muted-foreground">
+                            <strong>Tripulação:</strong> {s.crewNames}
                           </p>}
                       </div>
                       <div className="flex flex-col gap-2 items-end">
