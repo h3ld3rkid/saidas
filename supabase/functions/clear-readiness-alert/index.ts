@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,11 +22,13 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    
-    if (!botToken) {
-      console.error("Missing TELEGRAM_BOT_TOKEN");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!botToken || !supabaseUrl || !supabaseKey) {
+      console.error("Missing required environment variables (bot token or supabase creds)");
       return new Response(
-        JSON.stringify({ error: "Bot token not configured" }),
+        JSON.stringify({ error: "Server configuration error" }),
         {
           status: 500,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -37,7 +40,29 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Clearing alert ${alertId} for ${responders.length} responders`);
 
-    // Enviar mensagem a cada pessoa que respondeu "sim"
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 1) Delete all responses for this alert
+    const { error: delRespError, count: delRespCount } = await supabase
+      .from('readiness_responses')
+      .delete({ count: 'exact' })
+      .eq('alert_id', alertId);
+
+    if (delRespError) {
+      console.error('Error deleting responses:', delRespError);
+    }
+
+    // 2) Delete the alert itself
+    const { error: delAlertError, count: delAlertCount } = await supabase
+      .from('readiness_alerts')
+      .delete({ count: 'exact' })
+      .eq('alert_id', alertId);
+
+    if (delAlertError) {
+      console.error('Error deleting alert:', delAlertError);
+    }
+
+    // 3) Notify each positive responder via Telegram
     const notificationPromises = responders.map(async (responder) => {
       if (!responder.chatId) return;
 
@@ -68,7 +93,9 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        notificationsSent: responders.length 
+        notificationsSent: responders.length,
+        deletedResponses: delRespCount ?? 0,
+        deletedAlerts: delAlertCount ?? 0
       }),
       {
         status: 200,

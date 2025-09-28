@@ -155,32 +155,20 @@ export default function Home() {
         })).filter(r => r.chatId) || [];
       }
 
-      // Primeiro remover todas as respostas associadas ao alerta
-      await supabase
-        .from('readiness_responses')
-        .delete()
-        .eq('alert_id', alertId);
+      // Chamar edge function (que faz o cleanup e notifica)
+      const { data, error } = await supabase.functions.invoke('clear-readiness-alert', {
+        body: {
+          alertId,
+          alertType,
+          responders: respondersToNotify
+        }
+      });
 
-      // Depois remover o alerta
-      await supabase
-        .from('readiness_alerts')
-        .delete()
-        .eq('alert_id', alertId);
-
-      // Chamar edge function para notificar via Telegram
-      if (respondersToNotify.length > 0) {
-        await supabase.functions.invoke('clear-readiness-alert', {
-          body: {
-            alertId,
-            alertType,
-            responders: respondersToNotify
-          }
-        });
-      }
+      if (error) throw error;
 
       toast({
         title: "Prontidão limpa",
-        description: `Alerta de ${alertType} foi removido e notificações enviadas.`,
+        description: `Alerta de ${alertType} removido. (${data?.deletedResponses || 0} respostas apagadas)`,
       });
 
       // Forçar atualização imediata dos dados
