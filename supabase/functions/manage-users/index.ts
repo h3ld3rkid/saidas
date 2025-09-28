@@ -90,7 +90,7 @@ serve(async (req) => {
       }
       
       // Generate temporary password
-      const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
+      const tempPassword = 'CVAmares_' + Math.random().toString(36).slice(-5);
       
       // Create user in auth
       const { data: authData, error: authError } = await supabase.auth.admin.createUser({
@@ -251,7 +251,7 @@ serve(async (req) => {
     } else if (action === 'reset-password') {
       console.log('Resetting password for user:', userId, 'email:', email);
       
-      const newPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
+      const newPassword = 'CVAmares_' + Math.random().toString(36).slice(-5);
 
       let targetUserId = userId as string;
       

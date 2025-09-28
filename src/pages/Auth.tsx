@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { Car } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import logo from '@/assets/logo.png';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -45,8 +45,8 @@ const Auth = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-              <Car className="h-8 w-8 text-primary-foreground" />
+            <div className="w-16 h-16">
+              <img src={logo} alt="CV Amares Logo" className="w-full h-full object-contain" />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Sistema de Saídas</CardTitle>
