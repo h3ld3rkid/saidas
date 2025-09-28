@@ -79,19 +79,26 @@ const fetchReadinessResponses = async () => {
     }];
   }
 
-  // Buscar perfis dos utilizadores que responderam
-  const userIds = responses.map(r => r.user_id);
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('user_id, first_name, last_name, telegram_chat_id')
-    .in('user_id', userIds);
+  // Buscar nomes dos utilizadores via RPC (bypassa RLS de profiles de forma segura)
+  const { data: namesData, error: namesError } = await supabase
+    .rpc('get_user_names_by_ids', { _user_ids: userIds });
 
-  // Combinar respostas com perfis
+  if (namesError) {
+    console.error('Erro ao obter nomes via RPC:', namesError);
+  }
+
+  // Indexar nomes por user_id
+  const nameMap = new Map<string, { first_name: string; last_name: string }>();
+  (namesData || []).forEach((u: any) => {
+    nameMap.set(u.user_id, { first_name: u.first_name, last_name: u.last_name });
+  });
+
+  // Combinar respostas com nomes (sem expor profiles diretamente)
   const responsesWithProfiles = responses.map(response => {
-    const profile = profiles?.find(p => p.user_id === response.user_id);
+    const n = nameMap.get(response.user_id);
     return {
       ...response,
-      profiles: profile || { first_name: 'Desconhecido', last_name: '', telegram_chat_id: null }
+      profiles: n || { first_name: 'Desconhecido', last_name: '' }
     };
   });
 
