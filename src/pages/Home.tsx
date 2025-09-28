@@ -133,52 +133,29 @@ export default function Home() {
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
     try {
-      // Buscar quem respondeu "sim" para notificar
-      const { data: yesResponders } = await supabase
-        .from('readiness_responses')
-        .select('user_id')
-        .eq('alert_id', alertId)
-        .eq('response', true);
+      // Não vamos buscar perfis para evitar problemas de RLS para utilizadores
+      const respondersToNotify: Array<{ chatId: string; name: string }> = [];
 
-      let respondersToNotify: Array<{ chatId: string; name: string }> = [];
-      
-      if (yesResponders && yesResponders.length > 0) {
-        const userIds = yesResponders.map(r => r.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('first_name, last_name, telegram_chat_id')
-          .in('user_id', userIds);
-          
-        respondersToNotify = profiles?.map(p => ({
-          chatId: p.telegram_chat_id,
-          name: `${p.first_name} ${p.last_name}`
-        })).filter(r => r.chatId) || [];
-      }
-
-      // Chamar edge function (que faz o cleanup e notifica)
+      // Chamar edge function (faz cleanup e pode notificar caso venham responders)
       const { data, error } = await supabase.functions.invoke('clear-readiness-alert', {
-        body: {
-          alertId,
-          alertType,
-          responders: respondersToNotify
-        }
+        body: { alertId, alertType, responders: respondersToNotify }
       });
 
       if (error) throw error;
 
       toast({
-        title: "Prontidão limpa",
+        title: 'Prontidão desativada',
         description: `Alerta de ${alertType} removido. (${data?.deletedResponses || 0} respostas apagadas)`,
       });
 
       // Forçar atualização imediata dos dados
       refetchReadiness();
-      
+
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: 'Erro',
         description: error.message,
-        variant: "destructive"
+        variant: 'destructive'
       });
     }
   };
@@ -262,17 +239,15 @@ export default function Home() {
                           </p>
                         )}
                       </div>
-                      {(hasRole('admin') || hasRole('mod')) && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
-                          className="text-xs"
-                        >
-                          <Trash2 className="h-3 w-3 mr-1" />
-                          Limpar
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
+                        className="text-xs"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Desativar
+                      </Button>
                     </div>
                     
                     {alert.totalResponses > 0 && (
