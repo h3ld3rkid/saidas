@@ -26,28 +26,44 @@ serve(async (req) => {
     // Admin client (service role)
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authenticated client (from caller) to verify permissions
+    // Authenticated client (from caller) to verify permissions when needed
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
 
-    const { data: authUserData, error: authUserError } = await supabaseAuth.auth.getUser();
-    if (authUserError || !authUserData.user) {
-      return new Response(JSON.stringify({ success: false, error: 'Sessão inválida' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // Bootstrap mode: allow first admin creation if no roles exist yet
+    let isBootstrap = false;
+    try {
+      const { count: rolesCount } = await supabase
+        .from('user_roles')
+        .select('*', { count: 'exact', head: true });
+      isBootstrap = !rolesCount || rolesCount === 0;
+    } catch (e) {
+      console.warn('Could not determine bootstrap mode:', e);
     }
 
-    // Check admin role using SECURITY DEFINER function
-    const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', { _user_id: authUserData.user.id, _role: 'admin' });
-    if (roleError) {
-      console.error('Role check error:', roleError);
-      return new Response(JSON.stringify({ success: false, error: 'Erro ao verificar permissões' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ success: false, error: 'Sem permissão' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    let actingUserId: string | null = null;
+    if (!isBootstrap) {
+      if (!authHeader) {
+        return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: authUserData, error: authUserError } = await supabaseAuth.auth.getUser();
+      if (authUserError || !authUserData.user) {
+        return new Response(JSON.stringify({ success: false, error: 'Sessão inválida' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      actingUserId = authUserData.user.id;
+
+      // Check admin role using SECURITY DEFINER function
+      const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', { _user_id: actingUserId, _role: 'admin' });
+      if (roleError) {
+        console.error('Role check error:', roleError);
+        return new Response(JSON.stringify({ success: false, error: 'Erro ao verificar permissões' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ success: false, error: 'Sem permissão' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     }
     if (action === 'create') {
       console.log('Creating new user...');
