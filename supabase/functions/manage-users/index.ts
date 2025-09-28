@@ -28,6 +28,7 @@ serve(async (req) => {
 
     // Authenticated client (from caller) to verify permissions when needed
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
 
     // Bootstrap mode: allow first admin creation if no roles exist yet
     let isBootstrap = false;
@@ -52,6 +53,7 @@ serve(async (req) => {
       });
 
       const { data: authUserData, error: authUserError } = await supabaseAuth.auth.getUser();
+      console.log('Auth getUser error?', !!authUserError, 'user?', !!authUserData?.user);
       if (authUserError || !authUserData.user) {
         return new Response(JSON.stringify({ success: false, error: 'Sessão inválida' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -59,6 +61,7 @@ serve(async (req) => {
 
       // Check admin role using SECURITY DEFINER function
       const { data: isAdmin, error: roleError } = await supabase.rpc('has_role', { _user_id: actingUserId, _role: 'admin' });
+      console.log('isAdmin?', isAdmin, 'roleError?', roleError?.message);
       if (roleError) {
         console.error('Role check error:', roleError);
         return new Response(JSON.stringify({ success: false, error: 'Erro ao verificar permissões' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

@@ -246,16 +246,31 @@ const ManageUsers = () => {
     }
   };
 
-  const handleResetPassword = async (userId: string, employeeNumber: string) => {
+  const handleResetPassword = async (userId: string, employeeNumber: string, email?: string) => {
     try {
       const { data, error } = await supabase.functions.invoke('manage-users', {
         body: {
           action: 'reset-password',
-          userId: userId
+          userId: userId,
+          email,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        // Try to extract detailed error from edge function response
+        let description = 'Erro ao redefinir password';
+        try {
+          const ctx: any = error as any;
+          if (ctx?.context?.response) {
+            const body = await ctx.context.response.json();
+            description = body?.error || description;
+          } else if (error.message) {
+            description = error.message;
+          }
+        } catch (_) {}
+
+        throw new Error(description);
+      }
 
       if (data.success) {
         toast({
@@ -272,7 +287,7 @@ const ManageUsers = () => {
     } catch (error: any) {
       toast({
         title: 'Erro',
-        description: 'Erro inesperado ao redefinir password: ' + error.message,
+        description: 'Erro inesperado ao redefinir password: ' + (error?.message || 'Desconhecido'),
         variant: 'destructive',
       });
     }
@@ -516,7 +531,7 @@ const ManageUsers = () => {
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => handleResetPassword(profile.user_id, profile.employee_number)}
+                          onClick={() => handleResetPassword(profile.user_id, profile.employee_number, profile.email)}
                         >
                           <Key className="h-4 w-4" />
                         </Button>
