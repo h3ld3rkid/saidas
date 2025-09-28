@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Image } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
@@ -16,6 +16,9 @@ export default function Settings() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [currentLogo, setCurrentLogo] = useState<string>('');
+  const [exportLoading, setExportLoading] = useState(false);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   useEffect(() => {
     document.title = 'Configurações | CV Amares';
@@ -129,6 +132,55 @@ export default function Settings() {
     }
   };
 
+  const handleExportData = async () => {
+    if (!startDate || !endDate) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, selecione as datas de início e fim.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setExportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('export-data', {
+        body: {
+          startDate,
+          endDate
+        }
+      });
+
+      if (error) throw error;
+
+      // Create blob and download
+      const blob = new Blob([data.csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `relatorio_servicos_${startDate}_${endDate}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Dados exportados',
+        description: 'O relatório foi descarregado com sucesso.'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro na exportação',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   if (!hasRole('admin')) {
     return null;
   }
@@ -204,6 +256,48 @@ export default function Settings() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              Exportação de Dados
+            </CardTitle>
+            <CardDescription>
+              Exporte os serviços realizados num período específico para análise estatística
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Data de Início</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">Data de Fim</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+            <Button 
+              onClick={handleExportData}
+              disabled={exportLoading || !startDate || !endDate}
+              className="w-full"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {exportLoading ? 'A exportar...' : 'Exportar Dados (CSV)'}
+            </Button>
           </CardContent>
         </Card>
       </div>

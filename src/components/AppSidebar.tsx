@@ -161,6 +161,12 @@ export function AppSidebar() {
       path: '/telegram',
       roles: ['admin'],
     },
+    {
+      title: 'Configurações',
+      icon: Settings,
+      path: '/settings',
+      roles: ['admin'],
+    },
   ];
 
   const handleNavigation = (path: string) => {
