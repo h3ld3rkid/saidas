@@ -92,8 +92,8 @@ const Dashboard = () => {
       if (error) throw error;
 
       toast({
-        title: "Alerta limpo com sucesso",
-        description: `Alerta de ${alertType} foi limpo e notificações enviadas.`,
+        title: "Alerta desativado com sucesso",
+        description: `Alerta de ${alertType} foi desativado e notificações enviadas.`,
       });
 
     } catch (error: any) {
@@ -241,7 +241,7 @@ const Dashboard = () => {
                       className="ml-4"
                     >
                       <Trash2 className="h-4 w-4 mr-1" />
-                      Limpar
+                      Desativar
                     </Button>
                   </div>
                 );
