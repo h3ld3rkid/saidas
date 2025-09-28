@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Settings() {
   const navigate = useNavigate();
   const { hasRole, loading: roleLoading } = useUserRole();
-  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
   const [currentLogo, setCurrentLogo] = useState<string>('');
@@ -88,7 +88,7 @@ export default function Settings() {
   const handleUploadLogo = async () => {
     if (!logoFile) return;
 
-    setUploading(true);
+    setLoading(true);
     try {
       // Upload the logo (overwrites if exists)
       const { error: uploadError } = await supabase.storage
@@ -117,7 +117,7 @@ export default function Settings() {
         variant: 'destructive'
       });
     } finally {
-      setUploading(false);
+      setLoading(false);
     }
   };
 
@@ -177,6 +177,7 @@ export default function Settings() {
       </div>
     );
   }
+  
   if (!hasRole('admin')) {
     return null;
   }
@@ -244,11 +245,11 @@ export default function Settings() {
                 </div>
                 <Button 
                   onClick={handleUploadLogo}
-                  disabled={uploading}
+                  disabled={loading}
                   className="w-full"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  {uploading ? 'A fazer upload...' : 'Actualizar Logotipo'}
+                  {loading ? 'A fazer upload...' : 'Actualizar Logotipo'}
                 </Button>
               </div>
             )}
