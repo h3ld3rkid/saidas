@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { hasRole } = useUserRole();
+  const { hasRole, loading } = useUserRole();
   const [loading, setLoading] = useState(false);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
@@ -23,6 +23,7 @@ export default function Settings() {
   useEffect(() => {
     document.title = 'Configurações | CV Amares';
     
+    if (loading) return;
     if (!hasRole('admin')) {
       navigate('/home');
       return;
@@ -30,7 +31,7 @@ export default function Settings() {
 
     // Load current logo if exists
     loadCurrentLogo();
-  }, [navigate, hasRole]);
+  }, [navigate, hasRole, loading]);
 
   const loadCurrentLogo = async () => {
     try {
@@ -89,18 +90,6 @@ export default function Settings() {
 
     setLoading(true);
     try {
-      // Create assets bucket if it doesn't exist
-      const { error: bucketError } = await supabase.storage.createBucket('assets', {
-        public: true,
-        allowedMimeTypes: ['image/png'],
-        fileSizeLimit: 2097152 // 2MB
-      });
-
-      // Ignore error if bucket already exists
-      if (bucketError && !bucketError.message.includes('already exists')) {
-        throw bucketError;
-      }
-
       // Upload the logo (overwrites if exists)
       const { error: uploadError } = await supabase.storage
         .from('assets')
@@ -181,6 +170,13 @@ export default function Settings() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   if (!hasRole('admin')) {
     return null;
   }
