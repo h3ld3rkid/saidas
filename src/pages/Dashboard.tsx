@@ -6,12 +6,105 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Car, PlusCircle, List, Users, AlertTriangle, Siren } from 'lucide-react';
+import { Car, PlusCircle, List, Users, AlertTriangle, Siren, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { role, hasRole } = useUserRole();
   const { user } = useAuth();
+  const [readinessAlerts, setReadinessAlerts] = useState<any[]>([]);
+  const [readinessResponses, setReadinessResponses] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchReadinessData = async () => {
+      try {
+        // Fetch readiness alerts
+        const { data: alertsData } = await supabase
+          .from('readiness_alerts')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        // Fetch readiness responses
+        const { data: responsesData } = await supabase
+          .from('readiness_responses')
+          .select(`
+            *,
+            profiles:user_id (
+              first_name,
+              last_name
+            )
+          `)
+          .eq('response', true);
+
+        setReadinessAlerts(alertsData || []);
+        setReadinessResponses(responsesData || []);
+      } catch (error) {
+        console.error('Error fetching readiness data:', error);
+      }
+    };
+
+    fetchReadinessData();
+
+    // Set up real-time subscriptions
+    const alertsChannel = supabase
+      .channel('readiness_alerts_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'readiness_alerts' },
+        () => fetchReadinessData()
+      )
+      .subscribe();
+
+    const responsesChannel = supabase
+      .channel('readiness_responses_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'readiness_responses' },
+        () => fetchReadinessData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(alertsChannel);
+      supabase.removeChannel(responsesChannel);
+    };
+  }, []);
+
+  const handleClearReadiness = async (alertId: string, alertType: string) => {
+    try {
+      // Get positive responders for this alert
+      const positiveResponders = readinessResponses
+        .filter(response => response.alert_id === alertId && response.response === true)
+        .map(response => ({
+          chatId: response.profiles?.telegram_chat_id,
+          name: `${response.profiles?.first_name || ''} ${response.profiles?.last_name || ''}`.trim()
+        }))
+        .filter(responder => responder.chatId);
+
+      // Call the clear function
+      const { error } = await supabase.functions.invoke('clear-readiness-alert', {
+        body: {
+          alertId,
+          alertType,
+          responders: positiveResponders
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Alerta limpo com sucesso",
+        description: `Alerta de ${alertType} foi limpo e notificações enviadas.`,
+      });
+
+    } catch (error: any) {
+      console.error('Error clearing readiness alert:', error);
+      toast({
+        title: "Erro ao limpar alerta",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleReadinessAlert = async (alertType: 'condutores' | 'socorristas') => {
     if (!user) return;
@@ -107,6 +200,56 @@ const Dashboard = () => {
       </div>
 
       <NoticeMarquee />
+
+      {readinessAlerts.length > 0 && (
+        <Card className="border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-red-800 flex items-center gap-2">
+              <Siren className="h-5 w-5" />
+              Alertas de Prontidão Ativos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {readinessAlerts.map((alert) => {
+                const alertResponses = readinessResponses.filter(r => r.alert_id === alert.alert_id);
+                const positiveResponses = alertResponses.filter(r => r.response === true);
+                
+                return (
+                  <div key={alert.id} className="flex items-center justify-between p-4 bg-white rounded-lg border">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">Tipo:</span>
+                        <span className="capitalize">{alert.alert_type}</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Enviado por: {alert.requester_name} • {new Date(alert.created_at).toLocaleString('pt-PT')}
+                      </div>
+                      {positiveResponses.length > 0 && (
+                        <div className="text-sm text-green-600 mt-1">
+                          ✅ {positiveResponses.length} pessoa(s) disponível(eis): {' '}
+                          {positiveResponses.map(r => 
+                            `${r.profiles?.first_name || ''} ${r.profiles?.last_name || ''}`.trim()
+                          ).join(', ')}
+                        </div>
+                      )}
+                    </div>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
+                      className="ml-4"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {availableActions.map((action) => (
