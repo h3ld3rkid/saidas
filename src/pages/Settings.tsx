@@ -24,7 +24,7 @@ export default function Settings() {
     document.title = 'Configurações | CV Amares';
     
     if (!hasRole('admin')) {
-      navigate('/');
+      navigate('/home');
       return;
     }
 
@@ -188,7 +188,7 @@ export default function Settings() {
   return (
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate('/home')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
