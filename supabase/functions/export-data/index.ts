@@ -28,7 +28,9 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Fetch exits with related data
+    console.log('Export request received:', { startDate, endDate })
+
+    // Fetch exits with related data - using proper foreign key relationships
     const { data: exits, error } = await supabaseClient
       .from('vehicle_exits')
       .select(`
@@ -59,23 +61,60 @@ Deno.serve(async (req) => {
         is_pem,
         is_reserve,
         created_at,
-        profiles(first_name, last_name, employee_number),
-        vehicles(license_plate, make, model)
+        user_id,
+        vehicle_id
       `)
       .gte('departure_date', startDate)
       .lte('departure_date', endDate)
       .order('departure_date', { ascending: true })
 
+    console.log('Exits query result:', { exits: exits?.length, error })
+
     if (error) {
       console.error('Database error:', error)
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch data' }),
+        JSON.stringify({ error: 'Failed to fetch exits: ' + error.message }),
         { 
           status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
+
+    // Fetch user profiles and vehicles separately
+    const userIds = [...new Set(exits?.map(exit => exit.user_id).filter(Boolean) || [])]
+    const vehicleIds = [...new Set(exits?.map(exit => exit.vehicle_id).filter(Boolean) || [])]
+
+    console.log('Fetching additional data:', { userIds: userIds.length, vehicleIds: vehicleIds.length })
+
+    const [profilesResult, vehiclesResult] = await Promise.all([
+      userIds.length > 0 ? supabaseClient
+        .from('profiles')
+        .select('user_id, first_name, last_name, employee_number')
+        .in('user_id', userIds) : { data: [], error: null },
+      vehicleIds.length > 0 ? supabaseClient
+        .from('vehicles')
+        .select('id, license_plate, make, model')
+        .in('id', vehicleIds) : { data: [], error: null }
+    ])
+
+    if (profilesResult.error) {
+      console.error('Profiles fetch error:', profilesResult.error)
+    }
+    if (vehiclesResult.error) {
+      console.error('Vehicles fetch error:', vehiclesResult.error)
+    }
+
+    // Create lookup maps
+    const profilesMap = new Map()
+    profilesResult.data?.forEach(profile => {
+      profilesMap.set(profile.user_id, profile)
+    })
+
+    const vehiclesMap = new Map()
+    vehiclesResult.data?.forEach(vehicle => {
+      vehiclesMap.set(vehicle.id, vehicle)
+    })
 
     // Convert to CSV
     const headers = [
@@ -112,9 +151,14 @@ Deno.serve(async (req) => {
       'Data Criação'
     ]
 
+    console.log('Processing exits for CSV export:', exits?.length || 0)
+
     const csvRows = [headers.join(',')]
 
     for (const exit of exits || []) {
+      const profile = profilesMap.get(exit.user_id)
+      const vehicle = vehiclesMap.get(exit.vehicle_id)
+      
       const row = [
         exit.departure_date || '',
         exit.departure_time || '',
@@ -141,17 +185,18 @@ Deno.serve(async (req) => {
         exit.status || '',
         exit.is_pem ? 'Sim' : 'Não',
         exit.is_reserve ? 'Sim' : 'Não',
-        `"${((exit.profiles?.[0]?.first_name || '') + ' ' + (exit.profiles?.[0]?.last_name || '')).trim()}"`,
-        exit.profiles?.[0]?.employee_number || '',
-        exit.vehicles?.[0]?.license_plate || '',
-        exit.vehicles?.[0]?.make || '',
-        exit.vehicles?.[0]?.model || '',
+        `"${((profile?.first_name || '') + ' ' + (profile?.last_name || '')).trim()}"`,
+        profile?.employee_number || '',
+        vehicle?.license_plate || '',
+        vehicle?.make || '',
+        vehicle?.model || '',
         exit.created_at || ''
       ]
       csvRows.push(row.join(','))
     }
 
     const csv = csvRows.join('\n')
+    console.log('CSV export completed successfully')
 
     return new Response(
       JSON.stringify({ csv }),
@@ -164,7 +209,9 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Export error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ 
+        error: 'Internal server error: ' + (error instanceof Error ? error.message : String(error))
+      }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
