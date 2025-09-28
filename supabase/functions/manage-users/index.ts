@@ -172,26 +172,30 @@ serve(async (req) => {
       
       const newPassword = 'Admin123!';
 
-      let targetUserId = userId as string | undefined;
+      let targetUserId = userId as string;
+      
+      // If no userId provided but email is provided, try to find user by email
       if (!targetUserId && email) {
         const { data: list, error: listError } = await supabase.auth.admin.listUsers();
         if (listError) {
           console.error('List users error:', listError);
           return new Response(
             JSON.stringify({ success: false, error: 'Erro ao procurar utilizador' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         const found = list.users?.find((u: any) => (u.email || '').toLowerCase() === (email as string).toLowerCase());
         if (!found) {
           return new Response(
             JSON.stringify({ success: false, error: 'Utilizador não encontrado' }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
         targetUserId = found.id;
       }
+      
       if (!targetUserId) {
+        console.error('No userId provided for password reset');
         return new Response(
           JSON.stringify({ success: false, error: 'userId ou email obrigatório' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -206,7 +210,7 @@ serve(async (req) => {
         console.error('Password reset error:', error);
         return new Response(
           JSON.stringify({ success: false, error: 'Erro ao redefinir password: ' + error.message }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -265,7 +269,7 @@ serve(async (req) => {
     console.error('Error in manage-users function:', error);
     return new Response(
       JSON.stringify({ success: false, error: `Erro interno: ${error.message}` }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
