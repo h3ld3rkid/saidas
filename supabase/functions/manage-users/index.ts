@@ -173,7 +173,7 @@ serve(async (req) => {
     } else if (action === 'reset-password') {
       console.log('Resetting password for user:', userId, 'email:', email);
       
-      const newPassword = 'Admin123!';
+      const newPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
 
       let targetUserId = userId as string;
       
@@ -207,6 +207,9 @@ serve(async (req) => {
       
       const { error } = await supabase.auth.admin.updateUserById(targetUserId, {
         password: newPassword,
+        user_metadata: {
+          force_password_change: true
+        }
       });
 
       if (error) {
@@ -255,6 +258,32 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, message: 'Email atualizado com sucesso' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } else if (action === 'delete-user') {
+      console.log('Deleting user:', userId);
+
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'userId obrigatório' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Delete user from auth (this will cascade delete profile due to foreign key)
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+
+      if (error) {
+        console.error('Delete user error:', error);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Erro ao eliminar utilizador: ' + error.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Utilizador eliminado com sucesso' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield } from 'lucide-react';
+import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 
@@ -275,7 +275,8 @@ const ManageUsers = () => {
       if (data.success) {
         toast({
           title: 'Sucesso',
-          description: `Password do utilizador nº ${employeeNumber} redefinida para: ${data.newPassword}`,
+          description: `Password temporária do utilizador nº ${employeeNumber}: ${data.newPassword} (deve ser alterada no primeiro login)`,
+          duration: 10000, // 10 seconds to read the password
         });
       } else {
         toast({
@@ -288,6 +289,55 @@ const ManageUsers = () => {
       toast({
         title: 'Erro',
         description: 'Erro inesperado ao redefinir password: ' + (error?.message || 'Desconhecido'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Tem a certeza que pretende eliminar definitivamente o utilizador "${userName}"? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+          action: 'delete-user',
+          userId: userId
+        }
+      });
+
+      if (error) {
+        let description = 'Erro ao eliminar utilizador';
+        try {
+          const ctx: any = error as any;
+          if (ctx?.context?.response) {
+            const body = await ctx.context.response.json();
+            description = body?.error || description;
+          } else if (error.message) {
+            description = error.message;
+          }
+        } catch (_) {}
+        throw new Error(description);
+      }
+
+      if (data.success) {
+        toast({
+          title: 'Sucesso',
+          description: `Utilizador "${userName}" eliminado com sucesso`,
+        });
+        fetchUsers();
+      } else {
+        toast({
+          title: 'Erro',
+          description: data.error || 'Erro ao eliminar utilizador',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao eliminar utilizador: ' + (error?.message || 'Desconhecido'),
         variant: 'destructive',
       });
     }
@@ -534,6 +584,13 @@ const ManageUsers = () => {
                           onClick={() => handleResetPassword(profile.user_id, profile.employee_number, profile.email)}
                         >
                           <Key className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteUser(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
