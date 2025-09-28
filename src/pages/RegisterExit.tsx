@@ -242,11 +242,9 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
     if (!coduNumber.trim()) return;
     
     try {
-      const { data, error } = await supabase
-        .from('vehicle_exits')
-        .select('id, departure_date, departure_time')
-        .like('observations', `%CODU: ${coduNumber}%`)
-        .limit(1);
+      const { data, error } = await supabase.rpc('check_codu_exists', {
+        codu_number: coduNumber.trim()
+      });
         
       if (error) throw error;
       

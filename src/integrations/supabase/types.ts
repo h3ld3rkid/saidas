@@ -414,6 +414,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_codu_exists: {
+        Args: { codu_number: string }
+        Returns: {
+          departure_date: string
+          departure_time: string
+          exit_id: string
+          found: boolean
+        }[]
+      }
+      get_all_users_details: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          access_role: Database["public"]["Enums"]["app_role"]
+          created_at: string
+          email: string
+          employee_number: string
+          first_name: string
+          function_role: string
+          is_active: boolean
+          last_name: string
+          profile_id: string
+          user_id: string
+        }[]
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["app_role"]
