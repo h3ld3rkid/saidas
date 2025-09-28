@@ -80,6 +80,7 @@ const fetchReadinessResponses = async () => {
   }
 
   // Buscar nomes dos utilizadores via RPC (bypassa RLS de profiles de forma segura)
+  const userIds = responses.map(r => r.user_id);
   const { data: namesData, error: namesError } = await supabase
     .rpc('get_user_names_by_ids', { _user_ids: userIds });
 
