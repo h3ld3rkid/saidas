@@ -22,6 +22,7 @@ interface Profile {
   is_active: boolean;
   created_at: string;
   email: string;
+  access_role?: 'user' | 'mod' | 'admin';
 }
 
 interface UserRole {
@@ -57,21 +58,27 @@ const ManageUsers = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const [profilesResult, rolesResult] = await Promise.all([
-        supabase.rpc('get_users_with_email'),
-        supabase.from('user_roles').select('*')
-      ]);
+      const profilesResult = await supabase.rpc('get_all_users_details');
 
       if (profilesResult.error) {
         throw profilesResult.error;
       }
-      
-      if (rolesResult.error) {
-        throw rolesResult.error;
-      }
 
-      setProfiles(profilesResult.data || []);
-      setUserRoles(rolesResult.data || []);
+      // Mapear os dados para corresponder ao tipo Profile esperado
+      const mappedProfiles = (profilesResult.data || []).map((item: any) => ({
+        id: item.profile_id,
+        user_id: item.user_id,
+        email: item.email,
+        first_name: item.first_name,
+        last_name: item.last_name,
+        employee_number: item.employee_number,
+        function_role: item.function_role,
+        is_active: item.is_active,
+        created_at: item.created_at,
+        access_role: item.access_role,
+      }));
+      setProfiles(mappedProfiles);
+      setUserRoles([]);
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -182,23 +189,17 @@ const ManageUsers = () => {
         .from('profiles')
         .update({
           first_name: formData.first_name,
-          last_name: formData.last_name,
-          employee_number: formData.employee_number,
-          function_role: formData.function_role,
+        last_name: formData.last_name,
+        employee_number: formData.employee_number,
+        function_role: formData.function_role,
+        role: formData.role,
         })
         .eq('id', editingUser.id);
 
       if (profileError) throw profileError;
 
-      // 3) Update role se mudou
-      const currentRole = getUserRole(editingUser.user_id);
-      if (formData.role !== currentRole) {
-        await supabase.from('user_roles').delete().eq('user_id', editingUser.user_id);
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({ user_id: editingUser.user_id, role: formData.role });
-        if (roleError) throw roleError;
-      }
+      // 3) Update role se mudou - agora está na tabela profiles
+      // O role já foi atualizado na operação anterior (update do profile)
 
       toast({ title: 'Sucesso', description: 'Utilizador atualizado com sucesso' });
       resetForm();
@@ -278,8 +279,8 @@ const ManageUsers = () => {
   };
 
   const getUserRole = (userId: string) => {
-    const userRole = userRoles.find(role => role.user_id === userId);
-    return userRole?.role || 'user';
+    const profile = profiles.find(p => p.user_id === userId);
+    return profile?.access_role || 'user';
   };
 
   const getRoleLabel = (role: string) => {

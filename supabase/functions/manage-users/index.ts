@@ -32,10 +32,11 @@ serve(async (req) => {
     // Bootstrap mode: allow first admin creation if no roles exist yet
     let isBootstrap = false;
     try {
-      const { count: rolesCount } = await supabase
-        .from('user_roles')
-        .select('*', { count: 'exact', head: true });
-      isBootstrap = !rolesCount || rolesCount === 0;
+      const { count: profilesCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'admin');
+      isBootstrap = !profilesCount || profilesCount === 0;
     } catch (e) {
       console.warn('Could not determine bootstrap mode:', e);
     }
@@ -116,6 +117,7 @@ serve(async (req) => {
             last_name: userData.last_name,
             employee_number: userData.employee_number,
             function_role: userData.function_role,
+            role: userData.role,
           });
 
         if (profileError) {
@@ -137,6 +139,7 @@ serve(async (req) => {
             last_name: userData.last_name,
             employee_number: userData.employee_number,
             function_role: userData.function_role,
+            role: userData.role,
           })
           .eq('user_id', authData.user.id);
 
@@ -149,35 +152,8 @@ serve(async (req) => {
         }
       }
 
-      // Check if role already exists
-      const { data: existingRole } = await supabase
-        .from('user_roles')
-        .select('id')
-        .eq('user_id', authData.user.id)
-        .eq('role', userData.role)
-        .single();
-
-      if (!existingRole) {
-        // Create role only if it doesn't exist
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: userData.role,
-          });
-
-        if (roleError) {
-          console.error('Role error:', roleError);
-          return new Response(
-            JSON.stringify({ success: false, error: 'Erro ao atribuir role: ' + roleError.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        console.log('Role created');
-      } else {
-        console.log('Role already exists');
-      }
+      // O role agora é definido diretamente na tabela profiles durante a criação/atualização
+      console.log('Role será definido na tabela profiles');
 
       return new Response(
         JSON.stringify({ 
