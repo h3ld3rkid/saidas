@@ -31,11 +31,11 @@ export default function Settings() {
 
   const loadCurrentLogo = async () => {
     try {
-      const { data, error } = await supabase.storage
+      const { data } = supabase.storage
         .from('assets')
         .getPublicUrl('logo.png');
 
-      if (!error && data?.publicUrl) {
+      if (data?.publicUrl) {
         // Check if file actually exists by trying to fetch it
         const response = await fetch(data.publicUrl);
         if (response.ok) {
