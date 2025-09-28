@@ -264,6 +264,7 @@ export type Database = {
           expected_return_date: string | null
           expected_return_time: string | null
           id: string
+          inem_si: boolean | null
           is_pem: boolean | null
           is_reserve: boolean | null
           observations: string | null
@@ -295,6 +296,7 @@ export type Database = {
           expected_return_date?: string | null
           expected_return_time?: string | null
           id?: string
+          inem_si?: boolean | null
           is_pem?: boolean | null
           is_reserve?: boolean | null
           observations?: string | null
@@ -326,6 +328,7 @@ export type Database = {
           expected_return_date?: string | null
           expected_return_time?: string | null
           id?: string
+          inem_si?: boolean | null
           is_pem?: boolean | null
           is_reserve?: boolean | null
           observations?: string | null
