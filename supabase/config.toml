@@ -3,7 +3,22 @@ project_id = "mubuncckmiyxxnlxnecn"
 [functions.emergency-alert]
 verify_jwt = false
 
+[functions.export-data]
+verify_jwt = false
+
+[functions.manage-users]
+verify_jwt = false
+
+[functions.reset-counters]
+verify_jwt = false
+
+[functions.service-crew-notify]
+verify_jwt = false
+
 [functions.telegram-notify]
+verify_jwt = false
+
+[functions.telegram-readiness-callback]
 verify_jwt = false
 
 [functions.telegram-setup]
@@ -13,7 +28,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.telegram-webhook]
-verify_jwt = false
-
-[functions.manage-users]
 verify_jwt = false

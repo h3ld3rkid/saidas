@@ -177,6 +177,78 @@ export type Database = {
         }
         Relationships: []
       }
+      readiness_alerts: {
+        Row: {
+          alert_id: string
+          alert_type: string
+          created_at: string
+          id: string
+          requester_name: string
+        }
+        Insert: {
+          alert_id: string
+          alert_type: string
+          created_at?: string
+          id?: string
+          requester_name: string
+        }
+        Update: {
+          alert_id?: string
+          alert_type?: string
+          created_at?: string
+          id?: string
+          requester_name?: string
+        }
+        Relationships: []
+      }
+      readiness_responses: {
+        Row: {
+          alert_id: string
+          id: string
+          responded_at: string
+          response: boolean
+          user_id: string
+        }
+        Insert: {
+          alert_id: string
+          id?: string
+          responded_at?: string
+          response: boolean
+          user_id: string
+        }
+        Update: {
+          alert_id?: string
+          id?: string
+          responded_at?: string
+          response?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
+      realtime_notifications: {
+        Row: {
+          alert_id: string
+          created_at: string
+          id: string
+          message: string
+          responder_name: string
+        }
+        Insert: {
+          alert_id: string
+          created_at?: string
+          id?: string
+          message: string
+          responder_name: string
+        }
+        Update: {
+          alert_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          responder_name?: string
+        }
+        Relationships: []
+      }
       ruas: {
         Row: {
           created_at: string

@@ -30,7 +30,24 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Handle different types of updates
-    if (update.message) {
+    if (update.callback_query) {
+      // Handle button callbacks for readiness responses
+      const callbackQuery = update.callback_query;
+      
+      if (callbackQuery.data && callbackQuery.data.startsWith('readiness_')) {
+        // Forward to readiness callback handler
+        const callbackResponse = await fetch(`${supabaseUrl}/functions/v1/telegram-readiness-callback`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseKey}`
+          },
+          body: JSON.stringify({ callback_query: callbackQuery })
+        });
+        
+        console.log(`Readiness callback processed: ${callbackResponse.status}`);
+      }
+    } else if (update.message) {
       const message = update.message;
       const chatId = message.chat.id;
       const userId = message.from.id;
