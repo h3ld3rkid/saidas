@@ -31,6 +31,8 @@ export default function EditExit() {
   const [loading, setLoading] = useState(false);
   const [exit, setExit] = useState<any>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [selectedCrew, setSelectedCrew] = useState<{user_id: string, display_name: string}[]>([]);
+  const [coduNumber, setCoduNumber] = useState('');
   
   // Address hooks
   const {
@@ -78,6 +80,33 @@ export default function EditExit() {
           navigate('/exits');
         } else {
           setExit(data);
+          
+          // Extrair número CODU das observações se existir
+          if (data.observations && data.observations.includes('CODU:')) {
+            const coduMatch = data.observations.match(/CODU:\s*(\S+)/);
+            if (coduMatch) {
+              setCoduNumber(coduMatch[1]);
+            }
+          }
+          
+          // Carregar nomes da tripulação
+          if (data.crew) {
+            const crewIds = data.crew.split(',').map((id: string) => id.trim()).filter(Boolean);
+            supabase
+              .from('profiles')
+              .select('user_id, first_name, last_name')
+              .in('user_id', crewIds)
+              .then(({ data: profiles }) => {
+                if (profiles) {
+                  const crewWithNames = profiles.map(p => ({
+                    user_id: p.user_id,
+                    display_name: `${p.first_name} ${p.last_name}`.trim()
+                  }));
+                  setSelectedCrew(crewWithNames);
+                }
+              });
+          }
+          
           // Set address selections based on existing data
           if (data.patient_district) {
             const district = districts.find(d => d.nome === data.patient_district);
@@ -100,9 +129,25 @@ export default function EditExit() {
     if (!user || !exit || !id) return;
 
     setLoading(true);
+    
+    // Preparar dados para atualização
+    const updateData = { 
+      ...exit,
+      crew: selectedCrew.map(c => c.user_id).join(', ')
+    };
+    
+    // Se for Emergencia/CODU, atualizar observações com o número CODU
+    if (exit.exit_type === 'Emergencia/CODU' && coduNumber) {
+      const existingObs = exit.observations || '';
+      const coduObs = `CODU: ${coduNumber}`;
+      updateData.observations = existingObs.includes('CODU:') 
+        ? existingObs.replace(/CODU:\s*\S+/, coduObs)
+        : existingObs ? `${coduObs}\n${existingObs}` : coduObs;
+    }
+    
     const { error } = await supabase
       .from('vehicle_exits')
-      .update(exit)
+      .update(updateData)
       .eq('id', id);
     
     setLoading(false);
@@ -210,35 +255,27 @@ export default function EditExit() {
                 </div>
               </div>
 
+              {/* Tipo de Saída e CODU */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Data de Regresso Esperada</Label>
+                  <Label>Tipo de Saída</Label>
                   <Input 
-                    type="date"
-                    value={exit.expected_return_date || ''} 
-                    onChange={(e) => setExit({ ...exit, expected_return_date: e.target.value })}
+                    value={exit.exit_type || ''} 
+                    onChange={(e) => setExit({ ...exit, exit_type: e.target.value })}
                     disabled={!canEdit}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Hora de Regresso Esperada</Label>
-                  <Input 
-                    type="time"
-                    value={exit.expected_return_time || ''} 
-                    onChange={(e) => setExit({ ...exit, expected_return_time: e.target.value })}
-                    disabled={!canEdit}
-                  />
-                </div>
-              </div>
-
-              {/* Tipo de Saída */}
-              <div className="space-y-2">
-                <Label>Tipo de Saída</Label>
-                <Input 
-                  value={exit.exit_type || ''} 
-                  onChange={(e) => setExit({ ...exit, exit_type: e.target.value })}
-                  disabled={!canEdit}
-                />
+                {exit.exit_type === 'Emergencia/CODU' && (
+                  <div className="space-y-2">
+                    <Label>Número CODU</Label>
+                    <Input 
+                      value={coduNumber} 
+                      onChange={(e) => setCoduNumber(e.target.value)}
+                      disabled={!canEdit}
+                      placeholder="Ex.: 123456" 
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Motivo */}
@@ -445,7 +482,7 @@ export default function EditExit() {
                 </div>
                 <div className="space-y-2">
                   <Label>Opções INEM/Reserva</Label>
-                  <div className="flex gap-4 mt-2">
+                  <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <Checkbox 
                         id="is_pem" 
@@ -454,6 +491,15 @@ export default function EditExit() {
                         disabled={!canEdit}
                       />
                       <Label htmlFor="is_pem">INEM</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="inem_si" 
+                        checked={exit.inem_si || false} 
+                        onCheckedChange={(v) => setExit({ ...exit, inem_si: Boolean(v) })}
+                        disabled={!canEdit}
+                      />
+                      <Label htmlFor="inem_si">INEM s/ITeams</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Checkbox 
@@ -475,9 +521,8 @@ export default function EditExit() {
                 <Label>Tripulação</Label>
                 <div className="relative">
                   <Input 
-                    value={exit.crew || ''} 
+                    value={crewSearchTerm} 
                     onChange={(e) => {
-                      setExit({ ...exit, crew: e.target.value });
                       setCrewSearchTerm(e.target.value);
                       setShowCrewDropdown(e.target.value.length > 0);
                     }}
@@ -488,15 +533,15 @@ export default function EditExit() {
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   
                   {showCrewDropdown && crewMembers.length > 0 && canEdit && (
-                    <div className="absolute top-full left-0 right-0 z-10 bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
-                      {crewMembers.map((member, index) => (
+                    <div className="absolute top-full left-0 right-0 z-20 bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                      {crewMembers.map((member) => (
                         <div
-                          key={index}
+                          key={member.user_id}
                           className="px-3 py-2 hover:bg-accent cursor-pointer"
                           onClick={() => {
-                            const currentCrew = exit.crew || '';
-                            const newCrew = currentCrew ? `${currentCrew}, ${member.display_name}` : member.display_name;
-                            setExit({ ...exit, crew: newCrew });
+                            if (!selectedCrew.find(c => c.user_id === member.user_id)) {
+                              setSelectedCrew([...selectedCrew, member]);
+                            }
                             setShowCrewDropdown(false);
                             setCrewSearchTerm('');
                           }}
@@ -505,6 +550,30 @@ export default function EditExit() {
                         </div>
                       ))}
                     </div>
+                  )}
+                </div>
+                
+                {/* Tripulação selecionada */}
+                <div className="space-y-2">
+                  {selectedCrew.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedCrew.map((member) => (
+                        <div key={member.user_id} className="flex items-center gap-1 rounded-full bg-muted text-foreground text-xs px-2 py-1">
+                          <span>{member.display_name}</span>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              className="hover:text-destructive"
+                              onClick={() => setSelectedCrew(selectedCrew.filter(c => c.user_id !== member.user_id))}
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Sem membros selecionados.</p>
                   )}
                 </div>
               </div>
