@@ -536,7 +536,16 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de saída <span className="text-red-500">*</span></Label>
-                <Select value={exitType} onValueChange={setExitType}>
+                <Select value={exitType} onValueChange={(value) => { 
+                  setExitType(value); 
+                  if (value && errors.exitType) {
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.exitType;
+                      return newErrors;
+                    });
+                  }
+                }}>
                   <SelectTrigger className={errors.exitType ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Seleccione o tipo de saída" />
                   </SelectTrigger>
