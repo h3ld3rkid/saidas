@@ -19,12 +19,12 @@ const fetchNotices = async () => {
   if (error) throw error;
   return data ?? [];
 };
-const fetchActiveServices = async () => {
-  const { data, error } = await supabase
-    .from('vehicle_exits')
-    .select('id, user_id, vehicle_id, departure_date, departure_time, destination, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
-    .eq('status', 'active')
-    .order('departure_date', { ascending: false });
+  const fetchActiveServices = async () => {
+    const { data, error } = await supabase
+      .from('vehicle_exits')
+      .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
+      .eq('status', 'active')
+      .order('departure_date', { ascending: false });
   
   if (error) throw error;
   
@@ -137,7 +137,7 @@ export default function Home() {
                           {s.total_service_number && <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>}
                         </div>
                         <p className="text-sm text-muted-foreground mb-1">
-                          <strong>Destino:</strong> {s.destination}
+                          <strong>Motivo:</strong> {s.purpose}
                         </p>
                         <p className="text-xs text-muted-foreground mb-1">
                           <strong>Partida:</strong> {s.departure_date} às {s.departure_time}

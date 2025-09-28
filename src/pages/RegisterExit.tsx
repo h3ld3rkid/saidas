@@ -116,7 +116,6 @@ export default function RegisterExit() {
     expected_return_time: '',
     exit_type: '',
     purpose: '',
-    destination: '',
     driver_name: '',
     driver_license: '',
     observations: '',
@@ -271,7 +270,16 @@ export default function RegisterExit() {
     if (!exitType) newErrors.exitType = true;
     if (!form.vehicle_id) newErrors.vehicle_id = true;
     if (!form.purpose) newErrors.purpose = true;
-    if (!form.destination) newErrors.destination = true;
+    
+    // CODU obrigatório se emergencia/codu selecionado
+    if (exitType === 'Emergencia/CODU' && !coduNumber) {
+      newErrors.coduNumber = true;
+    }
+    
+    // Validação do contacto - aceitar números ou "CODU"
+    if (!form.patient_contact || (!form.patient_contact.match(/^\d+$/) && form.patient_contact.toLowerCase() !== 'codu')) {
+      newErrors.patient_contact = true;
+    }
 
     setErrors(newErrors);
 
@@ -541,11 +549,21 @@ export default function RegisterExit() {
               </div>
               {exitType === 'Emergencia/CODU' && (
                 <div className="space-y-2">
-                  <Label>Número CODU</Label>
+                  <Label>Número CODU <span className="text-red-500">*</span></Label>
                   <Input 
                     value={coduNumber} 
-                    onChange={(e) => setCoduNumber(e.target.value)} 
+                    onChange={(e) => {
+                      setCoduNumber(e.target.value);
+                      if (e.target.value && errors.coduNumber) {
+                        setErrors(prev => {
+                          const newErrors = { ...prev };
+                          delete newErrors.coduNumber;
+                          return newErrors;
+                        });
+                      }
+                    }}
                     onBlur={checkCoduExists}
+                    className={errors.coduNumber ? 'border-red-500' : ''}
                     placeholder="Ex.: 123456" 
                   />
                 </div>
@@ -620,13 +638,23 @@ export default function RegisterExit() {
             <div className="space-y-2">
               <Label>Contacto</Label>
               <Input 
-                inputMode="numeric" 
-                maxLength={9} 
+                inputMode="text" 
                 value={form.patient_contact} 
-                onChange={(e) => set('patient_contact', e.target.value.replace(/\D/g, '').slice(0, 9))} 
-                placeholder="123456789" 
+                onChange={(e) => {
+                  const value = e.target.value;
+                  set('patient_contact', value);
+                  if (value && errors.patient_contact) {
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.patient_contact;
+                      return newErrors;
+                    });
+                  }
+                }}
+                className={errors.patient_contact ? 'border-red-500' : ''}
+                placeholder="123456789 ou CODU" 
               />
-              <p className="text-xs text-muted-foreground">Número de telefone com 9 dígitos.</p>
+              <p className="text-xs text-muted-foreground">Número de telefone com 9 dígitos ou "CODU".</p>
             </div>
 
             {/* Linha 6: Morada com pesquisa ativa */}
