@@ -25,10 +25,17 @@ const Dashboard = () => {
           .select('*')
           .order('created_at', { ascending: false });
 
-        // Fetch readiness responses
+        // Fetch readiness responses with user profile data
         const { data: responsesData } = await supabase
           .from('readiness_responses')
-          .select('*')
+          .select(`
+            *,
+            profiles:user_id (
+              telegram_chat_id,
+              first_name,
+              last_name
+            )
+          `)
           .eq('response', true);
 
         setReadinessAlerts(alertsData || []);
