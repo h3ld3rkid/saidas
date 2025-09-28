@@ -13,8 +13,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Search, X } from 'lucide-react';
+import { ArrowLeft, Search, X, CalendarIcon, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 import { MapLocationPicker } from '@/components/MapLocationPicker';
 
@@ -373,30 +377,47 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Linha 1: Data/Hora com checkboxes */}
+            {/* Linha 1: Data/Hora com calendário intuitivo */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="departure_date">Data</Label>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="edit_date" checked={editDate} onCheckedChange={(v) => setEditDate(Boolean(v))} />
-                    <Label htmlFor="edit_date" className="text-sm text-muted-foreground">Editar</Label>
-                  </div>
-                </div>
-                <Input id="departure_date" type="date" value={form.departure_date} disabled={!editDate} onChange={(e) => set('departure_date', e.target.value)} />
-                {!editDate && <p className="text-xs text-muted-foreground">Usando a data atual: {nowDate()}</p>}
+                <Label>Data de Saída</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !form.departure_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {form.departure_date ? format(new Date(form.departure_date), "dd/MM/yyyy") : "Selecionar data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={form.departure_date ? new Date(form.departure_date) : undefined}
+                      onSelect={(date) => set('departure_date', date ? date.toISOString().slice(0, 10) : nowDate())}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="departure_time">Hora</Label>
-                  <div className="flex items-center gap-2">
-                    <Checkbox id="edit_time" checked={editTime} onCheckedChange={(v) => setEditTime(Boolean(v))} />
-                    <Label htmlFor="edit_time" className="text-sm text-muted-foreground">Editar</Label>
-                  </div>
+                <Label htmlFor="departure_time">Hora de Saída</Label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="departure_time" 
+                    type="time" 
+                    value={form.departure_time} 
+                    onChange={(e) => set('departure_time', e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
-                <Input id="departure_time" type="time" value={form.departure_time} disabled={!editTime} onChange={(e) => set('departure_time', e.target.value)} />
-                {!editTime && <p className="text-xs text-muted-foreground">Usando a hora atual: {nowTime()}</p>}
               </div>
             </div>
 
@@ -411,7 +432,7 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                   <SelectContent>
                     <SelectItem value="Emergencia/CODU">Emergência/CODU</SelectItem>
                     <SelectItem value="Emergencia particular">Emergência particular</SelectItem>
-                    <SelectItem value="VLS">VLS</SelectItem>
+                    <SelectItem value="VSL">VSL</SelectItem>
                     <SelectItem value="Outro">Outro</SelectItem>
                   </SelectContent>
                 </Select>
@@ -592,23 +613,33 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Tipo de serviço</Label>
-                <RadioGroup value={inemOption} onValueChange={(v: any) => setInemOption(v)} className="grid grid-cols-3 gap-2">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem id="inem" value="inem" />
-                    <Label htmlFor="inem">INEM</Label>
+              {exitType !== 'VSL' && (
+                <div className="space-y-2">
+                  <Label>Tipo de serviço</Label>
+                  <RadioGroup value={inemOption} onValueChange={(v: any) => setInemOption(v)} className="grid grid-cols-3 gap-2">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem id="inem" value="inem" />
+                      <Label htmlFor="inem">INEM</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem id="inem_si" value="inem_s_iteams" />
+                      <Label htmlFor="inem_si">INEM s/ITeams</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem id="reserva" value="reserva" />
+                      <Label htmlFor="reserva">Reserva</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+              {exitType === 'VSL' && (
+                <div className="space-y-2">
+                  <Label>Tipo de serviço</Label>
+                  <div className="flex items-center gap-2 p-3 bg-accent rounded-md">
+                    <span className="font-medium">VSL</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem id="inem_si" value="inem_s_iteams" />
-                    <Label htmlFor="inem_si">INEM s/ITeams</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem id="reserva" value="reserva" />
-                    <Label htmlFor="reserva">Reserva</Label>
-                  </div>
-                </RadioGroup>
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Linha 8: Destino */}
