@@ -69,25 +69,12 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
     try {
       // Check if it's a valid Google Maps URL
       if (mapUrl.includes('google.com/maps') || mapUrl.includes('maps.google.com') || mapUrl.includes('maps.app.goo.gl')) {
-        // Extract coordinates if possible with improved regex
-        const coordMatch = mapUrl.match(/@(-?\d+\.?\d+),(-?\d+\.?\d+)/);
-        if (coordMatch) {
-          const [, lat, lng] = coordMatch;
-          const cleanUrl = `https://www.google.com/maps/@${lat},${lng},15z?entry=ttu`;
-          setMapUrl(cleanUrl);
-          onLocationSelect(cleanUrl);
-          toast({
-            title: 'Localização definida',
-            description: `Coordenadas: ${lat}, ${lng}`
-          });
-        } else {
-          // If no coordinates found but it's a valid Google Maps URL, keep it as is
-          onLocationSelect(mapUrl);
-          toast({
-            title: 'URL aceite',
-            description: 'Link do Google Maps definido com sucesso.'
-          });
-        }
+        // Keep the original URL as is - don't modify it
+        onLocationSelect(mapUrl);
+        toast({
+          title: 'Localização definida',
+          description: 'Link do Google Maps definido com sucesso.'
+        });
       } else {
         toast({
           title: 'URL inválido',
