@@ -16,7 +16,7 @@ serve(async (req) => {
     console.log('Managing user request...');
 
     const { action, userData, userId, newEmail, email } = await req.json();
-    console.log('Action:', action, 'UserData:', userData, 'UserId:', userId);
+    console.log('Action:', action, 'UserData:', userData ? 'present' : 'missing', 'UserId:', userId);
 
     // Initialize Supabase clients
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -70,8 +70,9 @@ serve(async (req) => {
         return new Response(JSON.stringify({ success: false, error: 'Sem permissão' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
     }
+    
     if (action === 'create') {
-      console.log('Creating new user...');
+      console.log('Creating new user with data:', userData);
       
       // Generate temporary password
       const tempPassword = 'Temp' + Math.random().toString(36).slice(-8) + '!';
@@ -90,7 +91,7 @@ serve(async (req) => {
         console.error('Auth error:', authError);
         return new Response(
           JSON.stringify({ success: false, error: 'Erro ao criar utilizador: ' + authError.message }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -98,7 +99,7 @@ serve(async (req) => {
         console.error('No user returned from auth');
         return new Response(
           JSON.stringify({ success: false, error: 'Erro ao criar utilizador' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -128,7 +129,7 @@ serve(async (req) => {
           console.error('Profile error:', profileError);
           return new Response(
             JSON.stringify({ success: false, error: 'Erro ao criar perfil: ' + profileError.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
@@ -151,7 +152,7 @@ serve(async (req) => {
           console.error('Profile update error:', profileError);
           return new Response(
             JSON.stringify({ success: false, error: 'Erro ao atualizar perfil: ' + profileError.message }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
       }
@@ -166,6 +167,7 @@ serve(async (req) => {
           tempPassword: tempPassword
         }),
         { 
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -227,6 +229,7 @@ serve(async (req) => {
           newPassword: newPassword
         }),
         { 
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
@@ -252,13 +255,13 @@ serve(async (req) => {
         console.error('Email update error:', updateError);
         return new Response(
           JSON.stringify({ success: false, error: 'Erro ao atualizar email: ' + updateError.message }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
         JSON.stringify({ success: true, message: 'Email atualizado com sucesso' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
     } else if (action === 'delete-user') {
@@ -284,7 +287,7 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({ success: true, message: 'Utilizador eliminado com sucesso' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
     } else {

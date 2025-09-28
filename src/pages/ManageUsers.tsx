@@ -122,14 +122,30 @@ const ManageUsers = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Create user error:', error);
+        // Try to extract detailed error from edge function response
+        let description = 'Erro ao criar utilizador';
+        try {
+          const ctx: any = error as any;
+          if (ctx?.context?.response) {
+            const body = await ctx.context.response.json();
+            description = body?.error || description;
+          } else if (error.message) {
+            description = error.message;
+          }
+        } catch (_) {}
+        
+        throw new Error(description);
+      }
 
-      if (data.success) {
+      if (data?.success) {
         toast({
           title: 'Sucesso',
           description: data.tempPassword 
             ? `Utilizador criado! Senha temporária: ${data.tempPassword}` 
             : 'Utilizador criado com sucesso',
+          duration: 10000,
         });
         resetForm();
         fetchUsers();
@@ -137,14 +153,15 @@ const ManageUsers = () => {
       } else {
         toast({
           title: 'Erro',
-          description: data.error || 'Erro ao criar utilizador',
+          description: data?.error || 'Erro ao criar utilizador',
           variant: 'destructive',
         });
       }
     } catch (error: any) {
+      console.error('Create user catch error:', error);
       toast({
         title: 'Erro',
-        description: 'Erro inesperado: ' + error.message,
+        description: 'Erro inesperado: ' + (error?.message || 'Desconhecido'),
         variant: 'destructive',
       });
     }
