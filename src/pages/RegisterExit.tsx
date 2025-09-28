@@ -635,9 +635,12 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               {exitType === 'VSL' && (
                 <div className="space-y-2">
                   <Label>Tipo de serviço</Label>
-                  <div className="flex items-center gap-2 p-3 bg-accent rounded-md">
-                    <span className="font-medium">VSL</span>
-                  </div>
+                  <RadioGroup value="vsl" className="grid grid-cols-1 gap-2">
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem id="vsl" value="vsl" />
+                      <Label htmlFor="vsl">VSL</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
               )}
             </div>
