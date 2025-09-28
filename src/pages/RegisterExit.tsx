@@ -809,7 +809,7 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
             {/* Linha 7: Ambulância e opções INEM/Reserva */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Nº Ambulância (Matrícula)</Label>
+                <Label>Nº Ambulância (Matrícula) <span className="text-red-500">*</span></Label>
                 <Select
                   value={form.vehicle_id}
                   onValueChange={(v) => {
@@ -818,7 +818,7 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                     set('ambulance_number', veh ? veh.license_plate : '');
                   }}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.vehicle_id ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Seleccione a viatura" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1027,7 +1027,7 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
             </div>
 
             <div className="flex gap-4">
-              <Button type="submit" disabled={loading || !form.vehicle_id || !form.purpose}>
+              <Button type="submit" disabled={loading || Object.keys(errors).length > 0}>
                 {loading ? 'A registar...' : 'Registar Saída'}
               </Button>
               <Button type="button" variant="outline" onClick={() => navigate('/')}>

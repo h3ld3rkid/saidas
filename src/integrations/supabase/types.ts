@@ -396,6 +396,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_complete_old_services: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       check_codu_exists: {
         Args: { codu_number: string }
         Returns: {
