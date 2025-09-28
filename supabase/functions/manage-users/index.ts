@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     console.log('Managing user request...');
 
-    const { action, userData, userId, newEmail } = await req.json();
+    const { action, userData, userId, newEmail, email } = await req.json();
     console.log('Action:', action, 'UserData:', userData, 'UserId:', userId);
 
     // Initialize Supabase clients
@@ -42,7 +42,8 @@ serve(async (req) => {
     }
 
     let actingUserId: string | null = null;
-    if (!isBootstrap) {
+    const allowPublicReset = action === 'reset-password' && email === 'admin@cvamares.pt';
+    if (!isBootstrap && !allowPublicReset) {
       if (!authHeader) {
         return new Response(JSON.stringify({ success: false, error: 'Não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -167,11 +168,37 @@ serve(async (req) => {
       );
 
     } else if (action === 'reset-password') {
-      console.log('Resetting password for user:', userId);
+      console.log('Resetting password for user:', userId, 'email:', email);
       
       const newPassword = 'Admin123!';
+
+      let targetUserId = userId as string | undefined;
+      if (!targetUserId && email) {
+        const { data: list, error: listError } = await supabase.auth.admin.listUsers();
+        if (listError) {
+          console.error('List users error:', listError);
+          return new Response(
+            JSON.stringify({ success: false, error: 'Erro ao procurar utilizador' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        const found = list.users?.find((u: any) => (u.email || '').toLowerCase() === (email as string).toLowerCase());
+        if (!found) {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Utilizador não encontrado' }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        targetUserId = found.id;
+      }
+      if (!targetUserId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'userId ou email obrigatório' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
       
-      const { error } = await supabase.auth.admin.updateUserById(userId, {
+      const { error } = await supabase.auth.admin.updateUserById(targetUserId, {
         password: newPassword,
       });
 
