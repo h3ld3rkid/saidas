@@ -97,6 +97,10 @@ export default function RegisterExit() {
   const [mapLocation, setMapLocation] = useState('');
   type SelectedCrew = { user_id: string; display_name: string };
   const [selectedCrew, setSelectedCrew] = useState<SelectedCrew[]>([]);
+  const [vslActivated, setVslActivated] = useState(false);
+  const [selectedVslCrew, setSelectedVslCrew] = useState<SelectedCrew[]>([]);
+  const [showVslCrewDropdown, setShowVslCrewDropdown] = useState(false);
+  const [vslCrewSearchTerm, setVslCrewSearchTerm] = useState('');
 
   // Form data mapping 1:1 to DB where possible
   const [form, setForm] = useState({
@@ -321,41 +325,119 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
       if (!existingCrewIds.includes(user.id)) existingCrewIds.push(user.id);
       const crewIdsForDb = existingCrewIds.join(', ');
       
-      // Insert the exit with the numbers and crew
-      const { error } = await supabase.from('vehicle_exits').insert({
-        ...payload,
-        crew: crewIdsForDb,
-        service_number: serviceNumber,
-        total_service_number: totalServiceNumber
-      } as any);
-      
-      if (error) throw error;
-      
-      // Show summary modal
-      setSummaryData({ 
-        serviceType: exitType, 
-        serviceNumber, 
-        totalServiceNumber 
-      });
-      setShowSummary(true);
-
-      // Send Telegram notification (always include current user)
-      try {
-        await sendTelegramNotification({
-          serviceType: exitType,
-          serviceNumber,
-          departureTime: `${form.departure_date} ${form.departure_time}`,
-          contact: form.patient_contact,
-          coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
-          address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
-          observations: form.observations,
-          mapLocation,
-          crewUserIds: crewIdsForDb
+      // If VSL is activated, we need to handle both CODU and VSL entries
+      if (vslActivated && exitType === 'Emergencia/CODU') {
+        // Get VSL service number too
+        const { data: vslNumberData, error: vslNumberError } = await supabase.rpc('get_next_service_number', {
+          p_service_type: 'VSL'
         });
-      } catch (telegramError) {
-        console.error('Failed to send Telegram notification:', telegramError);
-        // Don't fail the main process for telegram errors
+        
+        if (vslNumberError) throw vslNumberError;
+        
+        const vslServiceNumber = vslNumberData[0]?.service_num || 1;
+        // Don't increment total again for VSL - they count as one combined service
+        
+        // Insert CODU record
+        const { error: coduError } = await supabase.from('vehicle_exits').insert({
+          ...payload,
+          crew: crewIdsForDb,
+          service_number: serviceNumber,
+          total_service_number: totalServiceNumber,
+          exit_type: 'Emergencia/CODU'
+        } as any);
+        
+        if (coduError) throw coduError;
+        
+        // Insert VSL record with VSL crew
+        const vslCrewIds = selectedVslCrew.map(c => c.user_id);
+        if (!vslCrewIds.includes(user.id)) vslCrewIds.push(user.id);
+        const vslCrewForDb = vslCrewIds.join(', ');
+        
+        const { error: vslError } = await supabase.from('vehicle_exits').insert({
+          ...payload,
+          crew: vslCrewForDb,
+          service_number: vslServiceNumber,
+          total_service_number: totalServiceNumber, // Same total number
+          exit_type: 'VSL',
+          observations: `VSL para CODU: ${coduNumber}${form.observations ? `\n${form.observations}` : ''}${mapLocation ? `\nMapa: ${mapLocation}` : ''}`
+        } as any);
+        
+        if (vslError) throw vslError;
+        
+        // Show summary for CODU (primary service)
+        setSummaryData({ 
+          serviceType: `${exitType} + VSL`, 
+          serviceNumber, 
+          totalServiceNumber 
+        });
+        
+        // Send notifications to both crews
+        try {
+          // CODU crew notification
+          await sendTelegramNotification({
+            serviceType: 'Emergencia/CODU',
+            serviceNumber,
+            departureTime: `${form.departure_date} ${form.departure_time}`,
+            contact: form.patient_contact,
+            coduNumber,
+            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            observations: form.observations,
+            mapLocation,
+            crewUserIds: crewIdsForDb
+          });
+          
+          // VSL crew notification
+          await sendTelegramNotification({
+            serviceType: 'VSL (Apoio)',
+            serviceNumber: vslServiceNumber,
+            departureTime: `${form.departure_date} ${form.departure_time}`,
+            contact: form.patient_contact,
+            coduNumber,
+            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            observations: `VSL para CODU: ${coduNumber}`,
+            mapLocation,
+            crewUserIds: vslCrewForDb
+          });
+        } catch (telegramError) {
+          console.error('Failed to send Telegram notification:', telegramError);
+        }
+      } else {
+        // Regular single service entry
+        const { error } = await supabase.from('vehicle_exits').insert({
+          ...payload,
+          crew: crewIdsForDb,
+          service_number: serviceNumber,
+          total_service_number: totalServiceNumber
+        } as any);
+        
+        if (error) throw error;
+        
+        // Show summary modal
+        setSummaryData({ 
+          serviceType: exitType, 
+          serviceNumber, 
+          totalServiceNumber 
+        });
+        
+        // Send Telegram notification (always include current user)
+        try {
+          await sendTelegramNotification({
+            serviceType: exitType,
+            serviceNumber,
+            departureTime: `${form.departure_date} ${form.departure_time}`,
+            contact: form.patient_contact,
+            coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
+            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            observations: form.observations,
+            mapLocation,
+            crewUserIds: crewIdsForDb
+          });
+        } catch (telegramError) {
+          console.error('Failed to send Telegram notification:', telegramError);
+        }
       }
+      
+      setShowSummary(true);
       
     } catch (error: any) {
       toast({ title: 'Erro ao registar saída', description: error.message, variant: 'destructive' });
@@ -455,6 +537,23 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
                 </div>
               )}
             </div>
+
+            {/* Botão VSL - só aparece quando Emergencia/CODU selecionado */}
+            {exitType === 'Emergencia/CODU' && (
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  variant={vslActivated ? "default" : "outline"}
+                  className={cn(
+                    "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
+                    !vslActivated && "bg-transparent text-blue-600 hover:bg-blue-50"
+                  )}
+                  onClick={() => setVslActivated(!vslActivated)}
+                >
+                  {vslActivated ? '✓ VSL Ativado' : 'Ativação VSL'}
+                </Button>
+              </div>
+            )}
 
             {/* Linha 3: Motivo */}
             <div className="space-y-2">
@@ -756,6 +855,87 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               value={mapLocation}
               onLocationSelect={setMapLocation}
             />
+
+            {/* Seção VSL - só aparece quando VSL está ativado */}
+            {vslActivated && exitType === 'Emergencia/CODU' && (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-orange-800 text-lg">🚑 Tripulação VSL</CardTitle>
+                  <CardDescription className="text-orange-700">Selecione a tripulação para a Viatura de Socorro e Limpeza</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="relative">
+                    <div className="space-y-2">
+                      <Label className="text-orange-800">Pesquisar tripulação VSL</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Digite para pesquisar membros..."
+                          value={vslCrewSearchTerm}
+                          onChange={(e) => {
+                            setVslCrewSearchTerm(e.target.value);
+                            setShowVslCrewDropdown(e.target.value.length > 0);
+                          }}
+                          onFocus={() => setShowVslCrewDropdown(vslCrewSearchTerm.length > 0)}
+                          onBlur={() => setTimeout(() => setShowVslCrewDropdown(false), 200)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+
+                    {showVslCrewDropdown && crewMembers.filter(member => 
+                      member.display_name.toLowerCase().includes(vslCrewSearchTerm.toLowerCase())
+                    ).length > 0 && (
+                      <div className="absolute z-10 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                        {crewMembers
+                          .filter(member => member.display_name.toLowerCase().includes(vslCrewSearchTerm.toLowerCase()))
+                          .map((member) => (
+                          <div
+                            key={member.user_id}
+                            className="px-3 py-2 hover:bg-accent cursor-pointer"
+                            onClick={() => {
+                              setSelectedVslCrew((prev) => {
+                                if (prev.some(m => m.user_id === member.user_id)) return prev;
+                                return [...prev, { user_id: member.user_id, display_name: member.display_name }];
+                              });
+                              setVslCrewSearchTerm('');
+                              setShowVslCrewDropdown(false);
+                            }}
+                          >
+                            {member.display_name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label className="text-orange-800">Tripulação VSL selecionada</Label>
+                      {selectedVslCrew.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedVslCrew.map((m) => (
+                            <div key={m.user_id} className="flex items-center gap-1 rounded-full bg-orange-200 text-orange-800 text-xs px-2 py-1">
+                              <span>{m.display_name}</span>
+                              <button
+                                type="button"
+                                aria-label={`Remover ${m.display_name}`}
+                                className="hover:text-red-600"
+                                onClick={() => {
+                                  setSelectedVslCrew((prev) => prev.filter(x => x.user_id !== m.user_id));
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-orange-600">Nenhum membro VSL selecionado ainda.</p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <div className="space-y-2">
               <Label>Observações</Label>

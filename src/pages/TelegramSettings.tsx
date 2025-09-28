@@ -136,6 +136,30 @@ export default function TelegramSettings() {
     }
   };
 
+  const removeChatId = async (userId: string, userName: string) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ telegram_chat_id: null })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Chat ID removido',
+        description: `Telegram desconfigurado para ${userName}`
+      });
+      
+      loadProfiles();
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao remover',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
   const sendTestMessage = async () => {
     const activeChatIds = profiles
       .filter(p => p.telegram_chat_id)
@@ -359,12 +383,23 @@ export default function TelegramSettings() {
                       {profile.first_name} {profile.last_name}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {profile.telegram_chat_id ? 'Telegram configurado' : 'Telegram não configurado'}
+                      {profile.telegram_chat_id ? `Telegram: ${profile.telegram_chat_id}` : 'Telegram não configurado'}
                     </p>
                   </div>
-                  {profile.telegram_chat_id && (
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {profile.telegram_chat_id ? (
+                      <>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeChatId(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
+                        >
+                          Remover
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
               ))
             )}

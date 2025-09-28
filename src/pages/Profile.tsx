@@ -213,9 +213,10 @@ const Profile = () => {
       telegram_chat_id: form.telegram_chat_id || null
     }).eq('user_id', user.id);
 
-    // Atualizar email no auth
+    // Atualizar email no auth (sem forçar mudança de password)
     const emailUpdate = await supabase.auth.updateUser({
-      email: form.email
+      email: form.email,
+      data: { force_password_change: false } // Garantir que não force mudança
     });
     const error = profileUpdate.error || emailUpdate.error;
     setSaving(false);
