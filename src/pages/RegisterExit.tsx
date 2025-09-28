@@ -98,6 +98,7 @@ export default function RegisterExit() {
   const [showMunicipalityDropdown, setShowMunicipalityDropdown] = useState(false);
   const [showParishDropdown, setShowParishDropdown] = useState(false);
   const [mapLocation, setMapLocation] = useState('');
+  const [errors, setErrors] = useState<{[key: string]: boolean}>({});
   type SelectedCrew = { user_id: string; display_name: string };
   const [selectedCrew, setSelectedCrew] = useState<SelectedCrew[]>([]);
   const [vslActivated, setVslActivated] = useState(false);
@@ -281,6 +282,25 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validar campos obrigatórios
+    const newErrors: {[key: string]: boolean} = {};
+    
+    if (!exitType) newErrors.exitType = true;
+    if (!form.vehicle_id) newErrors.vehicle_id = true;
+    if (!form.purpose) newErrors.purpose = true;
+    if (!form.destination) newErrors.destination = true;
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      toast({ 
+        title: 'Campos obrigatórios em falta', 
+        description: 'Por favor preencha todos os campos assinalados a vermelho.', 
+        variant: 'destructive' 
+      });
+      return;
+    }
 
     if (!exitType) {
       toast({ title: 'Tipo de saída obrigatório', description: 'Selecione o tipo de saída.', variant: 'destructive' });
@@ -515,9 +535,9 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
             {/* Linha 2: Tipo de saída e CODU */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tipo de saída</Label>
+                <Label>Tipo de saída <span className="text-red-500">*</span></Label>
                 <Select value={exitType} onValueChange={setExitType}>
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.exitType ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Seleccione o tipo de saída" />
                   </SelectTrigger>
                   <SelectContent>
@@ -558,10 +578,26 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               </div>
             )}
 
-            {/* Linha 3: Motivo */}
-            <div className="space-y-2">
-              <Label>Motivo</Label>
-              <Input value={form.purpose} onChange={(e) => set('purpose', e.target.value)} />
+            {/* Linha 3: Destino e Motivo */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Destino <span className="text-red-500">*</span></Label>
+                <Input 
+                  value={form.destination} 
+                  onChange={(e) => set('destination', e.target.value)} 
+                  className={errors.destination ? 'border-red-500' : ''}
+                  placeholder="Ex.: Hospital de Braga"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Motivo <span className="text-red-500">*</span></Label>
+                <Input 
+                  value={form.purpose} 
+                  onChange={(e) => set('purpose', e.target.value)} 
+                  className={errors.purpose ? 'border-red-500' : ''}
+                  placeholder="Ex.: Transporte médico"
+                />
+              </div>
             </div>
 
             {/* Linha 4: Dados do paciente */}
