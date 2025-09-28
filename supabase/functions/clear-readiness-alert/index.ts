@@ -38,36 +38,47 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // FIRST: Get positive responders BEFORE deleting anything
-    console.log('Fetching responders data before deletion...');
-    const { data: respondersData, error: respondersError } = await supabase
+    console.log('Fetching positive responses (no FK join)...');
+    const { data: responses, error: responsesError } = await supabase
       .from('readiness_responses')
-      .select(`
-        user_id,
-        profiles:user_id (
-          first_name,
-          last_name,
-          telegram_chat_id
-        )
-      `)
+      .select('user_id')
       .eq('alert_id', alertId)
       .eq('response', true);
 
-    if (respondersError) {
-      console.error('Error fetching responders:', respondersError);
+    if (responsesError) {
+      console.error('Error fetching responses:', responsesError);
       return new Response(
-        JSON.stringify({ error: "Failed to fetch responders" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: 'Failed to fetch responders' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
 
-    console.log('Raw responders data:', JSON.stringify(respondersData, null, 2));
+    const userIds = Array.from(new Set((responses || []).map((r: any) => r.user_id).filter(Boolean)));
+    console.log(`Positive response userIds:`, userIds);
 
-    const responders = (respondersData || [])
-      .map((r: any) => ({
-        chatId: r?.profiles?.telegram_chat_id || '',
-        name: `${r?.profiles?.first_name || ''} ${r?.profiles?.last_name || ''}`.trim() || 'Utilizador'
-      }))
-      .filter(r => !!r.chatId);
+    let profilesMap = new Map<string, any>();
+    if (userIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, telegram_chat_id')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      } else {
+        (profiles || []).forEach((p: any) => profilesMap.set(p.user_id, p));
+      }
+    }
+
+    const responders = userIds
+      .map((uid: string) => {
+        const p = profilesMap.get(uid) || {};
+        return {
+          chatId: p.telegram_chat_id || '',
+          name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Utilizador',
+        };
+      })
+      .filter((r: any) => !!r.chatId);
 
     console.log(`Found ${responders.length} responders with Telegram chat IDs:`, responders);
 
