@@ -78,35 +78,6 @@ const Auth = () => {
               {loading ? 'A entrar...' : 'Entrar'}
             </Button>
           </form>
-
-          <div className="mt-4 text-center">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={loading}
-              onClick={async () => {
-                try {
-                  setLoading(true);
-                  const { data, error } = await supabase.functions.invoke('manage-users', {
-                    body: { action: 'reset-password', email: 'admin@cvamares.pt' }
-                  });
-                  if (error || !data?.success) {
-                    throw new Error(data?.error || error?.message || 'Falha ao repor password');
-                  }
-                  toast({ title: 'Password reposta', description: 'Use a password: Admin123!' });
-                  setEmail('admin@cvamares.pt');
-                  setPassword('Admin123!');
-                } catch (e: any) {
-                  toast({ title: 'Erro', description: e.message, variant: 'destructive' });
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            >
-              Repor password admin
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
