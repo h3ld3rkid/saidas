@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import {
@@ -40,8 +41,38 @@ export function AppSidebar() {
   const { open } = useSidebar();
   const navigate = useNavigate();
   const location = useLocation();
+  const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data) {
+          setUserProfile(data);
+        }
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?.id]);
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'text-red-600';
+      case 'mod':
+        return 'text-green-600';
+      default:
+        return 'text-muted-foreground';
+    }
+  };
 
   const sendEmergencyAlert = async (alertType: 'condutores' | 'socorristas') => {
     try {
@@ -229,9 +260,13 @@ export function AppSidebar() {
       <SidebarFooter className="border-t p-4">
         <div className="space-y-2">
           {open && (
-            <div className="text-sm text-muted-foreground">
-              <p className="font-medium">{user?.email}</p>
-              <p className="text-xs capitalize">Nível: {role}</p>
+            <div className="text-sm">
+              <p className="font-bold text-foreground">
+                {userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() : user?.email}
+              </p>
+              <p className={`text-xs capitalize font-medium ${getRoleColor(role || '')}`}>
+                Nível: {role}
+              </p>
             </div>
           )}
           <Button
