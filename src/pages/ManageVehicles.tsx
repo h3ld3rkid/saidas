@@ -15,6 +15,7 @@ interface Vehicle {
   model: string;
   year: number | null;
   is_active: boolean;
+  ambulance_number: string | null;
 }
 
 export default function ManageVehicles() {
@@ -22,7 +23,7 @@ export default function ManageVehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-  const [form, setForm] = useState({ license_plate: "", make: "", model: "", year: "", is_active: true });
+  const [form, setForm] = useState({ license_plate: "", make: "", model: "", year: "", ambulance_number: "", is_active: true });
 
   useEffect(() => {
     document.title = 'Gerir Viaturas';
@@ -50,6 +51,7 @@ export default function ManageVehicles() {
       make: form.make,
       model: form.model,
       year: form.year ? Number(form.year) : null,
+      ambulance_number: form.ambulance_number || null,
       is_active: form.is_active,
     };
     
@@ -65,7 +67,7 @@ export default function ManageVehicles() {
       toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: editingVehicle ? 'Viatura atualizada' : 'Viatura adicionada' });
-      setForm({ license_plate: "", make: "", model: "", year: "", is_active: true });
+      setForm({ license_plate: "", make: "", model: "", year: "", ambulance_number: "", is_active: true });
       setEditingVehicle(null);
       load();
     }
@@ -78,13 +80,14 @@ export default function ManageVehicles() {
       make: vehicle.make,
       model: vehicle.model,
       year: vehicle.year?.toString() || "",
+      ambulance_number: vehicle.ambulance_number || "",
       is_active: vehicle.is_active,
     });
   };
 
   const cancelEdit = () => {
     setEditingVehicle(null);
-    setForm({ license_plate: "", make: "", model: "", year: "", is_active: true });
+    setForm({ license_plate: "", make: "", model: "", year: "", ambulance_number: "", is_active: true });
   };
 
   const toggleActive = async (v: Vehicle) => {
@@ -110,7 +113,11 @@ export default function ManageVehicles() {
             <CardTitle>{editingVehicle ? 'Editar Viatura' : 'Adicionar Viatura'}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <div>
+                <Label>Número Ambulância</Label>
+                <Input value={form.ambulance_number} onChange={(e) => setForm({ ...form, ambulance_number: e.target.value })} placeholder="01" />
+              </div>
               <div>
                 <Label>Matrícula</Label>
                 <Input value={form.license_plate} onChange={(e) => setForm({ ...form, license_plate: e.target.value.toUpperCase() })} placeholder="AA-00-AA" />
@@ -155,8 +162,9 @@ export default function ManageVehicles() {
             <p className="text-sm text-muted-foreground">Sem viaturas.</p>
           )}
           {vehicles.map((v) => (
-            <div key={v.id} className="grid grid-cols-2 md:grid-cols-6 gap-2 items-center border rounded-md p-3">
-              <span className="font-medium">{v.license_plate}</span>
+            <div key={v.id} className="grid grid-cols-2 md:grid-cols-7 gap-2 items-center border rounded-md p-3">
+              <span className="font-medium">Ambulância {v.ambulance_number || 'N/A'}</span>
+              <span className="text-sm text-muted-foreground">{v.license_plate}</span>
               <span>{v.make} {v.model}</span>
               <span className="text-sm text-muted-foreground">{v.year ?? '—'}</span>
               <span className="text-sm">{v.is_active ? 'Ativa' : 'Inativa'}</span>

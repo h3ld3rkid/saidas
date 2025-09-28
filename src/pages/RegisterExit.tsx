@@ -27,6 +27,7 @@ interface Vehicle {
   license_plate: string;
   make: string;
   model: string;
+  ambulance_number: string | null;
 }
 
 interface ProfileLite {
@@ -825,22 +826,24 @@ export default function RegisterExit() {
             {/* Linha 7: Ambulância e opções INEM/Reserva */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Nº Ambulância (Matrícula) <span className="text-red-500">*</span></Label>
+                <Label>Ambulância <span className="text-red-500">*</span></Label>
                 <Select
                   value={form.vehicle_id}
                   onValueChange={(v) => {
                     const veh = vehicles.find((x) => x.id === v);
                     set('vehicle_id', v);
-                    set('ambulance_number', veh ? veh.license_plate : '');
+                    set('ambulance_number', veh ? (veh.ambulance_number || veh.license_plate) : '');
                   }}
                 >
                   <SelectTrigger className={errors.vehicle_id ? 'border-red-500' : ''}>
-                    <SelectValue placeholder="Seleccione a viatura" />
+                    <SelectValue placeholder="Seleccione a ambulância" />
                   </SelectTrigger>
                   <SelectContent>
                     {vehicles.map((vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
-                        {vehicle.license_plate} — {vehicle.make} {vehicle.model}
+                        {vehicle.ambulance_number 
+                          ? `Ambulância ${vehicle.ambulance_number}` 
+                          : `${vehicle.license_plate} — ${vehicle.make} ${vehicle.model}`}
                       </SelectItem>
                     ))}
                   </SelectContent>

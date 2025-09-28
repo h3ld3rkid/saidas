@@ -57,7 +57,21 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Parse callback data: readiness_yes/no_alertId_chatId
-    const [, response, alertId, chatId] = callbackQuery.data.split('_');
+    const callbackDataParts = callbackQuery.data.split('_');
+    console.log('Callback data parts:', callbackDataParts);
+    
+    // Handle both old format and new format
+    let response, alertId, chatId;
+    if (callbackDataParts.length >= 5) {
+      // New format: readiness_yes_alert_1759076362784_6y0qf9hpb_723174237
+      [, response, , alertId, chatId] = callbackDataParts;
+      alertId = `alert_${alertId}_${callbackDataParts[4]}`;
+      chatId = callbackDataParts[5] || callbackDataParts[4];
+    } else {
+      // Old format: readiness_yes_alertId_chatId
+      [, response, alertId, chatId] = callbackDataParts;
+    }
+    
     console.log(`Processing callback: response=${response}, alertId=${alertId}, chatId=${chatId}`);
     
     // Get user profile from chat_id
