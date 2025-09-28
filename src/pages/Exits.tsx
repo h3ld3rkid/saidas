@@ -184,8 +184,6 @@ const Exits = () => {
               <p><strong>Tipo:</strong> {exit?.exit_type || 'N/A'}</p>
               <p><strong>Motivo:</strong> {exit?.purpose || 'N/A'}</p>
               <p><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
-              <p><strong>Condutor:</strong> {exit?.driver_name || 'N/A'}</p>
-              <p><strong>Carta:</strong> {exit?.driver_license || 'N/A'}</p>
               <p><strong>Tripulação:</strong> <CrewDisplay crewString={exit?.crew || ''} /></p>
             </div>
           </div>
