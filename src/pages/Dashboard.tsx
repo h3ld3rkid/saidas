@@ -28,13 +28,7 @@ const Dashboard = () => {
         // Fetch readiness responses
         const { data: responsesData } = await supabase
           .from('readiness_responses')
-          .select(`
-            *,
-            profiles:user_id (
-              first_name,
-              last_name
-            )
-          `)
+          .select('*')
           .eq('response', true);
 
         setReadinessAlerts(alertsData || []);
@@ -99,7 +93,7 @@ const Dashboard = () => {
     } catch (error: any) {
       console.error('Error clearing readiness alert:', error);
       toast({
-        title: "Erro ao limpar alerta",
+        title: "Erro ao desativar alerta",
         description: error.message,
         variant: "destructive"
       });
@@ -227,10 +221,7 @@ const Dashboard = () => {
                       </div>
                       {positiveResponses.length > 0 && (
                         <div className="text-sm text-green-600 mt-1">
-                          ✅ {positiveResponses.length} pessoa(s) disponível(eis): {' '}
-                          {positiveResponses.map(r => 
-                            `${r.profiles?.first_name || ''} ${r.profiles?.last_name || ''}`.trim()
-                          ).join(', ')}
+                          ✅ {positiveResponses.length} pessoa(s) disponível(eis)
                         </div>
                       )}
                     </div>
