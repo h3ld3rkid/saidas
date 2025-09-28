@@ -532,6 +532,15 @@ export type Database = {
           service_num: number
         }[]
       }
+      get_user_names_by_ids: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          first_name: string
+          last_name: string
+          telegram_chat_id: string
+          user_id: string
+        }[]
+      }
       get_users_with_email: {
         Args: Record<PropertyKey, never>
         Returns: {

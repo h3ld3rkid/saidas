@@ -9,10 +9,6 @@ const corsHeaders = {
 interface ClearAlertRequest {
   alertId: string;
   alertType: string;
-  responders?: Array<{
-    chatId: string;
-    name: string;
-  }>;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -36,36 +32,39 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { alertId, alertType, responders }: ClearAlertRequest = await req.json();
+    const { alertId, alertType }: ClearAlertRequest = await req.json();
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // If responders not provided, fetch positive responders and their Telegram IDs from DB
-    let computedResponders: Array<{ chatId: string; name: string }>;
-
-    // 1) Delete all responses for this alert
-    const { error: delRespError, count: delRespCount } = await supabase
+    // Get positive responders and their Telegram chat IDs from the database
+    const { data: respondersData, error: respondersError } = await supabase
       .from('readiness_responses')
-      .delete({ count: 'exact' })
-      .eq('alert_id', alertId);
+      .select(`
+        user_id,
+        profiles:user_id (
+          first_name,
+          last_name,
+          telegram_chat_id
+        )
+      `)
+      .eq('alert_id', alertId)
+      .eq('response', true);
 
-    if (delRespError) {
-      console.error('Error deleting responses:', delRespError);
+    if (respondersError) {
+      console.error('Error fetching responders:', respondersError);
     }
 
-    // 2) Delete the alert itself
-    const { error: delAlertError, count: delAlertCount } = await supabase
-      .from('readiness_alerts')
-      .delete({ count: 'exact' })
-      .eq('alert_id', alertId);
+    const responders = (respondersData || [])
+      .map((r: any) => ({
+        chatId: r?.profiles?.telegram_chat_id || '',
+        name: `${r?.profiles?.first_name || ''} ${r?.profiles?.last_name || ''}`.trim() || 'Desconhecido'
+      }))
+      .filter(r => !!r.chatId);
 
-    if (delAlertError) {
-      console.error('Error deleting alert:', delAlertError);
-    }
+    console.log(`Clearing alert ${alertId} for ${responders.length} responders`);
 
-    // 3) Notify each positive responder via Telegram
-    // 3) Notify each positive responder via Telegram
-    const notificationPromises = computedResponders.map(async (responder) => {
+    // Notify each positive responder via Telegram
+    const notificationPromises = responders.map(async (responder) => {
       if (!responder.chatId) return;
 
       const message = `✅ O alerta de ${alertType} foi resolvido. Obrigado pela sua disponibilidade!`;
@@ -92,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     await Promise.all(notificationPromises);
 
-    // 4) Delete all responses for this alert
+    // Delete all responses for this alert
     const { error: delRespError, count: delRespCount } = await supabase
       .from('readiness_responses')
       .delete({ count: 'exact' })
@@ -102,7 +101,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Error deleting responses:', delRespError);
     }
 
-    // 5) Delete the alert itself
+    // Delete the alert itself
     const { error: delAlertError, count: delAlertCount } = await supabase
       .from('readiness_alerts')
       .delete({ count: 'exact' })
@@ -115,7 +114,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        notificationsSent: computedResponders.length,
+        notificationsSent: responders.length,
         deletedResponses: delRespCount ?? 0,
         deletedAlerts: delAlertCount ?? 0
       }),
