@@ -68,12 +68,12 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
 
     try {
       // Check if it's a valid Google Maps URL
-      if (mapUrl.includes('google.com/maps') || mapUrl.includes('maps.google.com')) {
+      if (mapUrl.includes('google.com/maps') || mapUrl.includes('maps.google.com') || mapUrl.includes('maps.app.goo.gl')) {
         // Extract coordinates if possible
         const coordMatch = mapUrl.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
         if (coordMatch) {
           const [, lat, lng] = coordMatch;
-          const cleanUrl = `https://maps.google.com/@${lat},${lng},17z`;
+          const cleanUrl = `https://www.google.com/maps/@${lat},${lng},15z?entry=ttu`;
           setMapUrl(cleanUrl);
           onLocationSelect(cleanUrl);
           toast({
@@ -126,13 +126,13 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
           Cole aqui o URL do Google Maps após selecionar a localização:
         </Label>
         <div className="flex gap-2">
-          <Input
-            id="map-url"
-            placeholder="https://maps.google.com/@..."
-            value={mapUrl}
-            onChange={(e) => handleUrlChange(e.target.value)}
-            onBlur={validateAndFormatUrl}
-          />
+        <Input
+          id="map-url"
+          placeholder="https://www.google.com/maps/@... ou https://maps.app.goo.gl/..."
+          value={mapUrl}
+          onChange={(e) => handleUrlChange(e.target.value)}
+          onBlur={validateAndFormatUrl}
+        />
         </div>
         <p className="text-xs text-muted-foreground">
           <strong>Como usar:</strong><br/>
