@@ -94,6 +94,9 @@ export default function RegisterExit() {
   const [inemOption, setInemOption] = useState<'inem' | 'inem_s_iteams' | 'reserva' | ''>('');
   const [showCrewDropdown, setShowCrewDropdown] = useState(false);
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
+  const [showDistrictDropdown, setShowDistrictDropdown] = useState(false);
+  const [showMunicipalityDropdown, setShowMunicipalityDropdown] = useState(false);
+  const [showParishDropdown, setShowParishDropdown] = useState(false);
   const [mapLocation, setMapLocation] = useState('');
   type SelectedCrew = { user_id: string; display_name: string };
   const [selectedCrew, setSelectedCrew] = useState<SelectedCrew[]>([]);
@@ -599,86 +602,131 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               <p className="text-xs text-muted-foreground">Número de telefone com 9 dígitos.</p>
             </div>
 
-            {/* Linha 6: Morada com dropdowns hierárquicos */}
+            {/* Linha 6: Morada com pesquisa ativa */}
             <div className="space-y-4">
               <Label>Morada</Label>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label>Distrito</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                     <Input
                       value={districtSearch}
-                      onChange={(e) => setDistrictSearch(e.target.value)}
-                      placeholder="Procurar distrito..."
+                      onChange={(e) => {
+                        setDistrictSearch(e.target.value);
+                        setShowDistrictDropdown(true);
+                      }}
+                      onFocus={() => setShowDistrictDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowDistrictDropdown(false), 200)}
+                      placeholder="Procurar e selecionar distrito..."
                       className="pl-10"
                     />
                   </div>
-                  <Select value={selectedDistrict} onValueChange={setSelectedDistrict}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione o distrito" />
-                    </SelectTrigger>
-                    <SelectContent>
+                  {showDistrictDropdown && districts.length > 0 && (
+                    <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                       {districts.map((district) => (
-                        <SelectItem key={district.id} value={district.id}>
+                        <div
+                          key={district.id}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onClick={() => {
+                            setSelectedDistrict(district.id);
+                            setDistrictSearch(district.nome);
+                            setShowDistrictDropdown(false);
+                          }}
+                        >
                           {district.nome}
-                        </SelectItem>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                  {selectedDistrict && (
+                    <div className="text-sm text-muted-foreground">
+                      Selecionado: {districts.find(d => d.id === selectedDistrict)?.nome}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label>Concelho</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                     <Input
                       value={municipalitySearch}
-                      onChange={(e) => setMunicipalitySearch(e.target.value)}
-                      placeholder="Procurar concelho..."
+                      onChange={(e) => {
+                        setMunicipalitySearch(e.target.value);
+                        setShowMunicipalityDropdown(true);
+                      }}
+                      onFocus={() => selectedDistrict && setShowMunicipalityDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowMunicipalityDropdown(false), 200)}
+                      placeholder="Procurar e selecionar concelho..."
                       className="pl-10"
                       disabled={!selectedDistrict}
                     />
                   </div>
-                  <Select value={selectedMunicipality} onValueChange={setSelectedMunicipality} disabled={!selectedDistrict}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione o concelho" />
-                    </SelectTrigger>
-                    <SelectContent>
+                  {showMunicipalityDropdown && municipalities.length > 0 && selectedDistrict && (
+                    <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                       {municipalities.map((municipality) => (
-                        <SelectItem key={municipality.id} value={municipality.id}>
+                        <div
+                          key={municipality.id}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onClick={() => {
+                            setSelectedMunicipality(municipality.id);
+                            setMunicipalitySearch(municipality.nome);
+                            setShowMunicipalityDropdown(false);
+                          }}
+                        >
                           {municipality.nome}
-                        </SelectItem>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                  {selectedMunicipality && (
+                    <div className="text-sm text-muted-foreground">
+                      Selecionado: {municipalities.find(m => m.id === selectedMunicipality)?.nome}
+                    </div>
+                  )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                   <Label>Freguesia</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground z-10" />
                     <Input
                       value={parishSearch}
-                      onChange={(e) => setParishSearch(e.target.value)}
-                      placeholder="Procurar freguesia..."
+                      onChange={(e) => {
+                        setParishSearch(e.target.value);
+                        setShowParishDropdown(true);
+                      }}
+                      onFocus={() => selectedMunicipality && setShowParishDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowParishDropdown(false), 200)}
+                      placeholder="Procurar e selecionar freguesia..."
                       className="pl-10"
                       disabled={!selectedMunicipality}
                     />
                   </div>
-                  <Select value={selectedParish} onValueChange={setSelectedParish} disabled={!selectedMunicipality}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccione a freguesia" />
-                    </SelectTrigger>
-                    <SelectContent>
+                  {showParishDropdown && parishes.length > 0 && selectedMunicipality && (
+                    <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                       {parishes.map((parish) => (
-                        <SelectItem key={parish.id} value={parish.id}>
+                        <div
+                          key={parish.id}
+                          className="px-3 py-2 hover:bg-accent cursor-pointer"
+                          onClick={() => {
+                            setSelectedParish(parish.id);
+                            setParishSearch(parish.nome);
+                            setShowParishDropdown(false);
+                          }}
+                        >
                           {parish.nome}
-                        </SelectItem>
+                        </div>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
+                  {selectedParish && (
+                    <div className="text-sm text-muted-foreground">
+                      Selecionado: {parishes.find(p => p.id === selectedParish)?.nome}
+                    </div>
+                  )}
                 </div>
               </div>
 
