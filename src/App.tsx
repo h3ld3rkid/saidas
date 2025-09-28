@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import ForcePasswordChange from "@/components/ForcePasswordChange";
+import { ReadinessNotifications } from "@/components/ReadinessNotifications";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import RegisterExit from "./pages/RegisterExit";
@@ -36,6 +37,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </header>
           <div className="flex-1">
             {children}
+            <ReadinessNotifications />
           </div>
         </main>
       </div>

@@ -70,7 +70,7 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             {logoUrl ? (
-              <div className="w-16 h-16">
+              <div className="w-24 h-24">
                 <img src={logoUrl} alt="CV Amares Logo" className="w-full h-full object-contain" />
               </div>
             ) : (

@@ -106,9 +106,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     const message = `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${new Date().toLocaleString('pt-PT')}`;
 
+    // Generate unique alert ID for tracking responses
+    const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Store alert in database for tracking responses
+    await supabase
+      .from('readiness_alerts')
+      .insert({
+        alert_id: alertId,
+        alert_type: alertType,
+        requester_name: requesterName,
+        created_at: new Date().toISOString()
+      });
+
     const results = [];
 
-    // Enviar mensagem para cada chat ID
+    // Enviar mensagem para cada chat ID com botões inline
     for (const chatId of chatIds) {
       try {
         const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -122,6 +135,18 @@ const handler = async (req: Request): Promise<Response> => {
             chat_id: chatId,
             text: message,
             parse_mode: "HTML",
+            reply_markup: {
+              inline_keyboard: [[
+                {
+                  text: "✅ SIM - Estou disponível",
+                  callback_data: `readiness_yes_${alertId}_${chatId}`
+                },
+                {
+                  text: "❌ NÃO - Não disponível",
+                  callback_data: `readiness_no_${alertId}_${chatId}`
+                }
+              ]]
+            }
           }),
         });
 
