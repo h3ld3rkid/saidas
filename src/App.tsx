@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import ForcePasswordChange from "@/components/ForcePasswordChange";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import RegisterExit from "./pages/RegisterExit";
@@ -42,20 +43,28 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const AuthRedirect = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, requiresPasswordChange, setRequiresPasswordChange } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !requiresPasswordChange) {
       navigate('/home');
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, requiresPasswordChange, navigate]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
       </div>
+    );
+  }
+
+  if (requiresPasswordChange) {
+    return (
+      <ForcePasswordChange
+        onPasswordChanged={() => setRequiresPasswordChange(false)}
+      />
     );
   }
 
@@ -66,6 +75,96 @@ const AuthRedirect = () => {
   return <Auth />;
 };
 
+const AppContent = () => {
+  const { requiresPasswordChange, setRequiresPasswordChange } = useAuth();
+
+  if (requiresPasswordChange) {
+    return (
+      <ForcePasswordChange
+        onPasswordChanged={() => setRequiresPasswordChange(false)}
+      />
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/auth" element={<AuthRedirect />} />
+      <Route path="/" element={<AuthRedirect />} />
+      <Route path="/home" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <Home />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <Dashboard />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/register-exit" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <RegisterExit />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/exits" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <Exits />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/exits/:id/edit" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <EditExit />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/vehicles" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <ManageVehicles />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/notices" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <ManageNotices />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/users" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <ManageUsers />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/telegram" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <TelegramSettings />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/profile" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <Profile />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -73,81 +172,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<AuthRedirect />} />
-            <Route path="/" element={<AuthRedirect />} />
-            <Route path="/home" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Home />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Dashboard />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/register-exit" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <RegisterExit />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/exits" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Exits />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/exits/:id/edit" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <EditExit />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/vehicles" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <ManageVehicles />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/notices" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <ManageNotices />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/users" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <ManageUsers />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/telegram" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <TelegramSettings />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="/profile" element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Profile />
-                </AppLayout>
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppContent />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

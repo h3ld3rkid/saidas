@@ -8,6 +8,140 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft } from 'lucide-react';
+
+const PasswordChangeForm = () => {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswords(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As novas palavras-passe não coincidem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwords.newPassword.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A nova palavra-passe deve ter pelo menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // First verify current password by trying to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: (await supabase.auth.getUser()).data.user?.email || '',
+        password: passwords.currentPassword,
+      });
+
+      if (signInError) {
+        toast({
+          title: "Erro",
+          description: "Palavra-passe atual incorreta.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Update password
+      const { error } = await supabase.auth.updateUser({
+        password: passwords.newPassword
+      });
+
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Sucesso",
+          description: "Palavra-passe alterada com sucesso!",
+        });
+        setPasswords({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao alterar palavra-passe.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handlePasswordSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="currentPassword">Palavra-passe Atual</Label>
+        <Input
+          id="currentPassword"
+          name="currentPassword"
+          type="password"
+          value={passwords.currentPassword}
+          onChange={handlePasswordChange}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="newPassword">Nova Palavra-passe</Label>
+        <Input
+          id="newPassword"
+          name="newPassword"
+          type="password"
+          value={passwords.newPassword}
+          onChange={handlePasswordChange}
+          required
+          minLength={6}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="confirmPassword">Confirmar Nova Palavra-passe</Label>
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          value={passwords.confirmPassword}
+          onChange={handlePasswordChange}
+          required
+          minLength={6}
+        />
+      </div>
+      <Button type="submit" disabled={loading}>
+        {loading ? 'A alterar...' : 'Alterar Palavra-passe'}
+      </Button>
+    </form>
+  );
+};
 interface ProfileRow {
   id: string;
   user_id: string;
@@ -151,6 +285,11 @@ const Profile = () => {
                    <div className="space-y-2">
                      <Label htmlFor="email">Email</Label>
                      <Input id="email" name="email" type="email" value={form.email} onChange={handleChange} />
+                   </div>
+                   
+                   <div className="border-t pt-4 space-y-4">
+                     <h3 className="text-lg font-medium">Alterar Palavra-passe</h3>
+                     <PasswordChangeForm />
                    </div>
                    <div className="space-y-2">
                      <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>

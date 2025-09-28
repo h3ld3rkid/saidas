@@ -6,8 +6,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  requiresPasswordChange: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  setRequiresPasswordChange: (value: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,6 +18,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -23,6 +26,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        
+        // Check if user needs to change password
+        if (session?.user?.user_metadata?.force_password_change === true) {
+          setRequiresPasswordChange(true);
+        } else {
+          setRequiresPasswordChange(false);
+        }
+        
         setLoading(false);
       }
     );
@@ -31,6 +42,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      
+      // Check if user needs to change password
+      if (session?.user?.user_metadata?.force_password_change === true) {
+        setRequiresPasswordChange(true);
+      } else {
+        setRequiresPasswordChange(false);
+      }
+      
       setLoading(false);
     });
 
@@ -53,8 +72,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     session,
     loading,
+    requiresPasswordChange,
     signIn,
     signOut,
+    setRequiresPasswordChange,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
