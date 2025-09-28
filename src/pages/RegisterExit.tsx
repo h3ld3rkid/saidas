@@ -238,6 +238,31 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
     }
   };
 
+  const checkCoduExists = async () => {
+    if (!coduNumber.trim()) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('vehicle_exits')
+        .select('id, departure_date, departure_time')
+        .like('observations', `%CODU: ${coduNumber}%`)
+        .limit(1);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const exit = data[0];
+        toast({
+          title: 'Número CODU já registado',
+          description: `Este número CODU já foi usado em ${exit.departure_date} às ${exit.departure_time}`,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao verificar CODU:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -396,7 +421,12 @@ ${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}$
               {exitType === 'Emergencia/CODU' && (
                 <div className="space-y-2">
                   <Label>Número CODU</Label>
-                  <Input value={coduNumber} onChange={(e) => setCoduNumber(e.target.value)} placeholder="Ex.: 123456" />
+                  <Input 
+                    value={coduNumber} 
+                    onChange={(e) => setCoduNumber(e.target.value)} 
+                    onBlur={checkCoduExists}
+                    placeholder="Ex.: 123456" 
+                  />
                 </div>
               )}
             </div>
