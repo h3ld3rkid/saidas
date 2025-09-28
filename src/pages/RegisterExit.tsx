@@ -210,27 +210,28 @@ export default function RegisterExit() {
         crewIds.push(user.id);
       }
 
-      // Get ALL users with Telegram configured for notification (like readiness requests)
-      const { data: allTelegramUsers } = await supabase
+      // Get crew members' Telegram chat IDs and names
+      const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, telegram_chat_id, first_name, last_name')
-        .eq('is_active', true)
-        .not('telegram_chat_id', 'is', null);
-
-      // Get crew member names for the message
-      const { data: crewProfiles } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name')
         .in('user_id', crewIds);
 
-      if (!allTelegramUsers || allTelegramUsers.length === 0) {
-        console.log('No users with Telegram configured');
+      if (!profiles || profiles.length === 0) {
+        console.log('No crew members found');
         return;
       }
 
-      // Extract chat IDs from all telegram users and create crew names string
-      const chatIds = allTelegramUsers.map(p => p.telegram_chat_id!);
-      const crewNames = crewProfiles?.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'N/A';
+      // Filter only crew members with Telegram configured
+      const crewWithTelegram = profiles.filter(p => p.telegram_chat_id);
+      
+      if (crewWithTelegram.length === 0) {
+        console.log('No crew members have Telegram configured');
+        return;
+      }
+
+      // Extract chat IDs and create crew names string
+      const chatIds = crewWithTelegram.map(p => p.telegram_chat_id!);
+      const crewNames = profiles.map(p => `${p.first_name} ${p.last_name}`).join(', ');
 
       const message = `
 🚨 <b>Nova Saída Registrada</b>
