@@ -9,7 +9,7 @@ const corsHeaders = {
 interface ClearAlertRequest {
   alertId: string;
   alertType: string;
-  responders: Array<{
+  responders?: Array<{
     chatId: string;
     name: string;
   }>;
@@ -38,9 +38,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { alertId, alertType, responders }: ClearAlertRequest = await req.json();
 
-    console.log(`Clearing alert ${alertId} for ${responders.length} responders`);
-
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // If responders not provided, fetch positive responders and their Telegram IDs from DB
+    let computedResponders: Array<{ chatId: string; name: string }>;
 
     // 1) Delete all responses for this alert
     const { error: delRespError, count: delRespCount } = await supabase
@@ -63,7 +64,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // 3) Notify each positive responder via Telegram
-    const notificationPromises = responders.map(async (responder) => {
+    // 3) Notify each positive responder via Telegram
+    const notificationPromises = computedResponders.map(async (responder) => {
       if (!responder.chatId) return;
 
       const message = `✅ O alerta de ${alertType} foi resolvido. Obrigado pela sua disponibilidade!`;
@@ -90,10 +92,30 @@ const handler = async (req: Request): Promise<Response> => {
 
     await Promise.all(notificationPromises);
 
+    // 4) Delete all responses for this alert
+    const { error: delRespError, count: delRespCount } = await supabase
+      .from('readiness_responses')
+      .delete({ count: 'exact' })
+      .eq('alert_id', alertId);
+
+    if (delRespError) {
+      console.error('Error deleting responses:', delRespError);
+    }
+
+    // 5) Delete the alert itself
+    const { error: delAlertError, count: delAlertCount } = await supabase
+      .from('readiness_alerts')
+      .delete({ count: 'exact' })
+      .eq('alert_id', alertId);
+
+    if (delAlertError) {
+      console.error('Error deleting alert:', delAlertError);
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        notificationsSent: responders.length,
+        notificationsSent: computedResponders.length,
         deletedResponses: delRespCount ?? 0,
         deletedAlerts: delAlertCount ?? 0
       }),

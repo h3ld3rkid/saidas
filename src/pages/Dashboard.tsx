@@ -72,21 +72,11 @@ const Dashboard = () => {
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
     try {
-      // Get positive responders for this alert
-      const positiveResponders = readinessResponses
-        .filter(response => response.alert_id === alertId && response.response === true)
-        .map(response => ({
-          chatId: response.profiles?.telegram_chat_id,
-          name: `${response.profiles?.first_name || ''} ${response.profiles?.last_name || ''}`.trim()
-        }))
-        .filter(responder => responder.chatId);
-
-      // Call the clear function
+      // Now the edge function will compute responders and notify them server-side
       const { error } = await supabase.functions.invoke('clear-readiness-alert', {
         body: {
           alertId,
           alertType,
-          responders: positiveResponders
         }
       });
 

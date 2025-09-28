@@ -20,13 +20,11 @@ export const useUserNames = (userIds: string[] = []) => {
       setLoading(true);
       try {
         const { data, error } = await supabase
-          .from('profiles')
-          .select('user_id, first_name, last_name')
-          .in('user_id', userIds);
+          .rpc('get_user_names_by_ids', { _user_ids: userIds });
 
         if (error) throw error;
 
-        const names = data?.map(user => ({
+        const names = (data as any[])?.map(user => ({
           id: user.user_id,
           name: `${user.first_name} ${user.last_name}`.trim()
         })) || [];
