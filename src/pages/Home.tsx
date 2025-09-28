@@ -155,6 +155,18 @@ export default function Home() {
         })).filter(r => r.chatId) || [];
       }
 
+      // Primeiro remover todas as respostas associadas ao alerta
+      await supabase
+        .from('readiness_responses')
+        .delete()
+        .eq('alert_id', alertId);
+
+      // Depois remover o alerta
+      await supabase
+        .from('readiness_alerts')
+        .delete()
+        .eq('alert_id', alertId);
+
       // Chamar edge function para notificar via Telegram
       if (respondersToNotify.length > 0) {
         await supabase.functions.invoke('clear-readiness-alert', {
@@ -166,18 +178,14 @@ export default function Home() {
         });
       }
 
-      // Remover o alerta (cascade vai remover as respostas)
-      await supabase
-        .from('readiness_alerts')
-        .delete()
-        .eq('alert_id', alertId);
-
       toast({
         title: "Prontidão limpa",
         description: `Alerta de ${alertType} foi removido e notificações enviadas.`,
       });
 
+      // Forçar atualização imediata dos dados
       refetchReadiness();
+      
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -235,7 +243,7 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Prontidão Card */}
+          {/* Prontidão Card - Só aparece se houver dados */}
           {readinessData && readinessData.length > 0 && (
             <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
               <CardHeader className="pb-4">
