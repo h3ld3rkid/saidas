@@ -451,6 +451,12 @@ export type Database = {
           total_num: number
         }[]
       }
+      get_next_service_number_no_total: {
+        Args: { p_service_type: string }
+        Returns: {
+          service_num: number
+        }[]
+      }
       get_users_with_email: {
         Args: Record<PropertyKey, never>
         Returns: {

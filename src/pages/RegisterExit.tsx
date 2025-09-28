@@ -340,15 +340,14 @@ export default function RegisterExit() {
       
       // If VSL is activated, we need to handle both CODU and VSL entries
       if (vslActivated && exitType === 'Emergencia/CODU') {
-        // Get VSL service number too
-        const { data: vslNumberData, error: vslNumberError } = await supabase.rpc('get_next_service_number', {
+        // Get VSL service number without incrementing total counter
+        const { data: vslNumberData, error: vslNumberError } = await supabase.rpc('get_next_service_number_no_total', {
           p_service_type: 'VSL'
         });
         
         if (vslNumberError) throw vslNumberError;
         
         const vslServiceNumber = vslNumberData[0]?.service_num || 1;
-        // Don't increment total again for VSL - they count as one combined service
         
         // Insert CODU record
         const { error: coduError } = await supabase.from('vehicle_exits').insert({
