@@ -258,7 +258,6 @@ export type Database = {
           crew: string | null
           departure_date: string
           departure_time: string
-          destination: string
           driver_license: string | null
           driver_name: string | null
           exit_type: string | null
@@ -290,7 +289,6 @@ export type Database = {
           crew?: string | null
           departure_date: string
           departure_time: string
-          destination: string
           driver_license?: string | null
           driver_name?: string | null
           exit_type?: string | null
@@ -322,7 +320,6 @@ export type Database = {
           crew?: string | null
           departure_date?: string
           departure_time?: string
-          destination?: string
           driver_license?: string | null
           driver_name?: string | null
           exit_type?: string | null

@@ -587,26 +587,24 @@ export default function RegisterExit() {
               </div>
             )}
 
-            {/* Linha 3: Destino e Motivo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Destino <span className="text-red-500">*</span></Label>
-                <Input 
-                  value={form.destination} 
-                  onChange={(e) => set('destination', e.target.value)} 
-                  className={errors.destination ? 'border-red-500' : ''}
-                  placeholder="Ex.: Hospital de Braga"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Motivo <span className="text-red-500">*</span></Label>
-                <Input 
-                  value={form.purpose} 
-                  onChange={(e) => set('purpose', e.target.value)} 
-                  className={errors.purpose ? 'border-red-500' : ''}
-                  placeholder="Ex.: Transporte médico"
-                />
-              </div>
+            {/* Linha 3: Motivo */}
+            <div className="space-y-2">
+              <Label>Motivo <span className="text-red-500">*</span></Label>
+              <Input 
+                value={form.purpose} 
+                onChange={(e) => {
+                  set('purpose', e.target.value);
+                  if (e.target.value && errors.purpose) {
+                    setErrors(prev => {
+                      const newErrors = { ...prev };
+                      delete newErrors.purpose;
+                      return newErrors;
+                    });
+                  }
+                }}
+                className={errors.purpose ? 'border-red-500' : ''}
+                placeholder="Ex.: Transporte inter-hospitalar"
+              />
             </div>
 
             {/* Linha 4: Dados do paciente */}
