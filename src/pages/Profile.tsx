@@ -155,7 +155,7 @@ const Profile = () => {
                    <div className="space-y-2">
                      <Label htmlFor="telegram_chat_id">Telegram Chat ID</Label>
                      <Input id="telegram_chat_id" name="telegram_chat_id" value={form.telegram_chat_id} onChange={handleChange} placeholder="Digite o seu Chat ID do Telegram" />
-                     <p className="text-xs text-muted-foreground">Para obter o seu Chat ID, enviar /start para @saidascva_bot no Telegram e cola </p>
+                     <p className="text-xs text-muted-foreground">Para obter o Chat ID, enviar /start para @saidascva_bot no Telegram e cola </p>
                    </div>
                   <div className="flex justify-end">
                     <Button type="submit" disabled={saving}>{saving ? 'A guardar…' : 'Guardar Alterações'}</Button>
