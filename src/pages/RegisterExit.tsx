@@ -210,51 +210,26 @@ export default function RegisterExit() {
         crewIds.push(user.id);
       }
 
-      // Get crew members' Telegram chat IDs and names
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('user_id, telegram_chat_id, first_name, last_name')
-        .in('user_id', crewIds);
-
-      if (!profiles || profiles.length === 0) {
-        console.log('No crew members found');
-        return;
-      }
-
-      // Filter only crew members with Telegram configured
-      const crewWithTelegram = profiles.filter(p => p.telegram_chat_id);
-      
-      if (crewWithTelegram.length === 0) {
-        console.log('No crew members have Telegram configured');
-        return;
-      }
-
-      // Extract chat IDs and create crew names string
-      const chatIds = crewWithTelegram.map(p => p.telegram_chat_id!);
-      const crewNames = profiles.map(p => `${p.first_name} ${p.last_name}`).join(', ');
-
-      const message = `
-🚨 <b>Nova Saída Registrada</b>
-
-📋 <b>Tipo:</b> ${data.serviceType}
-🔢 <b>Número:</b> ${data.serviceNumber}
-⏰ <b>Hora:</b> ${data.departureTime}
-📞 <b>Contacto:</b> ${data.contact}
-${data.coduNumber ? `🆘 <b>CODU:</b> ${data.coduNumber}\n` : ''}📍 <b>Morada:</b> ${data.address}
-👥 <b>Tripulação:</b> ${crewNames}
-${data.observations ? `📝 <b>Observações:</b> ${data.observations}\n` : ''}${data.mapLocation ? `🗺️ <b>Localização:</b> ${data.mapLocation}` : ''}
-      `;
-
-      const response = await supabase.functions.invoke('telegram-notify', {
+      // Delegate notification to edge function (bypasses RLS safely)
+      const { data: notifyData, error: notifyError } = await supabase.functions.invoke('service-crew-notify', {
         body: {
-          chatIds: chatIds,
-          message: message.trim()
-        }
+          crewUserIds: crewIds,
+          serviceType: data.serviceType,
+          serviceNumber: data.serviceNumber,
+          departureTime: data.departureTime,
+          contact: data.contact,
+          coduNumber: data.coduNumber,
+          address: data.address,
+          observations: data.observations,
+          mapLocation: data.mapLocation,
+        },
       });
 
-      if (response.error) {
-        throw response.error;
+      if (notifyError) {
+        throw notifyError;
       }
+
+      console.log('Telegram notify result:', notifyData);
 
       console.log('Telegram notification sent successfully');
     } catch (error) {
