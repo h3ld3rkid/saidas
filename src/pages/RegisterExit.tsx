@@ -210,21 +210,27 @@ export default function RegisterExit() {
         crewIds.push(user.id);
       }
 
-      // Get crew members' Telegram chat IDs and names
-      const { data: profiles } = await supabase
+      // Get ALL users with Telegram configured for notification (like readiness requests)
+      const { data: allTelegramUsers } = await supabase
         .from('profiles')
         .select('user_id, telegram_chat_id, first_name, last_name')
-        .in('user_id', crewIds)
+        .eq('is_active', true)
         .not('telegram_chat_id', 'is', null);
 
-      if (!profiles || profiles.length === 0) {
-        console.log('No Telegram configurations found for crew');
+      // Get crew member names for the message
+      const { data: crewProfiles } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', crewIds);
+
+      if (!allTelegramUsers || allTelegramUsers.length === 0) {
+        console.log('No users with Telegram configured');
         return;
       }
 
-      // Extract chat IDs and create crew names string
-      const chatIds = profiles.map(p => p.telegram_chat_id!);
-      const crewNames = profiles.map(p => `${p.first_name} ${p.last_name}`).join(', ');
+      // Extract chat IDs from all telegram users and create crew names string
+      const chatIds = allTelegramUsers.map(p => p.telegram_chat_id!);
+      const crewNames = crewProfiles?.map(p => `${p.first_name} ${p.last_name}`).join(', ') || 'N/A';
 
       const message = `
 🚨 <b>Nova Saída Registrada</b>
