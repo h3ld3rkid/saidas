@@ -119,14 +119,10 @@ Deno.serve(async (req) => {
     const headers = [
       'Data de Saída',
       'Hora de Saída',
-      'Data Retorno Previsto',
-      'Hora Retorno Previsto',
       'Tipo de Serviço',
       'Número de Serviço',
       'Número Total',
-      'Finalidade',
-      'Condutor',
-      'Carta de Condução',
+      'Motivo',
       'Nome Utente',
       'Idade Utente',
       'Género Utente',
@@ -142,10 +138,7 @@ Deno.serve(async (req) => {
       'PEM',
       'Reserva',
       'Utilizador',
-      'Número Funcionário',
       'Matrícula Viatura',
-      'Marca Viatura',
-      'Modelo Viatura',
       'Data Criação'
     ]
 
@@ -157,17 +150,27 @@ Deno.serve(async (req) => {
       const profile = profilesMap.get(exit.user_id)
       const vehicle = vehiclesMap.get(exit.vehicle_id)
       
+      // Convert crew IDs to names
+      let crewNames = '';
+      if (exit.crew) {
+        const crewIds = exit.crew.split(',').map((id: string) => id.trim()).filter(Boolean);
+        const names = crewIds.map((id: string) => {
+          const crewProfile = profilesMap.get(id);
+          if (crewProfile) {
+            return `${crewProfile.first_name} ${crewProfile.last_name}`.trim();
+          }
+          return '';
+        }).filter(Boolean);
+        crewNames = names.join(', ');
+      }
+      
       const row = [
         exit.departure_date || '',
         exit.departure_time || '',
-        exit.expected_return_date || '',
-        exit.expected_return_time || '',
         exit.exit_type || '',
         exit.service_number || '',
         exit.total_service_number || '',
         `"${(exit.purpose || '').replace(/"/g, '""')}"`,
-        `"${(exit.driver_name || '').replace(/"/g, '""')}"`,
-        exit.driver_license || '',
         `"${(exit.patient_name || '').replace(/"/g, '""')}"`,
         exit.patient_age || '',
         exit.patient_gender || '',
@@ -177,16 +180,13 @@ Deno.serve(async (req) => {
         `"${(exit.patient_parish || '').replace(/"/g, '""')}"`,
         `"${(exit.patient_address || '').replace(/"/g, '""')}"`,
         exit.ambulance_number || '',
-        `"${(exit.crew || '').replace(/"/g, '""')}"`,
+        `"${crewNames.replace(/"/g, '""')}"`,
         `"${(exit.observations || '').replace(/"/g, '""')}"`,
         exit.status || '',
         exit.is_pem ? 'Sim' : 'Não',
         exit.is_reserve ? 'Sim' : 'Não',
         `"${((profile?.first_name || '') + ' ' + (profile?.last_name || '')).trim()}"`,
-        profile?.employee_number || '',
         vehicle?.license_plate || '',
-        vehicle?.make || '',
-        vehicle?.model || '',
         exit.created_at || ''
       ]
       csvRows.push(row.join(';'))
