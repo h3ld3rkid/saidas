@@ -77,6 +77,14 @@ const ManageUsers = () => {
         created_at: item.created_at,
         access_role: item.access_role,
       }));
+      
+      // Ordenar alfabeticamente por nome e apelido
+      mappedProfiles.sort((a, b) => {
+        const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
+        const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      
       setProfiles(mappedProfiles);
       setUserRoles([]);
     } catch (error: any) {

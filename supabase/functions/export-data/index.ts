@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
       vehiclesMap.set(vehicle.id, vehicle)
     })
 
-    // Convert to CSV
+    // Convert to CSV format optimized for Excel (Portuguese locale)
     const headers = [
       'Data de Saída',
       'Hora de Saída',
@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
 
     console.log('Processing exits for CSV export:', exits?.length || 0)
 
-    const csvRows = [headers.join(',')]
+    const csvRows = [headers.join(';')]
 
     for (const exit of exits || []) {
       const profile = profilesMap.get(exit.user_id)
@@ -192,10 +192,11 @@ Deno.serve(async (req) => {
         vehicle?.model || '',
         exit.created_at || ''
       ]
-      csvRows.push(row.join(','))
+      csvRows.push(row.join(';'))
     }
 
-    const csv = csvRows.join('\n')
+    // Add UTF-8 BOM for Excel to properly recognize special characters
+    const csv = '\uFEFF' + csvRows.join('\n')
     console.log('CSV export completed successfully')
 
     return new Response(
