@@ -833,6 +833,13 @@ export default function RegisterExit() {
                     const veh = vehicles.find((x) => x.id === v);
                     set('vehicle_id', v);
                     set('ambulance_number', veh ? (veh.ambulance_number || veh.license_plate) : '');
+                    if (v && errors.vehicle_id) {
+                      setErrors(prev => {
+                        const newErrors = { ...prev };
+                        delete newErrors.vehicle_id;
+                        return newErrors;
+                      });
+                    }
                   }}
                 >
                   <SelectTrigger className={errors.vehicle_id ? 'border-red-500' : ''}>

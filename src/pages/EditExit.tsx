@@ -20,6 +20,7 @@ interface Vehicle {
   license_plate: string;
   make: string;
   model: string;
+  ambulance_number: string | null;
 }
 
 export default function EditExit() {
@@ -181,6 +182,10 @@ export default function EditExit() {
   }
 
   const canEdit = exit.status !== 'completed' || hasRole('admin');
+  
+  // Check if service is older than 3 hours
+  const isOlderThan3Hours = new Date(exit.created_at).getTime() < Date.now() - 3 * 60 * 60 * 1000;
+  const canChangeStatus = !isOlderThan3Hours || hasRole('admin');
 
   return (
     <div className="p-6">
@@ -207,6 +212,7 @@ export default function EditExit() {
               <Button 
                 variant={exit.status === 'active' ? 'default' : 'outline'}
                 onClick={() => handleStatusChange('active')}
+                disabled={!canChangeStatus}
               >
                 Ativo
               </Button>
@@ -219,10 +225,16 @@ export default function EditExit() {
               <Button 
                 variant={exit.status === 'cancelled' ? 'destructive' : 'outline'}
                 onClick={() => handleStatusChange('cancelled')}
+                disabled={!canChangeStatus}
               >
                 Cancelar
               </Button>
             </div>
+            {isOlderThan3Hours && !hasRole('admin') && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Não é possível alterar o status após 3 horas da criação do serviço.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -474,7 +486,9 @@ export default function EditExit() {
                     <SelectContent>
                       {vehicles.map((vehicle) => (
                         <SelectItem key={vehicle.id} value={vehicle.id}>
-                          {vehicle.license_plate} - {vehicle.make} {vehicle.model}
+                          {vehicle.ambulance_number 
+                            ? `Ambulância ${vehicle.ambulance_number}` 
+                            : `${vehicle.license_plate} — ${vehicle.make} ${vehicle.model}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
