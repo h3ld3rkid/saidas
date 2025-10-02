@@ -271,11 +271,21 @@ export default function EditExit() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Tipo de Saída</Label>
-                  <Input 
+                  <Select 
                     value={exit.exit_type || ''} 
-                    onChange={(e) => setExit({ ...exit, exit_type: e.target.value })}
+                    onValueChange={(value) => setExit({ ...exit, exit_type: value })}
                     disabled={!canEdit}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccione o tipo de saída" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Emergencia/CODU">Emergência/CODU</SelectItem>
+                      <SelectItem value="Emergencia particular">Emergência particular</SelectItem>
+                      <SelectItem value="VSL">VSL</SelectItem>
+                      <SelectItem value="Outro">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 {exit.exit_type === 'Emergencia/CODU' && (
                   <div className="space-y-2">

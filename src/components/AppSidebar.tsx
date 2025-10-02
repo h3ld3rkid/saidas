@@ -253,8 +253,10 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('condutores')}
-                  className={`hover:bg-orange-500/10 text-orange-600 hover:text-orange-700 transition-all ${
-                    hasActiveAlert ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-orange-500/20' : ''
+                  className={`transition-all ${
+                    hasActiveAlert 
+                      ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-red-600 text-white hover:bg-red-700 hover:text-white' 
+                      : 'hover:bg-orange-500/10 text-orange-600 hover:text-orange-700'
                   }`}
                 >
                   <UserCheck className="h-4 w-4" />
@@ -264,8 +266,10 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('socorristas')}
-                  className={`hover:bg-red-500/10 text-red-600 hover:text-red-700 transition-all ${
-                    hasActiveAlert ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-red-500/20' : ''
+                  className={`transition-all ${
+                    hasActiveAlert 
+                      ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-orange-500 text-white hover:bg-orange-600 hover:text-white' 
+                      : 'hover:bg-red-500/10 text-red-600 hover:text-red-700'
                   }`}
                 >
                   <Zap className="h-4 w-4" />
