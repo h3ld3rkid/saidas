@@ -42,6 +42,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
+  const [hasActiveAlert, setHasActiveAlert] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -62,6 +63,40 @@ export function AppSidebar() {
 
     fetchUserProfile();
   }, [user?.id]);
+
+  // Check for active readiness alerts
+  useEffect(() => {
+    const checkActiveAlerts = async () => {
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from('readiness_alerts')
+        .select('alert_id')
+        .gte('created_at', thirtyMinutesAgo)
+        .limit(1);
+      
+      setHasActiveAlert(data && data.length > 0);
+    };
+
+    checkActiveAlerts();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('readiness-alerts-sidebar')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'readiness_alerts'
+        },
+        () => checkActiveAlerts()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -218,7 +253,9 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('condutores')}
-                  className="hover:bg-orange-500/10 text-orange-600 hover:text-orange-700"
+                  className={`hover:bg-orange-500/10 text-orange-600 hover:text-orange-700 transition-all ${
+                    hasActiveAlert ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-orange-500/20' : ''
+                  }`}
                 >
                   <UserCheck className="h-4 w-4" />
                   {open && <span>Condutores</span>}
@@ -227,7 +264,9 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('socorristas')}
-                  className="hover:bg-red-500/10 text-red-600 hover:text-red-700"
+                  className={`hover:bg-red-500/10 text-red-600 hover:text-red-700 transition-all ${
+                    hasActiveAlert ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-red-500/20' : ''
+                  }`}
                 >
                   <Zap className="h-4 w-4" />
                   {open && <span>Socorristas</span>}

@@ -363,9 +363,13 @@ export default function Home() {
                             variant="default"
                             className="text-xs"
                             onClick={async () => {
-                              const canConclude = hasRole('mod') || hasRole('admin') || s.user_id === user?.id;
+                              // Check if user is creator, crew member, mod, or admin
+                              const isCreator = s.user_id === user?.id;
+                              const isCrewMember = s.crew && s.crew.split(',').map((id: string) => id.trim()).includes(user?.id);
+                              const canConclude = hasRole('mod') || hasRole('admin') || isCreator || isCrewMember;
+                              
                               if (!canConclude) {
-                                toast({ title: 'Sem permissão', description: 'Apenas o autor, moderadores ou administradores podem concluir.', variant: 'destructive' });
+                                toast({ title: 'Sem permissão', description: 'Apenas quem registou, tripulação, moderadores ou administradores podem concluir.', variant: 'destructive' });
                                 return;
                               }
                               try {
