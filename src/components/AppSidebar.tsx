@@ -122,6 +122,22 @@ export function AppSidebar() {
 
   const sendEmergencyAlert = async (alertType: 'condutores' | 'socorristas') => {
     try {
+      // Verificar se já existem 2 alertas ativos
+      const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const { data: activeAlerts } = await supabase
+        .from('readiness_alerts')
+        .select('alert_id')
+        .gte('created_at', thirtyMinutesAgo);
+
+      if (activeAlerts && activeAlerts.length >= 2) {
+        toast({
+          title: 'Limite atingido',
+          description: 'Já existem 2 alertas de prontidão ativos. Aguarde antes de enviar outro.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       // Buscar o nome do utilizador
       const { data: profile } = await supabase
         .from('profiles')
@@ -264,11 +280,11 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('condutores')}
-                  className={`transition-all ${
+                  className={
                     hasActiveCondutoresAlert 
-                      ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-red-600 text-white hover:bg-red-700 hover:text-white' 
+                      ? 'animate-[pulse-alert_2s_ease-in-out_infinite] !bg-red-600 !text-white hover:!bg-red-700 hover:!text-white' 
                       : 'hover:bg-orange-500/10 text-orange-600 hover:text-orange-700'
-                  }`}
+                  }
                 >
                   <UserCheck className="h-4 w-4" />
                   {open && <span>Condutores</span>}
@@ -277,11 +293,11 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('socorristas')}
-                  className={`transition-all ${
+                  className={
                     hasActiveSocorristasAlert 
-                      ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-orange-500 text-white hover:bg-orange-600 hover:text-white' 
+                      ? 'animate-[pulse-alert_2s_ease-in-out_infinite] !bg-orange-500 !text-white hover:!bg-orange-600 hover:!text-white' 
                       : 'hover:bg-red-500/10 text-red-600 hover:text-red-700'
-                  }`}
+                  }
                 >
                   <Zap className="h-4 w-4" />
                   {open && <span>Socorristas</span>}
