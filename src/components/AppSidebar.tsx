@@ -42,7 +42,8 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
-  const [hasActiveAlert, setHasActiveAlert] = useState(false);
+  const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
+  const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -68,13 +69,23 @@ export function AppSidebar() {
   useEffect(() => {
     const checkActiveAlerts = async () => {
       const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
-      const { data } = await supabase
+      
+      const { data: condutoresData } = await supabase
         .from('readiness_alerts')
         .select('alert_id')
+        .eq('alert_type', 'condutores')
         .gte('created_at', thirtyMinutesAgo)
         .limit(1);
       
-      setHasActiveAlert(data && data.length > 0);
+      const { data: socorristasData } = await supabase
+        .from('readiness_alerts')
+        .select('alert_id')
+        .eq('alert_type', 'socorristas')
+        .gte('created_at', thirtyMinutesAgo)
+        .limit(1);
+      
+      setHasActiveCondutoresAlert(condutoresData && condutoresData.length > 0);
+      setHasActiveSocorristasAlert(socorristasData && socorristasData.length > 0);
     };
 
     checkActiveAlerts();
@@ -254,7 +265,7 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('condutores')}
                   className={`transition-all ${
-                    hasActiveAlert 
+                    hasActiveCondutoresAlert 
                       ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-red-600 text-white hover:bg-red-700 hover:text-white' 
                       : 'hover:bg-orange-500/10 text-orange-600 hover:text-orange-700'
                   }`}
@@ -267,7 +278,7 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   onClick={() => sendEmergencyAlert('socorristas')}
                   className={`transition-all ${
-                    hasActiveAlert 
+                    hasActiveSocorristasAlert 
                       ? 'animate-[pulse-alert_2s_ease-in-out_infinite] bg-orange-500 text-white hover:bg-orange-600 hover:text-white' 
                       : 'hover:bg-red-500/10 text-red-600 hover:text-red-700'
                   }`}
