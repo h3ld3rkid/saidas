@@ -283,7 +283,7 @@ export function AppSidebar() {
                   className={
                     hasActiveCondutoresAlert 
                       ? 'animate-[pulse-alert_2s_ease-in-out_infinite] !bg-red-600 !text-white hover:!bg-red-700 hover:!text-white' 
-                      : 'hover:bg-orange-500/10 text-orange-600 hover:text-orange-700'
+                      : '!bg-red-600 !text-white hover:!bg-red-700'
                   }
                 >
                   <UserCheck className="h-4 w-4" />

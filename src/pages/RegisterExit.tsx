@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 import { MapLocationPicker } from '@/components/MapLocationPicker';
+import { TimePicker } from '@/components/ui/time-picker';
 
 interface Vehicle {
   id: string;
@@ -509,16 +510,13 @@ export default function RegisterExit() {
 
               <div className="space-y-2">
                 <Label htmlFor="departure_time">Hora de Saída</Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="departure_time" 
-                    type="time" 
-                    value={form.departure_time} 
-                    onChange={(e) => set('departure_time', e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+                <TimePicker
+                  value={form.departure_time}
+                  onChange={(time) => {
+                    set('departure_time', time);
+                    setEditTime(true);
+                  }}
+                />
               </div>
             </div>
 
@@ -634,10 +632,10 @@ export default function RegisterExit() {
 
             {/* Linha 5: Contacto único */}
             <div className="space-y-2">
-              <Label>Contacto</Label>
+              <Label>Contato <span className="text-red-500">*</span></Label>
               <Input 
                 inputMode="text" 
-                value={form.patient_contact} 
+                value={form.patient_contact}
                 onChange={(e) => {
                   const value = e.target.value;
                   set('patient_contact', value);
