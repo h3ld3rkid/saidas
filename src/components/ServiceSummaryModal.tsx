@@ -35,12 +35,14 @@ export function ServiceSummaryModal({
               <Badge variant="default" className="text-lg px-4 py-2">
                 {serviceType}
               </Badge>
-              <p className="text-2xl font-bold mt-2">Nº {serviceNumber}</p>
+              <p className="text-2xl font-bold mt-2">
+                {serviceType === 'CODU' ? `Saída Nº ${serviceNumber}` : `Nº${serviceNumber}`}
+              </p>
             </div>
             
             <div className="p-4 border rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Número de Ficha Total</p>
-              <p className="text-3xl font-bold text-primary">#{totalServiceNumber}</p>
+              <p className="text-3xl font-bold text-primary">Nº{totalServiceNumber}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Total geral de todos os serviços
               </p>
