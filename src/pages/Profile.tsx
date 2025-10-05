@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -88,10 +89,9 @@ const PasswordChangeForm = () => {
     <div className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="currentPassword">Palavra-passe Atual</Label>
-        <Input
+        <PasswordInput
           id="currentPassword"
           name="currentPassword"
-          type="password"
           value={passwords.currentPassword}
           onChange={handlePasswordChange}
           required
@@ -99,10 +99,9 @@ const PasswordChangeForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="newPassword">Nova Palavra-passe</Label>
-        <Input
+        <PasswordInput
           id="newPassword"
           name="newPassword"
-          type="password"
           value={passwords.newPassword}
           onChange={handlePasswordChange}
           required
@@ -111,10 +110,9 @@ const PasswordChangeForm = () => {
       </div>
       <div className="space-y-2">
         <Label htmlFor="confirmPassword">Confirmar Nova Palavra-passe</Label>
-        <Input
+        <PasswordInput
           id="confirmPassword"
           name="confirmPassword"
-          type="password"
           value={passwords.confirmPassword}
           onChange={handlePasswordChange}
           required
