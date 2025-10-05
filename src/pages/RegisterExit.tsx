@@ -84,6 +84,7 @@ export default function RegisterExit() {
   // Base data
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [crewOptions, setCrewOptions] = useState<ProfileLite[]>([]);
+  const [vehicleOrderBy, setVehicleOrderBy] = useState<'license_plate' | 'ambulance_number' | 'make' | 'model'>('license_plate');
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -146,7 +147,7 @@ export default function RegisterExit() {
       .from('vehicles')
       .select('*')
       .eq('is_active', true)
-      .order('license_plate')
+      .order(vehicleOrderBy)
       .then(({ data, error }) => {
         if (error) {
           toast({ title: 'Erro ao carregar viaturas', description: error.message, variant: 'destructive' });
@@ -165,7 +166,7 @@ export default function RegisterExit() {
         .then(({ data }) => setCrewOptions(data || []));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [vehicleOrderBy]);
 
 
   // Keep exit_type in sync
@@ -824,7 +825,20 @@ export default function RegisterExit() {
             {/* Linha 7: Ambulância e opções INEM/Reserva */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Ambulância <span className="text-red-500">*</span></Label>
+                <div className="flex items-center justify-between mb-1">
+                  <Label>Ambulância <span className="text-red-500">*</span></Label>
+                  <Select value={vehicleOrderBy} onValueChange={(v: any) => setVehicleOrderBy(v)}>
+                    <SelectTrigger className="w-[180px] h-7 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="license_plate">Ordenar por Matrícula</SelectItem>
+                      <SelectItem value="ambulance_number">Ordenar por Nº Amb.</SelectItem>
+                      <SelectItem value="make">Ordenar por Marca</SelectItem>
+                      <SelectItem value="model">Ordenar por Modelo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Select
                   value={form.vehicle_id}
                   onValueChange={(v) => {
