@@ -296,7 +296,7 @@ export function AppSidebar() {
                   className={
                     hasActiveSocorristasAlert 
                       ? 'animate-[pulse-alert_2s_ease-in-out_infinite] !bg-orange-500 !text-white hover:!bg-orange-600 hover:!text-white' 
-                      : 'hover:bg-red-500/10 text-red-600 hover:text-red-700'
+                      : '!bg-orange-500 !text-white hover:!bg-orange-600'
                   }
                 >
                   <Zap className="h-4 w-4" />
