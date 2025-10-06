@@ -341,10 +341,10 @@ export default function Home() {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-semibold text-foreground">
-                            {s.ambulance_number ?? 'Viatura'}
+                            Ambulância {s.ambulance_number ?? 'N/A'}
                           </h4>
-                          {s.service_number && <Badge variant="outline" className="text-xs">Nº {s.service_number}</Badge>}
-                          {s.total_service_number && <Badge variant="secondary" className="text-xs">#{s.total_service_number}</Badge>}
+                          {s.service_number && <Badge variant="outline" className="text-xs">Nº{s.service_number}</Badge>}
+                          {s.total_service_number && <Badge variant="secondary" className="text-xs">Ficha #{s.total_service_number}</Badge>}
                         </div>
                         <p className="text-sm text-muted-foreground mb-1">
                           <strong>Motivo:</strong> {s.purpose}

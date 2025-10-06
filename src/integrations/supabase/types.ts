@@ -434,6 +434,7 @@ export type Database = {
         Row: {
           ambulance_number: string | null
           created_at: string
+          display_order: number | null
           id: string
           is_active: boolean
           license_plate: string
@@ -445,6 +446,7 @@ export type Database = {
         Insert: {
           ambulance_number?: string | null
           created_at?: string
+          display_order?: number | null
           id?: string
           is_active?: boolean
           license_plate: string
@@ -456,6 +458,7 @@ export type Database = {
         Update: {
           ambulance_number?: string | null
           created_at?: string
+          display_order?: number | null
           id?: string
           is_active?: boolean
           license_plate?: string

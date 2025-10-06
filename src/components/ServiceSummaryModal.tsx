@@ -9,6 +9,7 @@ interface ServiceSummaryModalProps {
   serviceType: string;
   serviceNumber: number;
   totalServiceNumber: number;
+  ambulanceNumber?: string;
 }
 
 export function ServiceSummaryModal({ 
@@ -16,7 +17,8 @@ export function ServiceSummaryModal({
   onClose, 
   serviceType, 
   serviceNumber, 
-  totalServiceNumber 
+  totalServiceNumber,
+  ambulanceNumber
 }: ServiceSummaryModalProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -36,13 +38,13 @@ export function ServiceSummaryModal({
                 {serviceType}
               </Badge>
               <p className="text-2xl font-bold mt-2">
-                {serviceType === 'CODU' ? `Saída Nº ${serviceNumber}` : `Nº${serviceNumber}`}
+                {ambulanceNumber && `Ambulância ${ambulanceNumber} - `}Nº{serviceNumber}
               </p>
             </div>
             
             <div className="p-4 border rounded-lg">
-              <p className="text-sm text-muted-foreground mb-1">Número de Ficha Total</p>
-              <p className="text-3xl font-bold text-primary">Nº{totalServiceNumber}</p>
+              <p className="text-sm text-muted-foreground mb-1">Número de Ficha</p>
+              <p className="text-3xl font-bold text-primary">#{totalServiceNumber}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Total geral de todos os serviços
               </p>
