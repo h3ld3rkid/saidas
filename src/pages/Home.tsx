@@ -19,58 +19,29 @@ const fetchNotices = async () => {
   if (error) throw error;
   return data ?? [];
 };
-const fetchActiveServices = async () => {
-  const { data, error } = await supabase
-    .from('vehicle_exits')
-    .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
-    .eq('status', 'active')
-    .order('departure_date', { ascending: false });
-
+  const fetchActiveServices = async () => {
+    const { data, error } = await supabase
+      .from('vehicle_exits')
+      .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
+      .eq('status', 'active')
+      .order('departure_date', { ascending: false });
+  
   if (error) throw error;
   
-  if (!data || data.length === 0) return [];
-
-  // Coletar todos os IDs de tripulação únicos de uma vez
-  const allCrewIds = new Set<string>();
-  data.forEach((service) => {
-    if (service.crew) {
-      service.crew.split(',').forEach((id: string) => {
-        const trimmedId = id.trim();
-        if (trimmedId) allCrewIds.add(trimmedId);
-      });
-    }
-  });
-
-  // Fazer apenas UMA query para buscar todos os perfis necessários
-  let profilesMap = new Map<string, { first_name: string; last_name: string }>();
-  if (allCrewIds.size > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('user_id, first_name, last_name')
-      .in('user_id', Array.from(allCrewIds));
-    
-    if (profiles) {
-      profiles.forEach(p => {
-        profilesMap.set(p.user_id, { first_name: p.first_name, last_name: p.last_name });
-      });
-    }
-  }
-
-  // Mapear os nomes da tripulação usando o mapa de perfis
-  const servicesWithCrewNames = data.map((service) => {
+  // Para cada serviço, buscar os nomes da tripulação
+  const servicesWithCrewNames = await Promise.all((data || []).map(async (service) => {
     if (service.crew) {
       const crewIds = service.crew.split(',').map((id: string) => id.trim());
-      const crewNames = crewIds
-        .map(id => {
-          const profile = profilesMap.get(id);
-          return profile ? `${profile.first_name} ${profile.last_name}` : null;
-        })
-        .filter(name => name !== null)
-        .join(', ');
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', crewIds);
+      
+      const crewNames = profiles?.map(p => `${p.first_name} ${p.last_name}`).join(', ') || service.crew;
       return { ...service, crewNames };
     }
     return { ...service, crewNames: '' };
-  });
+  }));
   
   return servicesWithCrewNames;
 };
@@ -146,91 +117,28 @@ export default function Home() {
   useEffect(() => {
     document.title = 'Home | CV Amares';
   }, []);
-  
   const {
     data: notices
   } = useQuery({
     queryKey: ['notices-active'],
     queryFn: fetchNotices
   });
-  
   const {
-    data: services,
-    refetch: refetchServices
+    data: services
   } = useQuery({
     queryKey: ['services-active'],
     queryFn: fetchActiveServices,
-    refetchInterval: false, // Desabilitar polling - usar realtime
+    refetchInterval: 3000
   });
 
   const { data: readinessData, refetch: refetchReadiness } = useQuery({
     queryKey: ['readiness-responses'],
     queryFn: fetchReadinessResponses,
-    refetchInterval: false, // Desabilitar polling - usar realtime
+    refetchInterval: 3000
   });
 
   const { hasRole } = useUserRole();
   const { user } = useAuth();
-
-  // Realtime subscriptions para atualizações instantâneas
-  useEffect(() => {
-    // Subscribe to vehicle_exits changes
-    const servicesChannel = supabase
-      .channel('vehicle-exits-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vehicle_exits'
-        },
-        () => {
-          console.log('Vehicle exits changed, refetching...');
-          refetchServices();
-        }
-      )
-      .subscribe();
-
-    // Subscribe to readiness alerts changes
-    const alertsChannel = supabase
-      .channel('readiness-alerts-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'readiness_alerts'
-        },
-        () => {
-          console.log('Readiness alerts changed, refetching...');
-          refetchReadiness();
-        }
-      )
-      .subscribe();
-
-    // Subscribe to readiness responses changes
-    const responsesChannel = supabase
-      .channel('readiness-responses-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'readiness_responses'
-        },
-        () => {
-          console.log('Readiness responses changed, refetching...');
-          refetchReadiness();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(servicesChannel);
-      supabase.removeChannel(alertsChannel);
-      supabase.removeChannel(responsesChannel);
-    };
-  }, [refetchServices, refetchReadiness]);
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
     try {
