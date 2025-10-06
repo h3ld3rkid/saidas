@@ -162,6 +162,9 @@ export function AppSidebar() {
         title: 'Alerta enviado',
         description: `Notificação de prontidão enviada para ${alertType}`,
       });
+
+      // Navegar para a página home
+      navigate('/home');
     } catch (error: any) {
       toast({
         title: 'Erro',
