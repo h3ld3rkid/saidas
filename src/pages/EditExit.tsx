@@ -107,12 +107,6 @@ export default function EditExit() {
                 }
               });
           }
-          
-          // Set address selections based on existing data
-          if (data.patient_district) {
-            const district = districts.find(d => d.nome === data.patient_district);
-            if (district) setSelectedDistrict(district.id);
-          }
         }
       });
 
@@ -123,7 +117,38 @@ export default function EditExit() {
       .eq('is_active', true)
       .order('license_plate')
       .then(({ data }) => setVehicles(data || []));
-  }, [id, navigate, districts]);
+  }, [id, navigate]);
+
+  // Separate effect to set address selections after data is loaded
+  useEffect(() => {
+    if (!exit || districts.length === 0) return;
+    
+    // Set district
+    if (exit.patient_district && !selectedDistrict) {
+      const district = districts.find(d => d.nome === exit.patient_district);
+      if (district) setSelectedDistrict(district.id);
+    }
+  }, [exit, districts, selectedDistrict, setSelectedDistrict]);
+
+  // Set municipality after district is loaded
+  useEffect(() => {
+    if (!exit || !selectedDistrict || municipalities.length === 0) return;
+    
+    if (exit.patient_municipality && !selectedMunicipality) {
+      const municipality = municipalities.find(m => m.nome === exit.patient_municipality);
+      if (municipality) setSelectedMunicipality(municipality.id);
+    }
+  }, [exit, selectedDistrict, municipalities, selectedMunicipality, setSelectedMunicipality]);
+
+  // Set parish after municipality is loaded
+  useEffect(() => {
+    if (!exit || !selectedMunicipality || parishes.length === 0) return;
+    
+    if (exit.patient_parish && !selectedParish) {
+      const parish = parishes.find(p => p.nome === exit.patient_parish);
+      if (parish) setSelectedParish(parish.id);
+    }
+  }, [exit, selectedMunicipality, parishes, selectedParish, setSelectedParish]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
