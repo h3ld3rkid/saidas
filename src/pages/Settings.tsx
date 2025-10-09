@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Image, Download } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Download, Calendar, Link } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
@@ -19,6 +19,8 @@ export default function Settings() {
   const [exportLoading, setExportLoading] = useState(false);
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [escalasUrl, setEscalasUrl] = useState<string>('');
+  const [escalasLoading, setEscalasLoading] = useState(false);
 
   useEffect(() => {
     document.title = 'Configurações | CV Amares';
@@ -31,7 +33,24 @@ export default function Settings() {
 
     // Load current logo if exists
     loadCurrentLogo();
+    loadEscalasUrl();
   }, [navigate, hasRole, roleLoading]);
+
+  const loadEscalasUrl = async () => {
+    try {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'escalas_url')
+        .single();
+      
+      if (data?.value) {
+        setEscalasUrl(data.value);
+      }
+    } catch (error) {
+      console.log('No escalas URL found yet');
+    }
+  };
 
   const loadCurrentLogo = async () => {
     try {
@@ -170,6 +189,32 @@ export default function Settings() {
     }
   };
 
+  const handleSaveEscalasUrl = async () => {
+    setEscalasLoading(true);
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .update({ value: escalasUrl })
+        .eq('key', 'escalas_url');
+
+      if (error) throw error;
+
+      toast({
+        title: 'URL guardado',
+        description: 'O link das escalas foi atualizado com sucesso.'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao guardar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setEscalasLoading(false);
+    }
+  };
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -195,6 +240,45 @@ export default function Settings() {
       </div>
 
       <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Link das Escalas
+            </CardTitle>
+            <CardDescription>
+              Configure o link que será aberto quando os utilizadores clicarem no botão "Escalas" na barra lateral
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="escalas-url">URL das Escalas</Label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="escalas-url"
+                    type="url"
+                    placeholder="https://exemplo.com/escalas"
+                    value={escalasUrl}
+                    onChange={(e) => setEscalasUrl(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Button 
+                  onClick={handleSaveEscalasUrl}
+                  disabled={escalasLoading}
+                >
+                  {escalasLoading ? 'A guardar...' : 'Guardar'}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                O botão "Escalas" só aparecerá na barra lateral quando um URL válido for configurado
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

@@ -33,6 +33,7 @@ import {
   Shield,
   UserCheck,
   Zap,
+  Calendar,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -44,6 +45,7 @@ export function AppSidebar() {
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
   const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
   const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
+  const [escalasUrl, setEscalasUrl] = useState<string>('');
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -64,6 +66,46 @@ export function AppSidebar() {
 
     fetchUserProfile();
   }, [user?.id]);
+
+  // Load escalas URL from settings
+  useEffect(() => {
+    const loadEscalasUrl = async () => {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'escalas_url')
+        .single();
+      
+      if (data?.value) {
+        setEscalasUrl(data.value);
+      }
+    };
+
+    loadEscalasUrl();
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('settings-escalas')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'settings',
+          filter: 'key=eq.escalas_url'
+        },
+        (payload: any) => {
+          if (payload.new?.value) {
+            setEscalasUrl(payload.new.value);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Check for active readiness alerts
   useEffect(() => {
@@ -194,6 +236,13 @@ export function AppSidebar() {
       roles: ['user', 'mod', 'admin'],
     },
     {
+      title: 'Escalas',
+      icon: Calendar,
+      path: escalasUrl,
+      roles: ['user', 'mod', 'admin'],
+      external: true,
+    },
+    {
       title: 'Editar Perfil',
       icon: User,
       path: '/profile',
@@ -234,8 +283,12 @@ export function AppSidebar() {
     },
   ];
 
-  const handleNavigation = (path: string) => {
-    navigate(path);
+  const handleNavigation = (path: string, external?: boolean) => {
+    if (external && path) {
+      window.open(path, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(path);
+    }
   };
 
   const handleSignOut = async () => {
@@ -257,21 +310,29 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton
-                    onClick={() => handleNavigation(item.path)}
-                    className={
-                      isActive(item.path)
-                        ? 'bg-accent text-accent-foreground'
-                        : 'hover:bg-accent/50'
-                    }
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {open && <span>{item.title}</span>}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {menuItems.map((item) => {
+                // Hide Escalas button if URL is not configured
+                if (item.title === 'Escalas' && !escalasUrl) {
+                  return null;
+                }
+                
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      onClick={() => handleNavigation(item.path, item.external)}
+                      className={
+                        !item.external && isActive(item.path)
+                          ? 'bg-accent text-accent-foreground'
+                          : 'hover:bg-accent/50'
+                      }
+                      disabled={item.title === 'Escalas' && !escalasUrl}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {open && <span>{item.title}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
