@@ -124,6 +124,7 @@ export default function RegisterExit() {
     // Patient fields
     patient_name: '',
     patient_age: '' as unknown as number | '' ,
+    patient_age_unit: 'anos' as 'anos' | 'meses',
     patient_gender: '',
     patient_contact: '',
     patient_district: '',
@@ -609,16 +610,28 @@ export default function RegisterExit() {
             </div>
 
             {/* Linha 4: Dados do paciente */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <div className="space-y-2 md:col-span-3">
                 <Label>Nome</Label>
                 <Input value={form.patient_name} onChange={(e) => set('patient_name', e.target.value)} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-1">
                 <Label>Idade</Label>
-                <Input type="number" min={0} max={120} value={form.patient_age as any} onChange={(e) => set('patient_age', e.target.value ? Number(e.target.value) : '')} />
+                <Input type="number" min={0} max={form.patient_age_unit === 'meses' ? 24 : 120} value={form.patient_age as any} onChange={(e) => set('patient_age', e.target.value ? Number(e.target.value) : '')} />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 md:col-span-1">
+                <Label>Unidade</Label>
+                <Select value={form.patient_age_unit} onValueChange={(v) => set('patient_age_unit', v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-background">
+                    <SelectItem value="anos">Anos</SelectItem>
+                    <SelectItem value="meses">Meses</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 md:col-span-1">
                 <Label>Sexo</Label>
                 <Select value={form.patient_gender} onValueChange={(v) => set('patient_gender', v)}>
                   <SelectTrigger>

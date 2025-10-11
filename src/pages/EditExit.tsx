@@ -342,8 +342,8 @@ export default function EditExit() {
                     </p>
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                  <div className="space-y-2 md:col-span-3">
                     <Label>Nome</Label>
                     <Input 
                       value={exit.patient_name || ''} 
@@ -352,7 +352,7 @@ export default function EditExit() {
                       placeholder={!exit.patient_name && !canEdit ? "Oculto" : ""}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
                     <Label>Idade</Label>
                     <Input 
                       type="number"
@@ -362,7 +362,23 @@ export default function EditExit() {
                       placeholder={!exit.patient_age && !canEdit ? "Oculto" : ""}
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-2 md:col-span-1">
+                    <Label>Unidade</Label>
+                    <Select 
+                      value={exit.patient_age_unit || 'anos'} 
+                      onValueChange={(value: 'anos' | 'meses') => setExit({ ...exit, patient_age_unit: value })}
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-50 bg-background">
+                        <SelectItem value="anos">Anos</SelectItem>
+                        <SelectItem value="meses">Meses</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2 md:col-span-1">
                     <Label>Sexo</Label>
                     <Select 
                       value={exit.patient_gender || ''} 
