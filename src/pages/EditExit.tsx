@@ -69,13 +69,11 @@ export default function EditExit() {
       return;
     }
 
-    // Load exit data
+    // Load exit data with privacy protection
     supabase
-      .from('vehicle_exits')
-      .select('*')
-      .eq('id', id)
-      .single()
-      .then(({ data, error }) => {
+      .rpc('get_vehicle_exits_with_privacy')
+      .then(({ data: exitsData, error }) => {
+        const data = exitsData?.find((exit: any) => exit.id === id);
         if (error || !data) {
           toast({ title: 'Erro ao carregar saída', variant: 'destructive' });
           navigate('/exits');
@@ -337,6 +335,13 @@ export default function EditExit() {
 
               {/* Dados do Utente */}
               <div className="space-y-4">
+                {!exit.patient_name && !exit.patient_age && !exit.patient_gender && !exit.patient_contact && (
+                  <div className="p-4 bg-muted rounded-md">
+                    <p className="text-sm text-muted-foreground italic">
+                      Os dados sensíveis do paciente foram ocultados (saída com mais de 24h)
+                    </p>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>Nome</Label>
@@ -344,6 +349,7 @@ export default function EditExit() {
                       value={exit.patient_name || ''} 
                       onChange={(e) => setExit({ ...exit, patient_name: e.target.value })}
                       disabled={!canEdit}
+                      placeholder={!exit.patient_name && !canEdit ? "Oculto" : ""}
                     />
                   </div>
                   <div className="space-y-2">
@@ -353,6 +359,7 @@ export default function EditExit() {
                       value={exit.patient_age || ''} 
                       onChange={(e) => setExit({ ...exit, patient_age: parseInt(e.target.value) || null })}
                       disabled={!canEdit}
+                      placeholder={!exit.patient_age && !canEdit ? "Oculto" : ""}
                     />
                   </div>
                   <div className="space-y-2">
@@ -363,7 +370,7 @@ export default function EditExit() {
                       disabled={!canEdit}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccione" />
+                        <SelectValue placeholder={!exit.patient_gender && !canEdit ? "Oculto" : "Seleccione"} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Masculino">Masculino</SelectItem>
@@ -381,7 +388,7 @@ export default function EditExit() {
                     value={exit.patient_contact || ''} 
                     onChange={(e) => setExit({ ...exit, patient_contact: e.target.value })}
                     disabled={!canEdit}
-                    placeholder="123456789"
+                    placeholder={!exit.patient_contact && !canEdit ? "Oculto" : "123456789"}
                   />
                 </div>
 
@@ -401,9 +408,9 @@ export default function EditExit() {
                         }}
                         disabled={!canEdit}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione o distrito" />
-                        </SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder={!exit.patient_district && !canEdit ? "Oculto" : "Seleccione o distrito"} />
+                      </SelectTrigger>
                         <SelectContent>
                           {districts.map((district) => (
                             <SelectItem key={district.id} value={district.id}>
@@ -425,7 +432,7 @@ export default function EditExit() {
                         disabled={!selectedDistrict || !canEdit}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccione o concelho" />
+                          <SelectValue placeholder={!exit.patient_municipality && !canEdit ? "Oculto" : "Seleccione o concelho"} />
                         </SelectTrigger>
                         <SelectContent>
                           {municipalities.map((municipality) => (
@@ -448,7 +455,7 @@ export default function EditExit() {
                         disabled={!selectedMunicipality || !canEdit}
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Seleccione a freguesia" />
+                          <SelectValue placeholder={!exit.patient_parish && !canEdit ? "Oculto" : "Seleccione a freguesia"} />
                         </SelectTrigger>
                         <SelectContent>
                           {parishes.map((parish) => (
@@ -473,7 +480,7 @@ export default function EditExit() {
                         }}
                         onFocus={() => setShowStreetDropdown((exit.patient_address || '').length > 2)}
                         disabled={!canEdit}
-                        placeholder="Rua, nº, andar..."
+                        placeholder={!exit.patient_address && !canEdit ? "Oculto" : "Rua, nº, andar..."}
                       />
                       <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       

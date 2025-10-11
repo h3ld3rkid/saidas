@@ -86,35 +86,48 @@ const Exits = () => {
     const fetchExits = async () => {
       if (!user) return;
 
-      let query = supabase
-        .from('vehicle_exits')
-        .select(`
-          *,
-          vehicles!inner (license_plate, make, model)
-        `)
-        .order('created_at', { ascending: false });
+      // Use RPC function to get exits with sensitive data privacy after 24h
+      const { data: exitsData, error } = await supabase
+        .rpc('get_vehicle_exits_with_privacy');
 
-      // Confiar nas RLS para devolver apenas as saídas às quais o utilizador tem acesso
-      // (próprias e onde está na tripulação).
-
-      const { data, error } = await query;
-
-      if (!error && data) {
-        // Buscar perfis dos utilizadores
-        const userIds = data.map(exit => exit.user_id);
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, first_name, last_name')
-          .in('user_id', userIds);
-
-        // Mapear perfis aos dados
-        const exitsWithProfiles = data.map(exit => ({
-          ...exit,
-          profile: profilesData?.find(p => p.user_id === exit.user_id)
-        }));
-
-        setExits(exitsWithProfiles as any);
+      if (error) {
+        console.error('Error fetching exits:', error);
+        setLoading(false);
+        return;
       }
+
+      if (!exitsData || exitsData.length === 0) {
+        setExits([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch vehicle data for the exits
+      const vehicleIds = exitsData.map((exit: any) => exit.vehicle_id);
+      const { data: vehiclesData } = await supabase
+        .from('vehicles')
+        .select('id, license_plate, make, model')
+        .in('id', vehicleIds);
+
+      const data = exitsData.map((exit: any) => ({
+        ...exit,
+        vehicles: vehiclesData?.find((v: any) => v.id === exit.vehicle_id)
+      }));
+
+      // Fetch user profiles
+      const userIds = data.map((exit: any) => exit.user_id);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name')
+        .in('user_id', userIds);
+
+      // Mapear perfis aos dados
+      const exitsWithProfiles = data.map((exit: any) => ({
+        ...exit,
+        profile: profilesData?.find(p => p.user_id === exit.user_id)
+      }));
+
+      setExits(exitsWithProfiles as any);
       setLoading(false);
     };
 
@@ -203,7 +216,7 @@ const Exits = () => {
           </div>
         </div>
         
-        {exit.patient_name && (
+        {exit.patient_name ? (
           <>
             <Separator />
             <div>
@@ -218,6 +231,16 @@ const Exits = () => {
                   {exit.patient_contact && <p><strong>Contacto:</strong> {exit.patient_contact}</p>}
                 </div>
               </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <Separator />
+            <div>
+              <h4 className="font-medium mb-2">Dados do Paciente</h4>
+              <p className="text-sm text-muted-foreground italic">
+                Os dados sensíveis do paciente foram ocultados (saída com mais de 24h)
+              </p>
             </div>
           </>
         )}

@@ -582,6 +582,41 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_vehicle_exits_with_privacy: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          ambulance_number: string
+          created_at: string
+          crew: string
+          departure_date: string
+          departure_time: string
+          driver_license: string
+          driver_name: string
+          exit_type: string
+          expected_return_date: string
+          expected_return_time: string
+          id: string
+          inem_si: boolean
+          is_pem: boolean
+          is_reserve: boolean
+          observations: string
+          patient_address: string
+          patient_age: number
+          patient_contact: string
+          patient_district: string
+          patient_gender: string
+          patient_municipality: string
+          patient_name: string
+          patient_parish: string
+          purpose: string
+          service_number: number
+          status: string
+          total_service_number: number
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
