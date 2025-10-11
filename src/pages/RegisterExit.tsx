@@ -620,16 +620,13 @@ export default function RegisterExit() {
                 <Input type="number" min={0} max={form.patient_age_unit === 'meses' ? 24 : 120} value={form.patient_age as any} onChange={(e) => set('patient_age', e.target.value ? Number(e.target.value) : '')} />
               </div>
               <div className="space-y-2 md:col-span-1">
-                <Label>Unidade</Label>
-                <Select value={form.patient_age_unit} onValueChange={(v) => set('patient_age_unit', v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="z-50 bg-background">
-                    <SelectItem value="anos">Anos</SelectItem>
-                    <SelectItem value="meses">Meses</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox 
+                    checked={form.patient_age_unit === 'meses'} 
+                    onCheckedChange={(checked) => set('patient_age_unit', checked ? 'meses' : 'anos')}
+                  />
+                  <span>Meses</span>
+                </Label>
               </div>
               <div className="space-y-2 md:col-span-1">
                 <Label>Sexo</Label>

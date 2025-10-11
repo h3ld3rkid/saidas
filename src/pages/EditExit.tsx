@@ -363,20 +363,14 @@ export default function EditExit() {
                     />
                   </div>
                   <div className="space-y-2 md:col-span-1">
-                    <Label>Unidade</Label>
-                    <Select 
-                      value={exit.patient_age_unit || 'anos'} 
-                      onValueChange={(value: 'anos' | 'meses') => setExit({ ...exit, patient_age_unit: value })}
-                      disabled={!canEdit}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="z-50 bg-background">
-                        <SelectItem value="anos">Anos</SelectItem>
-                        <SelectItem value="meses">Meses</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Label className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox 
+                        checked={exit.patient_age_unit === 'meses'} 
+                        onCheckedChange={(checked) => setExit({ ...exit, patient_age_unit: checked ? 'meses' : 'anos' })}
+                        disabled={!canEdit}
+                      />
+                      <span>Meses</span>
+                    </Label>
                   </div>
                   <div className="space-y-2 md:col-span-1">
                     <Label>Sexo</Label>
