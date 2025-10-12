@@ -564,7 +564,7 @@ const ManageUsers = () => {
               <div className="space-y-4">
                 {profiles.map((profile) => (
                   <div key={profile.id} className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-lg">
@@ -588,7 +588,7 @@ const ManageUsers = () => {
                         </div>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
                         <Button
                           size="sm"
                           variant="outline"

@@ -619,8 +619,8 @@ export default function RegisterExit() {
                 <Label>Idade</Label>
                 <Input type="number" min={0} max={form.patient_age_unit === 'meses' ? 24 : 120} value={form.patient_age as any} onChange={(e) => set('patient_age', e.target.value ? Number(e.target.value) : '')} />
               </div>
-              <div className="space-y-2 md:col-span-1">
-                <Label className="flex items-center gap-2 cursor-pointer">
+              <div className="space-y-2 md:col-span-1 flex items-end pb-0.5">
+                <Label className="flex items-center gap-2 cursor-pointer h-10">
                   <Checkbox 
                     checked={form.patient_age_unit === 'meses'} 
                     onCheckedChange={(checked) => set('patient_age_unit', checked ? 'meses' : 'anos')}

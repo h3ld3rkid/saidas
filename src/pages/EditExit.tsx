@@ -362,8 +362,8 @@ export default function EditExit() {
                       placeholder={!exit.patient_age && !canEdit ? "Oculto" : ""}
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-1">
-                    <Label className="flex items-center gap-2 cursor-pointer">
+                  <div className="space-y-2 md:col-span-1 flex items-end pb-0.5">
+                    <Label className="flex items-center gap-2 cursor-pointer h-10">
                       <Checkbox 
                         checked={exit.patient_age_unit === 'meses'} 
                         onCheckedChange={(checked) => setExit({ ...exit, patient_age_unit: checked ? 'meses' : 'anos' })}
