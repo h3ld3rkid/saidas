@@ -366,6 +366,7 @@ export type Database = {
           observations: string | null
           patient_address: string | null
           patient_age: number | null
+          patient_age_unit: string | null
           patient_contact: string | null
           patient_district: string | null
           patient_gender: string | null
@@ -398,6 +399,7 @@ export type Database = {
           observations?: string | null
           patient_address?: string | null
           patient_age?: number | null
+          patient_age_unit?: string | null
           patient_contact?: string | null
           patient_district?: string | null
           patient_gender?: string | null
@@ -430,6 +432,7 @@ export type Database = {
           observations?: string | null
           patient_address?: string | null
           patient_age?: number | null
+          patient_age_unit?: string | null
           patient_contact?: string | null
           patient_district?: string | null
           patient_gender?: string | null
