@@ -180,6 +180,16 @@ const Exits = () => {
     }
   };
 
+  const getExitTypeColor = (exitType: string) => {
+    switch (exitType) {
+      case 'Emergencia/CODU': return 'bg-red-500 hover:bg-red-600';
+      case 'Emergencia particular': return 'bg-green-500 hover:bg-green-600';
+      case 'VSL': return 'bg-orange-500 hover:bg-orange-600';
+      case 'Outro': return 'bg-blue-500 hover:bg-blue-600';
+      default: return 'bg-gray-500 hover:bg-gray-600';
+    }
+  };
+
   const ExitDetailsModal = ({ exit }: { exit: VehicleExit }) => (
     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
     <DialogHeader>
@@ -194,7 +204,12 @@ const Exits = () => {
           <div>
             <h4 className="font-medium mb-2">Informações Gerais</h4>
             <div className="space-y-2 text-sm">
-              <p><strong>Tipo:</strong> {exit?.exit_type || 'N/A'}</p>
+              <div className="flex items-center gap-2">
+                <strong>Tipo:</strong>
+                <Badge className={getExitTypeColor(exit?.exit_type || '')}>
+                  {exit?.exit_type || 'N/A'}
+                </Badge>
+              </div>
               <p><strong>Motivo:</strong> {exit?.purpose || 'N/A'}</p>
               <p><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
               <p><strong>Tripulação:</strong> <CrewDisplay crewString={exit?.crew || ''} /></p>
@@ -330,7 +345,11 @@ const Exits = () => {
                         {new Date(exit.departure_date).toLocaleDateString('pt-PT')}
                       </td>
                       <td className="p-4">{exit.departure_time}</td>
-                      <td className="p-4">{exit.exit_type}</td>
+                      <td className="p-4">
+                        <Badge className={getExitTypeColor(exit.exit_type)}>
+                          {exit.exit_type}
+                        </Badge>
+                      </td>
                       <td className="p-4">
                         <div className="font-medium">#{exit.service_number}</div>
                         <div className="text-xs text-muted-foreground">
