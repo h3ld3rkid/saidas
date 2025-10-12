@@ -588,34 +588,38 @@ const ManageUsers = () => {
                         </div>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+                      <div className="flex flex-col sm:flex-row gap-1 mt-2 sm:mt-0">
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="outline"
                           onClick={() => handleEditUser(profile)}
+                          className="h-8 w-8"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 className="h-3 w-3" />
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant={profile.is_active ? "destructive" : "default"}
                           onClick={() => handleToggleActive(profile.id, profile.is_active)}
+                          className="h-8 w-8"
                         >
-                          <UserX className="h-4 w-4" />
+                          <UserX className="h-3 w-3" />
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="secondary"
                           onClick={() => handleResetPassword(profile.user_id, profile.employee_number, profile.email)}
+                          className="h-8 w-8"
                         >
-                          <Key className="h-4 w-4" />
+                          <Key className="h-3 w-3" />
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon"
                           variant="destructive"
                           onClick={() => handleDeleteUser(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
+                          className="h-8 w-8"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
