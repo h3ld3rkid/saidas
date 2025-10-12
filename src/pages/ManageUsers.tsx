@@ -588,7 +588,7 @@ const ManageUsers = () => {
                         </div>
                       </div>
                       
-                      <div className="flex flex-col sm:flex-row gap-1 mt-2 sm:mt-0">
+                      <div className="flex flex-row gap-1 mt-2 sm:mt-0">
                         <Button
                           size="icon"
                           variant="outline"
