@@ -205,7 +205,7 @@ const Exits = () => {
     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
     <DialogHeader>
       <DialogTitle>
-        Detalhes do Serviço #{exit?.service_number || 'N/A'} (Ficha #{exit?.total_service_number || 'N/A'})
+        Detalhes do Serviço Nº{exit?.service_number || 'N/A'} (Ficha Nº{exit?.total_service_number || 'N/A'})
       </DialogTitle>
       <DialogDescription>Informações detalhadas do serviço</DialogDescription>
     </DialogHeader>
@@ -385,9 +385,9 @@ const Exits = () => {
                         </Badge>
                       </td>
                       <td className="p-4">
-                        <div className="font-medium">#{exit.service_number}</div>
+                        <div className="font-medium">Nº{exit.service_number}</div>
                         <div className="text-xs text-muted-foreground">
-                          Ficha #{exit.total_service_number}
+                          Ficha Nº{exit.total_service_number}
                         </div>
                       </td>
                       <td className="p-4">

@@ -343,7 +343,7 @@ const Dashboard = () => {
                     <Badge className={getExitTypeColor(exit.exit_type)}>
                       {exit.exit_type}
                     </Badge>
-                    <span className="font-medium">#{exit.service_number}</span>
+                    <span className="font-medium">Nº{exit.service_number}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">{exit.departure_time}</span>
                 </div>

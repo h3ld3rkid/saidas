@@ -44,7 +44,7 @@ export function ServiceSummaryModal({
             
             <div className="p-4 border rounded-lg">
               <p className="text-sm text-muted-foreground mb-1">Número de Ficha</p>
-              <p className="text-3xl font-bold text-primary">#{totalServiceNumber}</p>
+              <p className="text-3xl font-bold text-primary">{totalServiceNumber}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Total geral de todos os serviços
               </p>
