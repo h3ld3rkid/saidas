@@ -31,10 +31,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!botToken || !supabaseUrl || !supabaseKey) {
       console.error("Missing required environment variables");
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Server configuration error" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const {
@@ -53,47 +53,47 @@ const handler = async (req: Request): Promise<Response> => {
     const crewIds = Array.isArray(crewUserIds)
       ? crewUserIds
       : String(crewUserIds)
-          .split(',')
+          .split(",")
           .map((s) => s.trim())
           .filter((s) => !!s);
 
     if (!crewIds.length) {
-      return new Response(
-        JSON.stringify({ error: "No crew user IDs provided" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "No crew user IDs provided" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Fetch crew profiles with Telegram chat IDs
     const { data: profiles, error } = await supabase
-      .from('profiles')
-      .select('user_id, telegram_chat_id, first_name, last_name, is_active')
-      .in('user_id', crewIds);
+      .from("profiles")
+      .select("user_id, telegram_chat_id, first_name, last_name, is_active")
+      .in("user_id", crewIds);
 
     if (error) {
-      console.error('Error querying profiles:', error);
-      return new Response(
-        JSON.stringify({ error: 'Database query failed' }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      console.error("Error querying profiles:", error);
+      return new Response(JSON.stringify({ error: "Database query failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     if (!profiles || profiles.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No crew profiles found' }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ message: "No crew profiles found" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const crewWithTelegram = profiles.filter((p) => p.telegram_chat_id);
 
     if (crewWithTelegram.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No crew members with Telegram configured' }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ message: "No crew members with Telegram configured" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     const chatIds = crewWithTelegram
@@ -101,46 +101,42 @@ const handler = async (req: Request): Promise<Response> => {
       .filter((id: string | null) => !!id && String(id).trim().length > 0) as string[];
 
     // Separar OPCPOM (registrador) da tripulação
-    let opcpomName = '';
-    let crewNames = '';
-    
+    let opcpomName = "";
+    let crewNames = "";
+
     if (registrarUserId) {
-      const registrar = profiles.find(p => p.user_id === registrarUserId);
-      const crewMembers = profiles.filter(p => p.user_id !== registrarUserId);
-      
+      const registrar = profiles.find((p) => p.user_id === registrarUserId);
+      const crewMembers = profiles.filter((p) => p.user_id !== registrarUserId);
+
       if (registrar) {
         opcpomName = `${registrar.first_name} ${registrar.last_name}`.trim();
       }
-      
+
       if (crewMembers.length > 0) {
-        crewNames = crewMembers
-          .map((p) => `${p.first_name} ${p.last_name}`.trim())
-          .join(', ');
+        crewNames = crewMembers.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
       }
     } else {
-      crewNames = profiles
-        .map((p) => `${p.first_name} ${p.last_name}`.trim())
-        .join(', ');
+      crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
     }
 
-    let message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ''}📍 <b>Morada:</b> ${address}\n`;
-    
+    let message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ""}📍 <b>Morada:</b> ${address}\n`;
+
     if (opcpomName) {
-      message += `👤 <b>OPCPOM:</b> ${opcpomName}\n`;
+      message += `👤 <b>OPCOM:</b> ${opcpomName}\n`;
     }
-    
+
     if (crewNames) {
       message += `👥 <b>Tripulação:</b> ${crewNames}\n`;
     }
-    
+
     if (observations) {
       message += `📝 <b>Observações:</b> ${observations}\n`;
     }
-    
+
     if (mapLocation) {
       message += `🗺️ <b>Localização:</b> ${mapLocation}`;
     }
-    
+
     message = message.trim();
 
     const results: Array<{ chatId: string; success: boolean; error?: string; messageId?: number }> = [];
@@ -149,9 +145,9 @@ const handler = async (req: Request): Promise<Response> => {
       try {
         const telegramUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
         const response = await fetch(telegramUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: "HTML" }),
         });
         const result = await response.json();
         if (response.ok) {
@@ -168,16 +164,16 @@ const handler = async (req: Request): Promise<Response> => {
 
     const successCount = results.filter((r) => r.success).length;
 
-    return new Response(
-      JSON.stringify({ results, successCount, total: chatIds.length }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({ results, successCount, total: chatIds.length }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: any) {
     console.error("Error in service-crew-notify function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
