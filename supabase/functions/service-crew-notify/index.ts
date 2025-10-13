@@ -16,6 +16,7 @@ interface CrewNotifyRequest {
   address: string;
   observations?: string;
   mapLocation?: string;
+  registrarUserId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -46,6 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
       address,
       observations,
       mapLocation,
+      registrarUserId,
     }: CrewNotifyRequest = await req.json();
 
     const crewIds = Array.isArray(crewUserIds)
@@ -98,11 +100,48 @@ const handler = async (req: Request): Promise<Response> => {
       .map((p) => p.telegram_chat_id)
       .filter((id: string | null) => !!id && String(id).trim().length > 0) as string[];
 
-    const crewNames = profiles
-      .map((p) => `${p.first_name} ${p.last_name}`.trim())
-      .join(', ');
+    // Separar OPCPOM (registrador) da tripulação
+    let opcpomName = '';
+    let crewNames = '';
+    
+    if (registrarUserId) {
+      const registrar = profiles.find(p => p.user_id === registrarUserId);
+      const crewMembers = profiles.filter(p => p.user_id !== registrarUserId);
+      
+      if (registrar) {
+        opcpomName = `${registrar.first_name} ${registrar.last_name}`.trim();
+      }
+      
+      if (crewMembers.length > 0) {
+        crewNames = crewMembers
+          .map((p) => `${p.first_name} ${p.last_name}`.trim())
+          .join(', ');
+      }
+    } else {
+      crewNames = profiles
+        .map((p) => `${p.first_name} ${p.last_name}`.trim())
+        .join(', ');
+    }
 
-    const message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ''}📍 <b>Morada:</b> ${address}\n👥 <b>Tripulação:</b> ${crewNames}\n${observations ? `📝 <b>Observações:</b> ${observations}\n` : ''}${mapLocation ? `🗺️ <b>Localização:</b> ${mapLocation}` : ''}`.trim();
+    let message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ''}📍 <b>Morada:</b> ${address}\n`;
+    
+    if (opcpomName) {
+      message += `👤 <b>OPCPOM:</b> ${opcpomName}\n`;
+    }
+    
+    if (crewNames) {
+      message += `👥 <b>Tripulação:</b> ${crewNames}\n`;
+    }
+    
+    if (observations) {
+      message += `📝 <b>Observações:</b> ${observations}\n`;
+    }
+    
+    if (mapLocation) {
+      message += `🗺️ <b>Localização:</b> ${mapLocation}`;
+    }
+    
+    message = message.trim();
 
     const results: Array<{ chatId: string; success: boolean; error?: string; messageId?: number }> = [];
 

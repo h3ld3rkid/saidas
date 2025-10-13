@@ -225,6 +225,7 @@ export default function RegisterExit() {
           address: data.address,
           observations: data.observations,
           mapLocation: data.mapLocation,
+          registrarUserId: user?.id,
         },
       });
 

@@ -1,6 +1,7 @@
 import { NoticeMarquee } from '@/components/NoticeMarquee';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,6 +16,17 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [readinessAlerts, setReadinessAlerts] = useState<any[]>([]);
   const [readinessResponses, setReadinessResponses] = useState<any[]>([]);
+  const [activeExits, setActiveExits] = useState<any[]>([]);
+
+  const getExitTypeColor = (exitType: string) => {
+    switch (exitType) {
+      case 'Emergencia/CODU': return 'bg-red-500 hover:bg-red-600';
+      case 'Emergencia particular': return 'bg-green-500 hover:bg-green-600';
+      case 'VSL': return 'bg-orange-500 hover:bg-orange-600';
+      case 'Outro': return 'bg-blue-500 hover:bg-blue-600';
+      default: return 'bg-gray-500 hover:bg-gray-600';
+    }
+  };
 
   useEffect(() => {
     const fetchReadinessData = async () => {
@@ -38,7 +50,23 @@ const Dashboard = () => {
       }
     };
 
+    const fetchActiveExits = async () => {
+      try {
+        const { data } = await supabase
+          .from('vehicle_exits')
+          .select('id, exit_type, service_number, departure_time, status')
+          .eq('status', 'active')
+          .order('departure_time', { ascending: false })
+          .limit(5);
+        
+        setActiveExits(data || []);
+      } catch (error) {
+        console.error('Error fetching active exits:', error);
+      }
+    };
+
     fetchReadinessData();
+    fetchActiveExits();
 
     // Set up real-time subscriptions
     const alertsChannel = supabase
@@ -56,10 +84,19 @@ const Dashboard = () => {
         () => fetchReadinessData()
       )
       .subscribe();
+    
+    const exitsChannel = supabase
+      .channel('vehicle_exits_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'vehicle_exits' },
+        () => fetchActiveExits()
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(alertsChannel);
       supabase.removeChannel(responsesChannel);
+      supabase.removeChannel(exitsChannel);
     };
   }, []);
 
@@ -291,6 +328,30 @@ const Dashboard = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {activeExits.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Serviços Ativos</CardTitle>
+            <CardDescription>Últimos serviços em curso</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {activeExits.map((exit) => (
+                <div key={exit.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => navigate('/exits')}>
+                  <div className="flex items-center gap-3">
+                    <Badge className={getExitTypeColor(exit.exit_type)}>
+                      {exit.exit_type}
+                    </Badge>
+                    <span className="font-medium">#{exit.service_number}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">{exit.departure_time}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

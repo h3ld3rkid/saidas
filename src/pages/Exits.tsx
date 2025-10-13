@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Eye, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Dialog, 
   DialogContent, 
@@ -70,6 +72,8 @@ const Exits = () => {
   const [exits, setExits] = useState<VehicleExit[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Component to display crew names
   const CrewDisplay = ({ crewString }: { crewString: string }) => {
@@ -127,7 +131,14 @@ const Exits = () => {
         profile: profilesData?.find(p => p.user_id === exit.user_id)
       }));
 
-      setExits(exitsWithProfiles as any);
+      // Ordenar do mais recente para o mais antigo
+      const sortedExits = exitsWithProfiles.sort((a: any, b: any) => {
+        const dateA = new Date(`${a.departure_date} ${a.departure_time}`).getTime();
+        const dateB = new Date(`${b.departure_date} ${b.departure_time}`).getTime();
+        return dateB - dateA;
+      });
+
+      setExits(sortedExits as any);
       setLoading(false);
     };
 
@@ -300,6 +311,11 @@ const Exits = () => {
     );
   }
 
+  // Paginação
+  const totalPages = Math.ceil(exits.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedExits = exits.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="p-6">
       <div className="flex items-center gap-4 mb-6">
@@ -323,7 +339,25 @@ const Exits = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Lista de Saídas</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Lista de Saídas</CardTitle>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">Mostrar:</Label>
+                <Select value={itemsPerPage.toString()} onValueChange={(v) => {
+                  setItemsPerPage(Number(v));
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -339,7 +373,7 @@ const Exits = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {exits.map((exit) => (
+                  {paginatedExits.map((exit) => (
                     <tr key={exit.id} className="border-b hover:bg-muted/50">
                       <td className="p-4">
                         {new Date(exit.departure_date).toLocaleDateString('pt-PT')}
@@ -417,6 +451,57 @@ const Exits = () => {
               </table>
             </div>
           </CardContent>
+          
+          {/* Paginação */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                A mostrar {startIndex + 1}-{Math.min(startIndex + itemsPerPage, exits.length)} de {exits.length} serviços
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(page => 
+                      page === 1 || 
+                      page === totalPages || 
+                      Math.abs(page - currentPage) <= 1
+                    )
+                    .map((page, idx, arr) => (
+                      <>
+                        {idx > 0 && arr[idx - 1] !== page - 1 && (
+                          <span key={`ellipsis-${page}`} className="px-2">...</span>
+                        )}
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      </>
+                    ))
+                  }
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                </Button>
+              </div>
+            </div>
+          )}
         </Card>
       )}
     </div>

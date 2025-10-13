@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Search } from 'lucide-react';
+import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 
 interface Vehicle {
   id: string;
@@ -31,9 +32,12 @@ export default function EditExit() {
   
   const [loading, setLoading] = useState(false);
   const [exit, setExit] = useState<any>(null);
+  const [originalExitType, setOriginalExitType] = useState<string>('');
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedCrew, setSelectedCrew] = useState<{user_id: string, display_name: string}[]>([]);
   const [coduNumber, setCoduNumber] = useState('');
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [summaryData, setSummaryData] = useState<any>(null);
   
   // Address hooks
   const {
@@ -79,6 +83,7 @@ export default function EditExit() {
           navigate('/exits');
         } else {
           setExit(data);
+          setOriginalExitType(data.exit_type);
           
           // Extrair número CODU das observações se existir
           if (data.observations && data.observations.includes('CODU:')) {
@@ -154,6 +159,8 @@ export default function EditExit() {
 
     setLoading(true);
     
+    const exitTypeChanged = originalExitType !== exit.exit_type;
+    
     // Preparar dados para atualização
     const updateData = { 
       ...exit,
@@ -180,7 +187,29 @@ export default function EditExit() {
       toast({ title: 'Erro ao atualizar saída', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: 'Saída atualizada com sucesso' });
-      navigate('/');
+      
+      // Se o tipo de saída mudou, mostrar modal com números atualizados
+      if (exitTypeChanged) {
+        const { data: updatedExit } = await supabase
+          .from('vehicle_exits')
+          .select('service_number, total_service_number, exit_type, ambulance_number')
+          .eq('id', id)
+          .single();
+        
+        if (updatedExit) {
+          setSummaryData({
+            serviceType: updatedExit.exit_type,
+            serviceNumber: updatedExit.service_number,
+            totalServiceNumber: updatedExit.total_service_number,
+            ambulanceNumber: updatedExit.ambulance_number
+          });
+          setShowSummaryModal(true);
+        } else {
+          navigate('/');
+        }
+      } else {
+        navigate('/');
+      }
     }
   };
 
@@ -211,8 +240,21 @@ export default function EditExit() {
   const canChangeStatus = !isOlderThan3Hours || hasRole('admin');
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
+    <>
+      <ServiceSummaryModal
+        open={showSummaryModal}
+        onClose={() => {
+          setShowSummaryModal(false);
+          navigate('/');
+        }}
+        serviceType={summaryData?.serviceType || ''}
+        serviceNumber={summaryData?.serviceNumber || 0}
+        totalServiceNumber={summaryData?.totalServiceNumber || 0}
+        ambulanceNumber={summaryData?.ambulanceNumber}
+      />
+      
+      <div className="p-6">
+        <div className="flex items-center gap-4 mb-6">
         <Button variant="ghost" size="sm" onClick={() => navigate('/exits')}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -663,5 +705,6 @@ export default function EditExit() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
