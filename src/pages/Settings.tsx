@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Image, Download, Calendar, Link } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Settings() {
@@ -21,6 +21,11 @@ export default function Settings() {
   const [endDate, setEndDate] = useState<string>('');
   const [escalasUrl, setEscalasUrl] = useState<string>('');
   const [escalasLoading, setEscalasLoading] = useState(false);
+  
+  // Service counters state
+  const [serviceCounters, setServiceCounters] = useState<{[key: string]: number}>({});
+  const [totalCounter, setTotalCounter] = useState<number>(0);
+  const [countersLoading, setCountersLoading] = useState(false);
 
   useEffect(() => {
     document.title = 'Configurações | CV Amares';
@@ -34,6 +39,7 @@ export default function Settings() {
     // Load current logo if exists
     loadCurrentLogo();
     loadEscalasUrl();
+    loadServiceCounters();
   }, [navigate, hasRole, roleLoading]);
 
   const loadEscalasUrl = async () => {
@@ -215,6 +221,91 @@ export default function Settings() {
     }
   };
 
+  const loadServiceCounters = async () => {
+    try {
+      // Carregar contadores de serviço
+      const { data: counters } = await supabase
+        .from('service_counters')
+        .select('service_type, current_number');
+      
+      if (counters) {
+        const countersMap: {[key: string]: number} = {};
+        counters.forEach((c: any) => {
+          countersMap[c.service_type] = c.current_number;
+        });
+        setServiceCounters(countersMap);
+      }
+
+      // Carregar contador total
+      const { data: totalData } = await supabase
+        .from('total_service_counter')
+        .select('current_number')
+        .single();
+      
+      if (totalData) {
+        setTotalCounter(totalData.current_number);
+      }
+    } catch (error) {
+      console.log('Error loading counters:', error);
+    }
+  };
+
+  const handleUpdateCounter = async (serviceType: string, newValue: number) => {
+    setCountersLoading(true);
+    try {
+      const { error } = await supabase
+        .from('service_counters')
+        .update({ current_number: newValue, updated_at: new Date().toISOString() })
+        .eq('service_type', serviceType);
+
+      if (error) throw error;
+
+      setServiceCounters(prev => ({ ...prev, [serviceType]: newValue }));
+
+      toast({
+        title: 'Contador atualizado',
+        description: `Contador de "${serviceType}" atualizado para ${newValue}.`
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setCountersLoading(false);
+    }
+  };
+
+  const handleUpdateTotalCounter = async (newValue: number) => {
+    setCountersLoading(true);
+    try {
+      const { error } = await supabase
+        .from('total_service_counter')
+        .update({ current_number: newValue, updated_at: new Date().toISOString() })
+        .eq('id', (await supabase.from('total_service_counter').select('id').single()).data?.id);
+
+      if (error) throw error;
+
+      setTotalCounter(newValue);
+
+      toast({
+        title: 'Contador total atualizado',
+        description: `Contador total de fichas atualizado para ${newValue}.`
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setCountersLoading(false);
+    }
+  };
+
   if (roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -337,6 +428,74 @@ export default function Settings() {
                 </Button>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Hash className="h-5 w-5" />
+              Números de Saídas
+            </CardTitle>
+            <CardDescription>
+              Defina manualmente os números atuais dos contadores de saídas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="total-counter">Contador Total de Fichas</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="total-counter"
+                    type="number"
+                    min="0"
+                    value={totalCounter}
+                    onChange={(e) => setTotalCounter(parseInt(e.target.value) || 0)}
+                  />
+                  <Button 
+                    onClick={() => handleUpdateTotalCounter(totalCounter)}
+                    disabled={countersLoading}
+                  >
+                    Atualizar
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Próxima ficha será: Nº{totalCounter + 1}
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t">
+                <h4 className="font-medium">Contadores por Tipo de Serviço</h4>
+                
+                {['Emergência/CODU', 'Emergência Particular', 'VSL', 'Outro'].map((serviceType) => (
+                  <div key={serviceType} className="space-y-2">
+                    <Label htmlFor={`counter-${serviceType}`}>{serviceType}</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id={`counter-${serviceType}`}
+                        type="number"
+                        min="0"
+                        value={serviceCounters[serviceType] || 0}
+                        onChange={(e) => setServiceCounters(prev => ({
+                          ...prev,
+                          [serviceType]: parseInt(e.target.value) || 0
+                        }))}
+                      />
+                      <Button 
+                        onClick={() => handleUpdateCounter(serviceType, serviceCounters[serviceType] || 0)}
+                        disabled={countersLoading}
+                      >
+                        Atualizar
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Próximo número será: Nº{(serviceCounters[serviceType] || 0) + 1}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </CardContent>
         </Card>
 

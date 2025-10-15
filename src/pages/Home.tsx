@@ -9,6 +9,23 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
+
+const getExitTypeColor = (exitType: string | null) => {
+  if (!exitType) return "default";
+  
+  switch (exitType) {
+    case "Emergência/CODU":
+      return "destructive"; // vermelho
+    case "Emergência Particular":
+      return "default"; // verde (usando variant default com bg-green)
+    case "VSL":
+      return "secondary"; // laranja (usando variant secondary com bg-orange)
+    case "Outro":
+      return "outline"; // azul (usando variant outline com bg-blue)
+    default:
+      return "default";
+  }
+};
 const fetchNotices = async () => {
   const {
     data,
@@ -357,7 +374,16 @@ export default function Home() {
                           </p>}
                       </div>
                       <div className="flex flex-col gap-2 items-end">
-                        <Badge className="shrink-0">{s.exit_type ?? 'Serviço'}</Badge>
+                        <Badge 
+                          variant={getExitTypeColor(s.exit_type)} 
+                          className={`shrink-0 ${
+                            s.exit_type === "Emergência Particular" ? "bg-green-600 text-white hover:bg-green-700" :
+                            s.exit_type === "VSL" ? "bg-orange-600 text-white hover:bg-orange-700" :
+                            s.exit_type === "Outro" ? "bg-blue-600 text-white hover:bg-blue-700" : ""
+                          }`}
+                        >
+                          {s.exit_type ?? 'Serviço'}
+                        </Badge>
                         <div className="flex gap-2">
                           <Button 
                             size="sm" 
