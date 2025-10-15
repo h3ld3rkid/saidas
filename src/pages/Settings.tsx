@@ -240,7 +240,7 @@ export default function Settings() {
       const { data: totalData } = await supabase
         .from('total_service_counter')
         .select('current_number')
-        .single();
+        .maybeSingle();
       
       if (totalData) {
         setTotalCounter(totalData.current_number);
@@ -253,12 +253,28 @@ export default function Settings() {
   const handleUpdateCounter = async (serviceType: string, newValue: number) => {
     setCountersLoading(true);
     try {
-      const { error } = await supabase
+      // Check if counter exists
+      const { data: existing } = await supabase
         .from('service_counters')
-        .update({ current_number: newValue, updated_at: new Date().toISOString() })
-        .eq('service_type', serviceType);
+        .select('id')
+        .eq('service_type', serviceType)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existing) {
+        const { error } = await supabase
+          .from('service_counters')
+          .update({ current_number: newValue, updated_at: new Date().toISOString() })
+          .eq('service_type', serviceType);
+
+        if (error) throw error;
+      } else {
+        // Create new counter
+        const { error } = await supabase
+          .from('service_counters')
+          .insert({ service_type: serviceType, current_number: newValue });
+
+        if (error) throw error;
+      }
 
       setServiceCounters(prev => ({ ...prev, [serviceType]: newValue }));
 
@@ -266,6 +282,8 @@ export default function Settings() {
         title: 'Contador atualizado',
         description: `Contador de "${serviceType}" atualizado para ${newValue}.`
       });
+
+      await loadServiceCounters();
 
     } catch (error: any) {
       toast({
@@ -281,12 +299,25 @@ export default function Settings() {
   const handleUpdateTotalCounter = async (newValue: number) => {
     setCountersLoading(true);
     try {
-      const { error } = await supabase
+      const { data: existing } = await supabase
         .from('total_service_counter')
-        .update({ current_number: newValue, updated_at: new Date().toISOString() })
-        .eq('id', (await supabase.from('total_service_counter').select('id').single()).data?.id);
+        .select('id')
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existing) {
+        const { error } = await supabase
+          .from('total_service_counter')
+          .update({ current_number: newValue, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('total_service_counter')
+          .insert({ current_number: newValue });
+
+        if (error) throw error;
+      }
 
       setTotalCounter(newValue);
 
@@ -294,6 +325,8 @@ export default function Settings() {
         title: 'Contador total atualizado',
         description: `Contador total de fichas atualizado para ${newValue}.`
       });
+
+      await loadServiceCounters();
 
     } catch (error: any) {
       toast({
@@ -438,39 +471,47 @@ export default function Settings() {
               Números de Saídas
             </CardTitle>
             <CardDescription>
-              Defina manualmente os números atuais dos contadores de saídas
+              Defina manualmente os números atuais dos contadores de saídas. Estes são os últimos números usados.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="total-counter">Contador Total de Fichas</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="total-counter"
-                    type="number"
-                    min="0"
-                    value={totalCounter}
-                    onChange={(e) => setTotalCounter(parseInt(e.target.value) || 0)}
-                  />
-                  <Button 
-                    onClick={() => handleUpdateTotalCounter(totalCounter)}
-                    disabled={countersLoading}
-                  >
-                    Atualizar
-                  </Button>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Próxima ficha será: Nº{totalCounter + 1}
-                </p>
+          <CardContent className="space-y-6">
+            {/* Contador Total */}
+            <div className="p-4 border rounded-lg bg-muted/30">
+              <Label htmlFor="total-counter" className="text-base font-semibold mb-3 block">
+                Contador Total de Fichas
+              </Label>
+              <div className="flex gap-3">
+                <Input
+                  id="total-counter"
+                  type="number"
+                  min="0"
+                  value={totalCounter}
+                  onChange={(e) => setTotalCounter(parseInt(e.target.value) || 0)}
+                  className="text-lg font-mono"
+                />
+                <Button 
+                  onClick={() => handleUpdateTotalCounter(totalCounter)}
+                  disabled={countersLoading}
+                  size="lg"
+                >
+                  Atualizar
+                </Button>
               </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                Próxima ficha será: <span className="font-semibold">Nº{totalCounter + 1}</span>
+              </p>
+            </div>
 
-              <div className="space-y-3 pt-4 border-t">
-                <h4 className="font-medium">Contadores por Tipo de Serviço</h4>
-                
+            {/* Contadores por Tipo */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-base">Contadores por Tipo de Serviço</h4>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {['Emergência/CODU', 'Emergência Particular', 'VSL', 'Outro'].map((serviceType) => (
-                  <div key={serviceType} className="space-y-2">
-                    <Label htmlFor={`counter-${serviceType}`}>{serviceType}</Label>
+                  <div key={serviceType} className="p-4 border rounded-lg bg-card">
+                    <Label htmlFor={`counter-${serviceType}`} className="font-medium mb-2 block">
+                      {serviceType}
+                    </Label>
                     <div className="flex gap-2">
                       <Input
                         id={`counter-${serviceType}`}
@@ -481,6 +522,7 @@ export default function Settings() {
                           ...prev,
                           [serviceType]: parseInt(e.target.value) || 0
                         }))}
+                        className="font-mono"
                       />
                       <Button 
                         onClick={() => handleUpdateCounter(serviceType, serviceCounters[serviceType] || 0)}
@@ -489,8 +531,8 @@ export default function Settings() {
                         Atualizar
                       </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Próximo número será: Nº{(serviceCounters[serviceType] || 0) + 1}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Próximo: <span className="font-semibold">Nº{(serviceCounters[serviceType] || 0) + 1}</span>
                     </p>
                   </div>
                 ))}

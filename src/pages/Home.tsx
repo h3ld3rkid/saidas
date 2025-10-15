@@ -11,19 +11,19 @@ import { toast } from "@/hooks/use-toast";
 import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
 
 const getExitTypeColor = (exitType: string | null) => {
-  if (!exitType) return "default";
+  if (!exitType) return { variant: "default" as const, className: "" };
   
   switch (exitType) {
     case "Emergência/CODU":
-      return "destructive"; // vermelho
+      return { variant: "destructive" as const, className: "" };
     case "Emergência Particular":
-      return "default"; // verde (usando variant default com bg-green)
+      return { variant: "default" as const, className: "bg-green-600 text-white hover:bg-green-700" };
     case "VSL":
-      return "secondary"; // laranja (usando variant secondary com bg-orange)
+      return { variant: "default" as const, className: "bg-orange-600 text-white hover:bg-orange-700" };
     case "Outro":
-      return "outline"; // azul (usando variant outline com bg-blue)
+      return { variant: "default" as const, className: "bg-blue-600 text-white hover:bg-blue-700" };
     default:
-      return "default";
+      return { variant: "default" as const, className: "" };
   }
 };
 const fetchNotices = async () => {
@@ -374,16 +374,17 @@ export default function Home() {
                           </p>}
                       </div>
                       <div className="flex flex-col gap-2 items-end">
-                        <Badge 
-                          variant={getExitTypeColor(s.exit_type)} 
-                          className={`shrink-0 ${
-                            s.exit_type === "Emergência Particular" ? "bg-green-600 text-white hover:bg-green-700" :
-                            s.exit_type === "VSL" ? "bg-orange-600 text-white hover:bg-orange-700" :
-                            s.exit_type === "Outro" ? "bg-blue-600 text-white hover:bg-blue-700" : ""
-                          }`}
-                        >
-                          {s.exit_type ?? 'Serviço'}
-                        </Badge>
+                        {(() => {
+                          const color = getExitTypeColor(s.exit_type);
+                          return (
+                            <Badge 
+                              variant={color.variant}
+                              className={`shrink-0 ${color.className}`}
+                            >
+                              {s.exit_type ?? 'Serviço'}
+                            </Badge>
+                          );
+                        })()}
                         <div className="flex gap-2">
                           <Button 
                             size="sm" 
