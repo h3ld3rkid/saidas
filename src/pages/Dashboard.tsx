@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Car, PlusCircle, List, Users, AlertTriangle, Siren, Trash2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { getExitTypeBadgeStyle, displayExitType } from '@/lib/exitType';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -18,15 +19,7 @@ const Dashboard = () => {
   const [readinessResponses, setReadinessResponses] = useState<any[]>([]);
   const [activeExits, setActiveExits] = useState<any[]>([]);
 
-  const getExitTypeColor = (exitType: string) => {
-    switch (exitType) {
-      case 'Emergencia/CODU': return 'bg-red-500 hover:bg-red-600';
-      case 'Emergencia particular': return 'bg-green-500 hover:bg-green-600';
-      case 'VSL': return 'bg-orange-500 hover:bg-orange-600';
-      case 'Outro': return 'bg-blue-500 hover:bg-blue-600';
-      default: return 'bg-gray-500 hover:bg-gray-600';
-    }
-  };
+  // exit type styles come from @/lib/exitType
 
   useEffect(() => {
     const fetchReadinessData = async () => {
@@ -340,9 +333,14 @@ const Dashboard = () => {
               {activeExits.map((exit) => (
                 <div key={exit.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer" onClick={() => navigate('/exits')}>
                   <div className="flex items-center gap-3">
-                    <Badge className={getExitTypeColor(exit.exit_type)}>
-                      {exit.exit_type}
-                    </Badge>
+                    {(() => {
+                      const style = getExitTypeBadgeStyle(exit.exit_type);
+                      return (
+                        <Badge variant={style.variant} className={style.className}>
+                          {displayExitType(exit.exit_type)}
+                        </Badge>
+                      );
+                    })()}
                     <span className="font-medium">Nº{exit.service_number}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">{exit.departure_time}</span>

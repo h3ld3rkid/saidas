@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeExitType, displayExitType, DEFAULT_EXIT_TYPE_KEYS } from '@/lib/exitType';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function Settings() {
   
   // Service counters state
   const [serviceCounters, setServiceCounters] = useState<{[key: string]: number}>({});
+  const [serviceTypeOriginalNames, setServiceTypeOriginalNames] = useState<{[key: string]: string}>({});
   const [totalCounter, setTotalCounter] = useState<number>(0);
   const [countersLoading, setCountersLoading] = useState(false);
 
