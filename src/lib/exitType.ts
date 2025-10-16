@@ -25,12 +25,11 @@ export const getExitTypeBadgeStyle = (exitType: string | null | undefined): Exit
     case 'emergencia/codu':
       return { variant: 'destructive' };
     case 'emergencia particular':
-      // use default variant with green background to fit design system
-      return { variant: 'default', className: 'bg-green-600 text-white hover:bg-green-700' };
+      return { variant: 'secondary', className: '!bg-green-600 !text-white hover:!bg-green-700' };
     case 'vsl':
-      return { variant: 'default', className: 'bg-orange-600 text-white hover:bg-orange-700' };
+      return { variant: 'secondary', className: '!bg-orange-600 !text-white hover:!bg-orange-700' };
     case 'outro':
-      return { variant: 'default', className: 'bg-blue-600 text-white hover:bg-blue-700' };
+      return { variant: 'secondary', className: '!bg-blue-600 !text-white hover:!bg-blue-700' };
     default:
       return { variant: 'default' };
   }

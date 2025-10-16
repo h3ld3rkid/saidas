@@ -232,10 +232,16 @@ export default function Settings() {
       
       if (counters) {
         const countersMap: {[key: string]: number} = {};
+        const originalNamesMap: {[key: string]: string} = {};
+        
         counters.forEach((c: any) => {
-          countersMap[c.service_type] = c.current_number;
+          const normalizedKey = normalizeExitType(c.service_type);
+          countersMap[normalizedKey] = c.current_number;
+          originalNamesMap[normalizedKey] = c.service_type;
         });
+        
         setServiceCounters(countersMap);
+        setServiceTypeOriginalNames(originalNamesMap);
       }
 
       // Carregar contador total
@@ -252,37 +258,40 @@ export default function Settings() {
     }
   };
 
-  const handleUpdateCounter = async (serviceType: string, newValue: number) => {
+  const handleUpdateCounter = async (normalizedKey: string, newValue: number) => {
     setCountersLoading(true);
     try {
+      // Use original name if exists, otherwise use normalized key
+      const dbServiceType = serviceTypeOriginalNames[normalizedKey] || normalizedKey;
+      
       // Check if counter exists
       const { data: existing } = await supabase
         .from('service_counters')
         .select('id')
-        .eq('service_type', serviceType)
+        .eq('service_type', dbServiceType)
         .maybeSingle();
 
       if (existing) {
         const { error } = await supabase
           .from('service_counters')
           .update({ current_number: newValue, updated_at: new Date().toISOString() })
-          .eq('service_type', serviceType);
+          .eq('service_type', dbServiceType);
 
         if (error) throw error;
       } else {
-        // Create new counter
+        // Create new counter with normalized key
         const { error } = await supabase
           .from('service_counters')
-          .insert({ service_type: serviceType, current_number: newValue });
+          .insert({ service_type: normalizedKey, current_number: newValue });
 
         if (error) throw error;
       }
 
-      setServiceCounters(prev => ({ ...prev, [serviceType]: newValue }));
+      setServiceCounters(prev => ({ ...prev, [normalizedKey]: newValue }));
 
       toast({
         title: 'Contador atualizado',
-        description: `Contador de "${serviceType}" atualizado para ${newValue}.`
+        description: `Contador de "${displayExitType(normalizedKey)}" atualizado para ${newValue}.`
       });
 
       await loadServiceCounters();
@@ -509,32 +518,32 @@ export default function Settings() {
               <h4 className="font-semibold text-base">Contadores por Tipo de Serviço</h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {['Emergência/CODU', 'Emergência Particular', 'VSL', 'Outro'].map((serviceType) => (
-                  <div key={serviceType} className="p-4 border rounded-lg bg-card">
-                    <Label htmlFor={`counter-${serviceType}`} className="font-medium mb-2 block">
-                      {serviceType}
+                {DEFAULT_EXIT_TYPE_KEYS.map(({ key, label }) => (
+                  <div key={key} className="p-4 border rounded-lg bg-card">
+                    <Label htmlFor={`counter-${key}`} className="font-medium mb-2 block">
+                      {label}
                     </Label>
                     <div className="flex gap-2">
                       <Input
-                        id={`counter-${serviceType}`}
+                        id={`counter-${key}`}
                         type="number"
                         min="0"
-                        value={serviceCounters[serviceType] || 0}
+                        value={serviceCounters[key] || 0}
                         onChange={(e) => setServiceCounters(prev => ({
                           ...prev,
-                          [serviceType]: parseInt(e.target.value) || 0
+                          [key]: parseInt(e.target.value) || 0
                         }))}
                         className="font-mono"
                       />
                       <Button 
-                        onClick={() => handleUpdateCounter(serviceType, serviceCounters[serviceType] || 0)}
+                        onClick={() => handleUpdateCounter(key, serviceCounters[key] || 0)}
                         disabled={countersLoading}
                       >
                         Atualizar
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                      Próximo: <span className="font-semibold">Nº{(serviceCounters[serviceType] || 0) + 1}</span>
+                      Próximo: <span className="font-semibold">Nº{(serviceCounters[key] || 0) + 1}</span>
                     </p>
                   </div>
                 ))}
