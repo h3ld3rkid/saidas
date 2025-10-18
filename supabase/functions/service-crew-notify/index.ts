@@ -134,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (mapLocation) {
-      message += `🗺️ <b>Localização:</b> ${mapLocation}`;
+      message += `🗺️ <b>Localização:</b> <a href="${mapLocation}">clica AQUI!!!!</a>`;
     }
 
     message = message.trim();

@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import {
@@ -34,12 +35,15 @@ import {
   UserCheck,
   Zap,
   Calendar,
+  Moon,
+  Sun,
 } from 'lucide-react';
 
 export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { role, hasRole } = useUserRole();
   const { open } = useSidebar();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
@@ -413,6 +417,15 @@ export function AppSidebar() {
               </p>
             </div>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-full justify-start"
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            {open && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
+          </Button>
           <Button
             variant="ghost"
             size="sm"
