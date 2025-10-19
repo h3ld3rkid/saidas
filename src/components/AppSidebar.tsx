@@ -42,7 +42,7 @@ import {
 export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { role, hasRole } = useUserRole();
-  const { open } = useSidebar();
+  const { open, setOpen } = useSidebar();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -222,7 +222,7 @@ export function AppSidebar() {
 
   const menuItems = [
     {
-      title: 'Home',
+      title: 'Início',
       icon: Home,
       path: '/home',
       roles: ['user', 'mod', 'admin'],
@@ -285,6 +285,10 @@ export function AppSidebar() {
       window.open(path, '_blank', 'noopener,noreferrer');
     } else {
       navigate(path);
+      // Fechar sidebar em mobile após navegação
+      if (window.innerWidth < 768) {
+        setOpen(false);
+      }
     }
   };
 

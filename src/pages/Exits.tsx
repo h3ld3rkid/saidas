@@ -440,43 +440,44 @@ const Exits = () => {
               <table className="w-full">
                 <thead className="border-b">
                   <tr className="text-left">
-                    <th className="p-4 font-medium whitespace-nowrap">Data</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Hora</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Tipo de Saída</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Nº Saída</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Status</th>
-                    <th className="p-4 font-medium whitespace-nowrap">Ações</th>
+                    <th className="p-3 font-medium text-sm">Data/Hora</th>
+                    <th className="p-3 font-medium text-sm">Tipo</th>
+                    <th className="p-3 font-medium text-sm">Nº</th>
+                    <th className="p-3 font-medium text-sm">Status</th>
+                    <th className="p-3 font-medium text-sm text-center">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedExits.map((exit) => (
-                    <tr key={exit.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4 whitespace-nowrap">
-                        {new Date(exit.departure_date).toLocaleDateString('pt-PT')}
+                    <tr key={exit.id} className="border-b hover:bg-muted/50 text-sm">
+                      <td className="p-3">
+                        <div className="whitespace-nowrap">
+                          {new Date(exit.departure_date).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' })}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{exit.departure_time}</div>
                       </td>
-                      <td className="p-4 whitespace-nowrap">{exit.departure_time}</td>
-                      <td className="p-4">
-                        <Badge className={getExitTypeColor(exit.exit_type)}>
+                      <td className="p-3">
+                        <Badge className={`${getExitTypeColor(exit.exit_type)} text-xs`}>
                           {exit.exit_type}
                         </Badge>
                       </td>
-                      <td className="p-4 whitespace-nowrap">
-                        <div className="font-medium">Nº{exit.service_number}</div>
-                        <div className="text-xs text-muted-foreground">
-                          Ficha Nº{exit.total_service_number}
+                      <td className="p-3">
+                        <div className="text-xs">
+                          <div className="font-medium">Nº{exit.service_number}</div>
+                          <div className="text-muted-foreground">F.{exit.total_service_number}</div>
                         </div>
                       </td>
-                      <td className="p-4">
-                        <Badge className={getStatusColor(exit.status)}>
+                      <td className="p-3">
+                        <Badge className={`${getStatusColor(exit.status)} text-xs`}>
                           {getStatusText(exit.status)}
                         </Badge>
                       </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
+                      <td className="p-3">
+                        <div className="flex gap-1 justify-center">
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Eye className="h-4 w-4" />
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Eye className="h-3.5 w-3.5" />
                               </Button>
                             </DialogTrigger>
                             <ExitDetailsModal exit={exit} />
@@ -485,18 +486,19 @@ const Exits = () => {
 {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
   <Button 
     variant="ghost" 
-    size="sm" 
+    size="icon"
+    className="h-8 w-8"
     onClick={() => navigate(`/exits/${exit.id}/edit`)}
   >
-    <Edit className="h-4 w-4" />
+    <Edit className="h-3.5 w-3.5" />
   </Button>
 )}
                           
                           {hasRole('admin') && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" disabled={deleting === exit.id}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                <Button variant="ghost" size="icon" className="h-8 w-8" disabled={deleting === exit.id}>
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
