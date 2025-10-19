@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
 import ForcePasswordChange from "@/components/ForcePasswordChange";
 import { ReadinessNotifications } from "@/components/ReadinessNotifications";
 import Dashboard from "./pages/Dashboard";
@@ -28,8 +29,9 @@ import Settings from "./pages/Settings";
 const queryClient = new QueryClient();
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const isMobile = useIsMobile();
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={!isMobile}>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <main className="flex-1 overflow-auto">
