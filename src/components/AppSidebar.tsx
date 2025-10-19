@@ -285,9 +285,11 @@ export function AppSidebar() {
       window.open(path, '_blank', 'noopener,noreferrer');
     } else {
       navigate(path);
-      // Fechar sidebar em mobile após navegação
+      // Comportamento após navegação: fecha em mobile, mantém aberto em desktop
       if (window.innerWidth < 768) {
         setOpen(false);
+      } else {
+        setOpen(true);
       }
     }
   };
