@@ -204,26 +204,26 @@ const Exits = () => {
   const ExitDetailsModal = ({ exit }: { exit: VehicleExit }) => (
     <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
     <DialogHeader>
-      <DialogTitle>
+      <DialogTitle className="text-sm md:text-base">
         Detalhes do Serviço Nº{exit?.service_number || 'N/A'} (Ficha Nº{exit?.total_service_number || 'N/A'})
       </DialogTitle>
       <DialogDescription>Informações detalhadas do serviço</DialogDescription>
     </DialogHeader>
       
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <h4 className="font-medium mb-2">Informações Gerais</h4>
             <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <strong>Tipo:</strong>
                 <Badge className={getExitTypeColor(exit?.exit_type || '')}>
                   {exit?.exit_type || 'N/A'}
                 </Badge>
               </div>
-              <p><strong>Motivo:</strong> {exit?.purpose || 'N/A'}</p>
-              <p><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
-              <p><strong>Tripulação:</strong> <CrewDisplay crewString={exit?.crew || ''} /></p>
+              <p className="break-words"><strong>Motivo:</strong> {exit?.purpose || 'N/A'}</p>
+              <p className="break-words"><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
+              <p className="break-words"><strong>Tripulação:</strong> <CrewDisplay crewString={exit?.crew || ''} /></p>
             </div>
           </div>
           
@@ -247,14 +247,14 @@ const Exits = () => {
             <Separator />
             <div>
               <h4 className="font-medium mb-2">Dados do Paciente</h4>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="space-y-2">
-                  <p><strong>Nome:</strong> {exit.patient_name}</p>
+                  <p className="break-words"><strong>Nome:</strong> {exit.patient_name}</p>
                   {exit.patient_age && <p><strong>Idade:</strong> {exit.patient_age} anos</p>}
                   {exit.patient_gender && <p><strong>Sexo:</strong> {exit.patient_gender}</p>}
                 </div>
                 <div className="space-y-2">
-                  {exit.patient_contact && <p><strong>Contacto:</strong> {exit.patient_contact}</p>}
+                  {exit.patient_contact && <p className="break-words"><strong>Contacto:</strong> {exit.patient_contact}</p>}
                 </div>
               </div>
             </div>
@@ -276,14 +276,14 @@ const Exits = () => {
             <Separator />
             <div>
               <h4 className="font-medium mb-2">Observações</h4>
-              <p className="text-sm text-muted-foreground">{exit.observations}</p>
+              <p className="text-sm text-muted-foreground break-words">{exit.observations}</p>
             </div>
           </>
         )}
         
         <Separator />
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+          <p className="text-sm text-muted-foreground break-words">
             Registado por: {exit.profile?.first_name} {exit.profile?.last_name}
           </p>
           <Badge className={getStatusColor(exit.status)}>
@@ -360,31 +360,107 @@ const Exits = () => {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Mobile: Cards */}
+            <div className="md:hidden">
+              {paginatedExits.map((exit) => (
+                <div key={exit.id} className="border-b p-4 hover:bg-muted/50">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm mb-1">
+                        {new Date(exit.departure_date).toLocaleDateString('pt-PT')} - {exit.departure_time}
+                      </div>
+                      <Badge className={`${getExitTypeColor(exit.exit_type)} text-xs mb-2`}>
+                        {exit.exit_type}
+                      </Badge>
+                      <div className="text-xs text-muted-foreground">
+                        <div>Nº{exit.service_number} • Ficha Nº{exit.total_service_number}</div>
+                      </div>
+                    </div>
+                    <Badge className={getStatusColor(exit.status)}>
+                      {getStatusText(exit.status)}
+                    </Badge>
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex-1">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Ver
+                        </Button>
+                      </DialogTrigger>
+                      <ExitDetailsModal exit={exit} />
+                    </Dialog>
+                    
+                    {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => navigate(`/exits/${exit.id}/edit`)}
+                      >
+                        <Edit className="h-4 w-4 mr-1" />
+                        Editar
+                      </Button>
+                    )}
+                    
+                    {hasRole('admin') && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" disabled={deleting === exit.id}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Eliminar Serviço</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem a certeza que pretende eliminar este serviço? Esta ação não pode ser desfeita. 
+                              Todos os números de serviços posteriores serão atualizados.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDeleteExit(exit.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop: Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead className="border-b">
                   <tr className="text-left">
-                    <th className="p-4 font-medium">Data</th>
-                    <th className="p-4 font-medium">Hora</th>
-                    <th className="p-4 font-medium">Tipo de Saída</th>
-                    <th className="p-4 font-medium">Nº Saída</th>
-                    <th className="p-4 font-medium">Status</th>
-                    <th className="p-4 font-medium">Ações</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Data</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Hora</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Tipo de Saída</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Nº Saída</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Status</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {paginatedExits.map((exit) => (
                     <tr key={exit.id} className="border-b hover:bg-muted/50">
-                      <td className="p-4">
+                      <td className="p-4 whitespace-nowrap">
                         {new Date(exit.departure_date).toLocaleDateString('pt-PT')}
                       </td>
-                      <td className="p-4">{exit.departure_time}</td>
+                      <td className="p-4 whitespace-nowrap">{exit.departure_time}</td>
                       <td className="p-4">
                         <Badge className={getExitTypeColor(exit.exit_type)}>
                           {exit.exit_type}
                         </Badge>
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 whitespace-nowrap">
                         <div className="font-medium">Nº{exit.service_number}</div>
                         <div className="text-xs text-muted-foreground">
                           Ficha Nº{exit.total_service_number}

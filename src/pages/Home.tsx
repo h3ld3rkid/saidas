@@ -340,38 +340,38 @@ export default function Home() {
             </CardHeader>
             <CardContent className="space-y-3">
               {services && services.length > 0 ? services.map((s: any) => <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <h4 className="font-semibold text-foreground">
                             Ambulância {s.ambulance_number ?? 'N/A'}
                           </h4>
-                          {s.service_number && <Badge variant="outline" className="text-xs">Nº{s.service_number}</Badge>}
-                          {s.total_service_number && <Badge variant="secondary" className="text-xs">Ficha Nº{s.total_service_number}</Badge>}
+                          {s.service_number && <Badge variant="outline" className="text-xs whitespace-nowrap">Nº{s.service_number}</Badge>}
+                          {s.total_service_number && <Badge variant="secondary" className="text-xs whitespace-nowrap">Ficha Nº{s.total_service_number}</Badge>}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-1">
+                        <p className="text-sm text-muted-foreground mb-1 break-words">
                           <strong>Motivo:</strong> {s.purpose}
                         </p>
                         <p className="text-xs text-muted-foreground mb-1">
                           <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
                         </p>
-                        {s.crewNames && <p className="text-xs text-muted-foreground">
+                        {s.crewNames && <p className="text-xs text-muted-foreground break-words">
                             <strong>Tripulação:</strong> {s.crewNames}
                           </p>}
                       </div>
-                      <div className="flex flex-col gap-2 items-end">
+                      <div className="flex flex-row md:flex-col gap-2 items-start md:items-end">
                         {(() => {
                           const style = getExitTypeBadgeStyle(s.exit_type);
                           return (
                             <Badge 
                               variant={style.variant}
-                              className={`shrink-0 ${style.className || ''}`}
+                              className={`shrink-0 whitespace-nowrap ${style.className || ''}`}
                             >
                               {displayExitType(s.exit_type)}
                             </Badge>
                           );
                         })()}
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           <Button 
                             size="sm" 
                             variant="default"
