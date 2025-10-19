@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
 import {
   Car,
@@ -46,6 +47,7 @@ export function AppSidebar() {
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
   const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
   const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
@@ -300,11 +302,11 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={!open ? 'w-14' : 'w-60'} collapsible="icon">
+    <Sidebar className={isMobile ? 'w-60' : (!open ? 'w-14' : 'w-60')} collapsible={isMobile ? 'offcanvas' : 'icon'}>
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
           <Car className="h-6 w-6 text-primary" />
-          {open && <span className="font-semibold">Sistema Saídas</span>}
+          {(!isMobile || open) && <span className="font-semibold">Sistema Saídas</span>}
         </div>
       </SidebarHeader>
 
@@ -324,7 +326,7 @@ export function AppSidebar() {
                     }
                   >
                     <item.icon className="h-4 w-4" />
-                    {open && <span>{item.title}</span>}
+                    {(!isMobile || open) && <span>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -346,7 +348,7 @@ export function AppSidebar() {
                   }
                 >
                   <UserCheck className="h-4 w-4" />
-                  {open && <span>Condutores</span>}
+                  {(!isMobile || open) && <span>Condutores</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -359,7 +361,7 @@ export function AppSidebar() {
                   }
                 >
                   <Zap className="h-4 w-4" />
-                  {open && <span>Socorristas</span>}
+                  {(!isMobile || open) && <span>Socorristas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -377,7 +379,7 @@ export function AppSidebar() {
                     className="hover:bg-accent/50"
                   >
                     <Calendar className="h-4 w-4" />
-                    {open && <span>Inserir</span>}
+                    {(!isMobile || open) && <span>Inserir</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -401,7 +403,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="h-4 w-4" />
-                      {open && <span>{item.title}</span>}
+                      {(!isMobile || open) && <span>{item.title}</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -413,7 +415,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t p-4">
         <div className="space-y-2">
-          {open && (
+          {(!isMobile || open) && (
             <div className="text-sm">
               <p className="font-bold text-foreground">
                 {userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() : user?.email}
@@ -430,7 +432,7 @@ export function AppSidebar() {
             className="w-full justify-start"
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {open && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
+            {(!isMobile || open) && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
           </Button>
           <Button
             variant="ghost"
@@ -439,7 +441,7 @@ export function AppSidebar() {
             className="w-full justify-start"
           >
             <LogOut className="h-4 w-4" />
-            {open && <span className="ml-2">Sair</span>}
+            {(!isMobile || open) && <span className="ml-2">Sair</span>}
           </Button>
         </div>
       </SidebarFooter>
