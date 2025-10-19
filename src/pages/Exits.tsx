@@ -6,7 +6,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, Edit, Trash2 } from 'lucide-react';
+import {
+  Car,
+  FilePlus2,
+  Megaphone,
+  Users,
+  UserCircle2,
+  ListChecks,
+  Edit3,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Edit,
+  Eye,
+  List
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -317,74 +331,68 @@ const Exits = () => {
   const paginatedExits = exits.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+    <div className="p-4 md:p-6 space-y-4">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Registos de Saídas</h1>
-          <p className="text-muted-foreground">
-            {hasRole('mod') ? 'Todos os registos de saídas' : 'Os seus registos de saídas'}
+          <h1 className="text-xl md:text-2xl font-bold">Saídas</h1>
+          <p className="text-sm text-muted-foreground">
+            {exits.length} {exits.length === 1 ? 'registo' : 'registos'}
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={itemsPerPage.toString()} onValueChange={(v) => {
+            setItemsPerPage(Number(v));
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-20 h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {exits.length === 0 ? (
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-12 text-center">
+            <List className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-20" />
             <p className="text-muted-foreground">Nenhum registo encontrado.</p>
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Lista de Saídas</CardTitle>
-              <div className="flex items-center gap-2">
-                <Label className="text-sm">Mostrar:</Label>
-                <Select value={itemsPerPage.toString()} onValueChange={(v) => {
-                  setItemsPerPage(Number(v));
-                  setCurrentPage(1);
-                }}>
-                  <SelectTrigger className="w-24">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="20">20</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardHeader>
           <CardContent className="p-0">
             {/* Mobile: Cards */}
-            <div className="md:hidden">
+            <div className="md:hidden divide-y">
               {paginatedExits.map((exit) => (
-                <div key={exit.id} className="border-b p-4 hover:bg-muted/50">
+                <div key={exit.id} className="p-3 hover:bg-muted/30 transition-colors">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm mb-1">
-                        {new Date(exit.departure_date).toLocaleDateString('pt-PT')} - {exit.departure_time}
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={`${getExitTypeColor(exit.exit_type)} text-xs`}>
+                          {exit.exit_type}
+                        </Badge>
+                        <Badge className={`${getStatusColor(exit.status)} text-xs`}>
+                          {getStatusText(exit.status)}
+                        </Badge>
                       </div>
-                      <Badge className={`${getExitTypeColor(exit.exit_type)} text-xs mb-2`}>
-                        {exit.exit_type}
-                      </Badge>
                       <div className="text-xs text-muted-foreground">
-                        <div>Nº{exit.service_number} • Ficha Nº{exit.total_service_number}</div>
+                        {new Date(exit.departure_date).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} • {exit.departure_time}
+                      </div>
+                      <div className="text-xs font-medium">
+                        Nº{exit.service_number} • F.{exit.total_service_number}
                       </div>
                     </div>
-                    <Badge className={getStatusColor(exit.status)}>
-                      {getStatusText(exit.status)}
-                    </Badge>
                   </div>
-                  <div className="flex gap-2 mt-3">
+                  <div className="flex gap-1 mt-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex-1">
-                          <Eye className="h-4 w-4 mr-1" />
+                        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">
+                          <Eye className="h-3 w-3 mr-1" />
                           Ver
                         </Button>
                       </DialogTrigger>
@@ -393,12 +401,12 @@ const Exits = () => {
                     
                     {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
                       <Button 
-                        variant="ghost" 
+                        variant="outline" 
                         size="sm" 
-                        className="flex-1"
+                        className="flex-1 h-8 text-xs"
                         onClick={() => navigate(`/exits/${exit.id}/edit`)}
                       >
-                        <Edit className="h-4 w-4 mr-1" />
+                        <Edit className="h-3 w-3 mr-1" />
                         Editar
                       </Button>
                     )}
@@ -406,8 +414,8 @@ const Exits = () => {
                     {hasRole('admin') && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="sm" disabled={deleting === exit.id}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
+                          <Button variant="outline" size="sm" className="h-8 px-2" disabled={deleting === exit.id}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
@@ -532,50 +540,28 @@ const Exits = () => {
           
           {/* Paginação */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between px-6 py-4 border-t">
-              <div className="text-sm text-muted-foreground">
-                A mostrar {startIndex + 1}-{Math.min(startIndex + itemsPerPage, exits.length)} de {exits.length} serviços
+            <div className="flex items-center justify-between px-4 py-3 border-t text-xs md:text-sm">
+              <div className="text-muted-foreground">
+                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, exits.length)} de {exits.length}
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8"
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
                   Anterior
                 </Button>
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(page => 
-                      page === 1 || 
-                      page === totalPages || 
-                      Math.abs(page - currentPage) <= 1
-                    )
-                    .map((page, idx, arr) => (
-                      <>
-                        {idx > 0 && arr[idx - 1] !== page - 1 && (
-                          <span key={`ellipsis-${page}`} className="px-2">...</span>
-                        )}
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setCurrentPage(page)}
-                        >
-                          {page}
-                        </Button>
-                      </>
-                    ))
-                  }
-                </div>
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-8"
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  Próxima
+                  Próximo
                 </Button>
               </div>
             </div>
