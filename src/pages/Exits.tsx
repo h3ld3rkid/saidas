@@ -372,6 +372,12 @@ const Exits = () => {
                 <div key={exit.id} className="p-3 hover:bg-muted/30 transition-colors">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1 min-w-0 space-y-1">
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(exit.departure_date).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} • {exit.departure_time}
+                      </div>
+                      <div className="text-xs font-medium">
+                        Nº{exit.service_number} • Nº Ficha {exit.total_service_number}
+                      </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge className={`${getExitTypeColor(exit.exit_type)} text-xs`}>
                           {exit.exit_type}
@@ -380,20 +386,13 @@ const Exits = () => {
                           {getStatusText(exit.status)}
                         </Badge>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(exit.departure_date).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} • {exit.departure_time}
-                      </div>
-                      <div className="text-xs font-medium">
-                        Nº{exit.service_number} • F.{exit.total_service_number}
-                      </div>
                     </div>
                   </div>
                   <div className="flex gap-1 mt-2">
                     <Dialog>
                       <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Ver
+                        <Button variant="outline" size="icon" className="h-8 w-8">
+                          <Eye className="h-3.5 w-3.5" />
                         </Button>
                       </DialogTrigger>
                       <ExitDetailsModal exit={exit} />
@@ -402,20 +401,19 @@ const Exits = () => {
                     {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
                       <Button 
                         variant="outline" 
-                        size="sm" 
-                        className="flex-1 h-8 text-xs"
+                        size="icon"
+                        className="h-8 w-8"
                         onClick={() => navigate(`/exits/${exit.id}/edit`)}
                       >
-                        <Edit className="h-3 w-3 mr-1" />
-                        Editar
+                        <Edit className="h-3.5 w-3.5" />
                       </Button>
                     )}
                     
                     {hasRole('admin') && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="h-8 px-2" disabled={deleting === exit.id}>
-                            <Trash2 className="h-3 w-3 text-destructive" />
+                          <Button variant="outline" size="icon" className="h-8 w-8" disabled={deleting === exit.id}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
