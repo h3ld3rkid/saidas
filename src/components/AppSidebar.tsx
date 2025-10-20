@@ -43,11 +43,13 @@ import {
 export function AppSidebar() {
   const { user, signOut } = useAuth();
   const { role, hasRole } = useUserRole();
-  const { open, setOpen } = useSidebar();
+  const { open, setOpen, openMobile, setOpenMobile } = useSidebar();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const isMobile = useIsMobile();
+  const isExpanded = isMobile ? openMobile : open;
+  const showLabels = isMobile ? true : open;
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
   const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
   const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
@@ -288,8 +290,8 @@ export function AppSidebar() {
     } else {
       navigate(path);
       // Comportamento após navegação: fecha em mobile, mantém aberto em desktop
-      if (window.innerWidth < 768) {
-        setOpen(false);
+      if (isMobile) {
+        setOpenMobile(false);
       } else {
         setOpen(true);
       }
@@ -306,7 +308,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
           <Car className="h-6 w-6 text-primary" />
-          {(!isMobile || open) && <span className="font-semibold">Sistema Saídas</span>}
+          {showLabels && <span className="font-semibold">Sistema Saídas</span>}
         </div>
       </SidebarHeader>
 
@@ -326,7 +328,7 @@ export function AppSidebar() {
                     }
                   >
                     <item.icon className="h-4 w-4" />
-                    {(!isMobile || open) && <span>{item.title}</span>}
+                    {showLabels && <span>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -348,7 +350,7 @@ export function AppSidebar() {
                   }
                 >
                   <UserCheck className="h-4 w-4" />
-                  {(!isMobile || open) && <span>Condutores</span>}
+                  {showLabels && <span>Condutores</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
@@ -361,7 +363,7 @@ export function AppSidebar() {
                   }
                 >
                   <Zap className="h-4 w-4" />
-                  {(!isMobile || open) && <span>Socorristas</span>}
+                  {showLabels && <span>Socorristas</span>}
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>
@@ -379,7 +381,7 @@ export function AppSidebar() {
                     className="hover:bg-accent/50"
                   >
                     <Calendar className="h-4 w-4" />
-                    {(!isMobile || open) && <span>Inserir</span>}
+                    {showLabels && <span>Inserir</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -403,7 +405,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="h-4 w-4" />
-                      {(!isMobile || open) && <span>{item.title}</span>}
+                      {isExpanded && <span>{item.title}</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
@@ -415,7 +417,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="border-t p-4">
         <div className="space-y-2">
-          {(!isMobile || open) && (
+          {isExpanded && (
             <div className="text-sm">
               <p className="font-bold text-foreground">
                 {userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() : user?.email}
@@ -432,7 +434,7 @@ export function AppSidebar() {
             className="w-full justify-start"
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            {(!isMobile || open) && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
+            {isExpanded && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
           </Button>
           <Button
             variant="ghost"
@@ -441,7 +443,7 @@ export function AppSidebar() {
             className="w-full justify-start"
           >
             <LogOut className="h-4 w-4" />
-            {(!isMobile || open) && <span className="ml-2">Sair</span>}
+            {isExpanded && <span className="ml-2">Sair</span>}
           </Button>
         </div>
       </SidebarFooter>
