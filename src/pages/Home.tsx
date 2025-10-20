@@ -8,31 +8,46 @@ import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Car, FilePlus2, Megaphone, Users, UserCircle2, ListChecks, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { getExitTypeBadgeStyle, displayExitType } from "@/lib/exitType";
 
-// exit type style helpers imported from @/lib/exitType
 const fetchNotices = async () => {
-  const {
-    data,
-    error
-  } = await supabase.from('notices').select('id, title, content, start_date, end_date').order('start_date', {
-    ascending: false
-  });
+  const { data, error } = await supabase
+    .from('notices')
+    .select('id, title, content, start_date, end_date')
+    .order('start_date', { ascending: false });
   if (error) throw error;
   return data ?? [];
 };
-  const fetchActiveServices = async () => {
-    const { data, error } = await supabase
-      .from('vehicle_exits')
-      .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
-      .eq('status', 'active')
-      .order('departure_date', { ascending: false });
-  
+
+const fetchActiveServices = async () => {
+  const { data, error } = await supabase
+    .from('vehicle_exits')
+    .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
+    .eq('status', 'active')
+    .order('departure_date', { ascending: false });
+
   if (error) throw error;
-  
-  // Para cada serviço, buscar os nomes da tripulação
-  const servicesWithCrewNames = await Promise.all((data || []).map(async (service) => {
+
+  // Para cada serviço, buscar o nome do OPCOM e da tripulação
+  const servicesWithNames = await Promise.all((data || []).map(async (service) => {
+    let opcomName = '';
+    let crewNames = '';
+    
+    // Buscar nome do OPCOM (quem registou)
+    if (service.user_id) {
+      const { data: opcomProfile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', service.user_id)
+        .single();
+      
+      if (opcomProfile) {
+        opcomName = `${opcomProfile.first_name} ${opcomProfile.last_name}`;
+      }
+    }
+    
+    // Buscar nomes da tripulação
     if (service.crew) {
       const crewIds = service.crew.split(',').map((id: string) => id.trim());
       const { data: profiles } = await supabase
@@ -40,17 +55,16 @@ const fetchNotices = async () => {
         .select('user_id, first_name, last_name')
         .in('user_id', crewIds);
       
-      const crewNames = profiles?.map(p => `${p.first_name} ${p.last_name}`).join(', ') || service.crew;
-      return { ...service, crewNames };
+      crewNames = profiles?.map(p => `${p.first_name} ${p.last_name}`).join(', ') || service.crew;
     }
-    return { ...service, crewNames: '' };
+    
+    return { ...service, opcomName, crewNames };
   }));
   
-  return servicesWithCrewNames;
+  return servicesWithNames;
 };
 
 const fetchReadinessResponses = async () => {
-  // Buscar apenas o alerta mais recente dos últimos 30 minutos
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
   
   const { data: alerts, error: alertsError } = await supabase
@@ -58,13 +72,11 @@ const fetchReadinessResponses = async () => {
     .select('alert_id, alert_type, requester_name, created_at')
     .gte('created_at', thirtyMinutesAgo)
     .order('created_at', { ascending: false })
-    .limit(1); // Apenas o mais recente
+    .limit(1);
 
   if (alertsError) throw alertsError;
-  
   if (!alerts || alerts.length === 0) return [];
 
-  // Para o alerta mais recente, buscar as respostas
   const alert = alerts[0];
   const { data: responses, error: responsesError } = await supabase
     .from('readiness_responses')
@@ -82,7 +94,6 @@ const fetchReadinessResponses = async () => {
     }];
   }
 
-  // Buscar nomes dos utilizadores via RPC (bypassa RLS de profiles de forma segura)
   const userIds = responses.map(r => r.user_id);
   const { data: namesData, error: namesError } = await supabase
     .rpc('get_user_names_by_ids', { _user_ids: userIds });
@@ -91,13 +102,11 @@ const fetchReadinessResponses = async () => {
     console.error('Erro ao obter nomes via RPC:', namesError);
   }
 
-  // Indexar nomes por user_id
   const nameMap = new Map<string, { first_name: string; last_name: string }>();
   (namesData || []).forEach((u: any) => {
     nameMap.set(u.user_id, { first_name: u.first_name, last_name: u.last_name });
   });
 
-  // Combinar respostas com nomes (sem expor profiles diretamente)
   const responsesWithProfiles = responses.map(response => {
     const n = nameMap.get(response.user_id);
     return {
@@ -116,19 +125,18 @@ const fetchReadinessResponses = async () => {
     totalResponses: responses.length
   }];
 };
+
 export default function Home() {
   useEffect(() => {
     document.title = 'Home | CV Amares';
   }, []);
-  const {
-    data: notices
-  } = useQuery({
+  
+  const { data: notices } = useQuery({
     queryKey: ['notices-active'],
     queryFn: fetchNotices
   });
-  const {
-    data: services
-  } = useQuery({
+  
+  const { data: services } = useQuery({
     queryKey: ['services-active'],
     queryFn: fetchActiveServices,
     refetchInterval: 3000
@@ -145,10 +153,8 @@ export default function Home() {
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
     try {
-      // Não vamos buscar perfis para evitar problemas de RLS para utilizadores
       const respondersToNotify: Array<{ chatId: string; name: string }> = [];
 
-      // Chamar edge function (faz cleanup e pode notificar caso venham responders)
       const { data, error } = await supabase.functions.invoke('clear-readiness-alert', {
         body: { alertId, alertType, responders: respondersToNotify }
       });
@@ -160,9 +166,7 @@ export default function Home() {
         description: `Alerta de ${alertType} removido. (${data?.deletedResponses || 0} respostas apagadas)`,
       });
 
-      // Forçar atualização imediata dos dados
       refetchReadiness();
-
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -171,25 +175,27 @@ export default function Home() {
       });
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
-      {/* Hero Section */}
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
         <div className="relative px-6 py-12 md:py-20">
           <div className="max-w-4xl mx-auto text-center">
             <div className="animate-float">
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">Cruz Vermelha Amares</h1>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">Sistema de gestão de emergências e serviços</p>
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
+                Cruz Vermelha Amares
+              </h1>
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+                Sistema de gestão de emergências e serviços
+              </p>
             </div>
-            
           </div>
         </div>
       </section>
 
-      {/* Content Section */}
       <section className="px-6 pb-12">
         <div className="max-w-7xl mx-auto space-y-8">
-          {/* Avisos Card - Now on Top */}
           <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
@@ -203,7 +209,9 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {notices && notices.length > 0 ? notices.map((n: any) => <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+              {notices && notices.length > 0 ? (
+                notices.map((n: any) => (
+                  <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
@@ -211,16 +219,19 @@ export default function Home() {
                       </div>
                       <Badge variant="secondary" className="shrink-0">Ativo</Badge>
                     </div>
-                  </div>) : <div className="text-center py-12">
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12">
                   <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Megaphone className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground">Sem avisos ativos no momento</p>
-                </div>}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Prontidão Card - Só aparece se houver dados */}
           {readinessData && readinessData.length > 0 && (
             <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
               <CardHeader className="pb-4">
@@ -264,7 +275,6 @@ export default function Home() {
                     
                     {alert.totalResponses > 0 && (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {/* Disponíveis */}
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-600" />
@@ -291,7 +301,6 @@ export default function Home() {
                           )}
                         </div>
 
-                        {/* Não Disponíveis */}
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <XCircle className="h-4 w-4 text-red-600" />
@@ -325,7 +334,6 @@ export default function Home() {
             </Card>
           )}
 
-          {/* Serviços Card - Now Below Notices */}
           <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
@@ -339,90 +347,119 @@ export default function Home() {
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {services && services.length > 0 ? services.map((s: any) => <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-foreground">
+              {services && services.length > 0 ? (
+                services.map((s: any) => (
+                  <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-foreground text-base mb-1">
                             Ambulância {s.ambulance_number ?? 'N/A'}
                           </h4>
-                          {s.service_number && <Badge variant="outline" className="text-xs whitespace-nowrap">Nº{s.service_number}</Badge>}
-                          {s.total_service_number && <Badge variant="secondary" className="text-xs whitespace-nowrap">Ficha Nº{s.total_service_number}</Badge>}
+                          <div className="flex flex-wrap items-center gap-2 text-sm">
+                            {s.service_number && <span className="font-medium">Nº{s.service_number}</span>}
+                            {s.total_service_number && (
+                              <>
+                                <span className="text-muted-foreground">•</span>
+                                <span className="text-muted-foreground">Nº Ficha {s.total_service_number}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
-                        <p className="text-sm text-muted-foreground mb-1 break-words">
-                          <strong>Motivo:</strong> {s.purpose}
-                        </p>
-                        <p className="text-xs text-muted-foreground mb-1">
-                          <strong>Partida:</strong> {s.departure_date} às {s.departure_time}
-                        </p>
-                        {s.crewNames && <p className="text-xs text-muted-foreground break-words">
-                            <strong>Tripulação:</strong> {s.crewNames}
-                          </p>}
                       </div>
-                      <div className="flex flex-row md:flex-col gap-2 items-start md:items-end">
-                        {(() => {
-                          const style = getExitTypeBadgeStyle(s.exit_type);
-                          return (
-                            <Badge 
-                              variant={style.variant}
-                              className={`shrink-0 whitespace-nowrap ${style.className || ''}`}
-                            >
-                              {displayExitType(s.exit_type)}
-                            </Badge>
-                          );
-                        })()}
-                        <div className="flex gap-2 flex-wrap">
-                          <Button 
-                            size="sm" 
-                            variant="default"
-                            className="text-xs"
-                            onClick={async () => {
-                              // Check if user is creator, crew member, mod, or admin
-                              const isCreator = s.user_id === user?.id;
-                              const isCrewMember = s.crew && s.crew.split(',').map((id: string) => id.trim()).includes(user?.id);
-                              const canConclude = hasRole('mod') || hasRole('admin') || isCreator || isCrewMember;
-                              
-                              if (!canConclude) {
-                                toast({ title: 'Sem permissão', description: 'Apenas quem registou, tripulação, moderadores ou administradores podem concluir.', variant: 'destructive' });
-                                return;
-                              }
-                              try {
-                                const { error } = await supabase
-                                  .from('vehicle_exits')
-                                  .update({ status: 'completed' })
-                                  .eq('id', s.id);
-                                
-                                if (error) {
-                                  toast({ title: 'Erro', description: error.message, variant: 'destructive' });
-                                } else {
-                                  toast({ title: 'Concluído', description: 'Serviço marcado como concluído.' });
-                                  window.location.reload();
-                                }
-                              } catch (e: any) {
-                                toast({ title: 'Erro inesperado', description: e.message, variant: 'destructive' });
-                              }
-                            }}
-                          >
-                            Concluir
-                          </Button>
-                          <Link to={`/exits/${s.id}/edit`}>
-                            <Button size="sm" variant="outline" className="text-xs">
-                              <Edit3 className="h-3 w-3 mr-1" />
-                              Editar
-                            </Button>
-                          </Link>
+
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {(() => {
+                            const style = getExitTypeBadgeStyle(s.exit_type);
+                            return (
+                              <Badge variant={style.variant} className={`shrink-0 ${style.className || ''}`}>
+                                {displayExitType(s.exit_type)}
+                              </Badge>
+                            );
+                          })()}
                         </div>
+                        <p className="text-sm text-muted-foreground break-words">
+                          <strong className="text-foreground">Motivo:</strong> {s.purpose}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <strong className="text-foreground">Partida:</strong> {s.departure_date} às {s.departure_time}
+                        </p>
+                      </div>
+
+                      <div className="space-y-1 text-xs">
+                        {s.opcomName && (
+                          <p className="text-muted-foreground break-words">
+                            <strong className="text-foreground">OPCOM:</strong> {s.opcomName}
+                          </p>
+                        )}
+                        {s.crewNames && (
+                          <p className="text-muted-foreground break-words">
+                            <strong className="text-foreground">Tripulação:</strong> {s.crewNames}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button 
+                          size="icon"
+                          variant="default"
+                          className="h-9 w-9 bg-green-600 hover:bg-green-700"
+                          title="Concluir"
+                          onClick={async () => {
+                            const isCreator = s.user_id === user?.id;
+                            const isCrewMember = s.crew && s.crew.split(',').map((id: string) => id.trim()).includes(user?.id);
+                            const canConclude = hasRole('mod') || hasRole('admin') || isCreator || isCrewMember;
+                            
+                            if (!canConclude) {
+                              toast({ 
+                                title: 'Sem permissão', 
+                                description: 'Apenas quem registou, tripulação, moderadores ou administradores podem concluir.', 
+                                variant: 'destructive' 
+                              });
+                              return;
+                            }
+                            
+                            try {
+                              const { error } = await supabase
+                                .from('vehicle_exits')
+                                .update({ status: 'completed' })
+                                .eq('id', s.id);
+                              
+                              if (error) {
+                                toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+                              } else {
+                                toast({ title: 'Concluído', description: 'Serviço marcado como concluído.' });
+                                window.location.reload();
+                              }
+                            } catch (e: any) {
+                              toast({ title: 'Erro inesperado', description: e.message, variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                        </Button>
+                        <Link to={`/exits/${s.id}/edit`}>
+                          <Button size="icon" variant="outline" className="h-9 w-9" title="Editar">
+                            <Edit3 className="h-4 w-4" />
+                          </Button>
+                        </Link>
                       </div>
                     </div>
-                  </div>) : <div className="text-center py-12">
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-12">
                   <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Car className="h-8 w-8 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground">Sem serviços ativos no momento</p>
-                </div>}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       </section>
-    </div>;
+    </div>
+  );
 }
