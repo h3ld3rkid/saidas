@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check } from 'lucide-react';
+import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check, KeyRound } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -325,6 +325,57 @@ const ManageUsers = () => {
           password: data.newPassword,
           title: 'Password Reposta com Sucesso',
           description: `Nova senha temporária para o utilizador nº ${employeeNumber}. Deve ser alterada no primeiro login.`
+        });
+      } else {
+        toast({
+          title: 'Erro',
+          description: data.error || 'Erro ao redefinir password',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro inesperado ao redefinir password: ' + (error?.message || 'Desconhecido'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleResetToDefaultPassword = async (userId: string, employeeNumber: string, email?: string) => {
+    const defaultPassword = 'CVA2025!';
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-users', {
+        body: {
+          action: 'reset-password',
+          userId: userId,
+          email,
+          defaultPassword: defaultPassword,
+        }
+      });
+
+      if (error) {
+        let description = 'Erro ao redefinir password';
+        try {
+          const ctx: any = error as any;
+          if (ctx?.context?.response) {
+            const body = await ctx.context.response.json();
+            description = body?.error || description;
+          } else if (error.message) {
+            description = error.message;
+          }
+        } catch (_) {}
+
+        throw new Error(description);
+      }
+
+      if (data.success) {
+        setTempPasswordDialog({
+          open: true,
+          password: defaultPassword,
+          title: 'Password Reposta para Padrão',
+          description: `Password padrão definida para o utilizador nº ${employeeNumber}. Deve ser alterada no primeiro login.`
         });
       } else {
         toast({
@@ -677,6 +728,7 @@ const ManageUsers = () => {
                           variant="outline"
                           onClick={() => handleEditUser(profile)}
                           className="h-8 w-8"
+                          title="Editar"
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
@@ -685,14 +737,25 @@ const ManageUsers = () => {
                           variant={profile.is_active ? "destructive" : "default"}
                           onClick={() => handleToggleActive(profile.id, profile.is_active)}
                           className="h-8 w-8"
+                          title={profile.is_active ? "Desativar" : "Ativar"}
                         >
                           <UserX className="h-3 w-3" />
                         </Button>
                         <Button
                           size="icon"
                           variant="secondary"
+                          onClick={() => handleResetToDefaultPassword(profile.user_id, profile.employee_number, profile.email)}
+                          className="h-8 w-8"
+                          title="Repor Password Padrão (CVA2025!)"
+                        >
+                          <KeyRound className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="secondary"
                           onClick={() => handleResetPassword(profile.user_id, profile.employee_number, profile.email)}
                           className="h-8 w-8"
+                          title="Gerar Password Temporária"
                         >
                           <Key className="h-3 w-3" />
                         </Button>
@@ -701,6 +764,7 @@ const ManageUsers = () => {
                           variant="destructive"
                           onClick={() => handleDeleteUser(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
                           className="h-8 w-8"
+                          title="Eliminar"
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>

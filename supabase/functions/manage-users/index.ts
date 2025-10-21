@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     console.log('Managing user request...');
 
-    const { action, userData, userId, newEmail, email } = await req.json();
+    const { action, userData, userId, newEmail, email, defaultPassword } = await req.json();
     console.log('Action:', action, 'UserData:', userData ? 'present' : 'missing', 'UserId:', userId);
 
     // Initialize Supabase clients
@@ -249,9 +249,10 @@ serve(async (req) => {
       );
 
     } else if (action === 'reset-password') {
-      console.log('Resetting password for user:', userId, 'email:', email);
+      console.log('Resetting password for user:', userId, 'email:', email, 'using default:', !!defaultPassword);
       
-      const newPassword = 'CVAmares_' + Math.random().toString(36).slice(-5);
+      // Use default password if provided, otherwise generate a random one
+      const newPassword = defaultPassword || ('CVAmares_' + Math.random().toString(36).slice(-5));
 
       let targetUserId = userId as string;
       
