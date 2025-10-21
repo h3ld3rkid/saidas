@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -96,10 +96,9 @@ const ForcePasswordChange = ({ onPasswordChanged }: ForcePasswordChangeProps) =>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newPassword">Nova Palavra-passe</Label>
-              <Input
+              <PasswordInput
                 id="newPassword"
                 name="newPassword"
-                type="password"
                 value={passwords.newPassword}
                 onChange={handleChange}
                 required
@@ -108,10 +107,9 @@ const ForcePasswordChange = ({ onPasswordChanged }: ForcePasswordChangeProps) =>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirmar Palavra-passe</Label>
-              <Input
+              <PasswordInput
                 id="confirmPassword"
                 name="confirmPassword"
-                type="password"
                 value={passwords.confirmPassword}
                 onChange={handleChange}
                 required
