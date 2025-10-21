@@ -8,9 +8,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2 } from 'lucide-react';
+import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Profile {
   id: string;
@@ -39,6 +48,13 @@ const ManageUsers = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [tempPasswordDialog, setTempPasswordDialog] = useState<{ open: boolean; password: string; title: string; description: string }>({
+    open: false,
+    password: '',
+    title: '',
+    description: ''
+  });
+  const [copiedPassword, setCopiedPassword] = useState(false);
   
   const [formData, setFormData] = useState({
     email: '',
@@ -148,13 +164,19 @@ const ManageUsers = () => {
       }
 
       if (data?.success) {
-        toast({
-          title: 'Sucesso',
-          description: data.tempPassword 
-            ? `Utilizador criado! Senha temporária: ${data.tempPassword}` 
-            : 'Utilizador criado com sucesso',
-          duration: 10000,
-        });
+        if (data.tempPassword) {
+          setTempPasswordDialog({
+            open: true,
+            password: data.tempPassword,
+            title: 'Utilizador Criado com Sucesso',
+            description: 'Guarde a senha temporária abaixo. O utilizador deve alterá-la no primeiro login.'
+          });
+        } else {
+          toast({
+            title: 'Sucesso',
+            description: 'Utilizador criado com sucesso',
+          });
+        }
         resetForm();
         fetchUsers();
         setActiveTab('list');
@@ -298,10 +320,11 @@ const ManageUsers = () => {
       }
 
       if (data.success) {
-        toast({
-          title: 'Sucesso',
-          description: `Password temporária do utilizador nº ${employeeNumber}: ${data.newPassword} (deve ser alterada no primeiro login)`,
-          duration: 10000, // 10 seconds to read the password
+        setTempPasswordDialog({
+          open: true,
+          password: data.newPassword,
+          title: 'Password Reposta com Sucesso',
+          description: `Nova senha temporária para o utilizador nº ${employeeNumber}. Deve ser alterada no primeiro login.`
         });
       } else {
         toast({
@@ -389,6 +412,24 @@ const ManageUsers = () => {
     }
   };
 
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(tempPasswordDialog.password);
+      setCopiedPassword(true);
+      setTimeout(() => setCopiedPassword(false), 2000);
+      toast({
+        title: 'Copiado',
+        description: 'Senha copiada para a área de transferência',
+      });
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao copiar senha',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (!hasRole('admin')) {
     return (
       <div className="p-6">
@@ -410,7 +451,49 @@ const ManageUsers = () => {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <>
+      <AlertDialog open={tempPasswordDialog.open} onOpenChange={(open) => {
+        setTempPasswordDialog({ ...tempPasswordDialog, open });
+        if (!open) setCopiedPassword(false);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{tempPasswordDialog.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {tempPasswordDialog.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="my-4 p-4 bg-muted rounded-lg">
+            <div className="flex items-center justify-between gap-2">
+              <code className="text-lg font-mono font-semibold flex-1">
+                {tempPasswordDialog.password}
+              </code>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={handleCopyPassword}
+                className="shrink-0"
+              >
+                {copiedPassword ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => {
+              setTempPasswordDialog({ ...tempPasswordDialog, open: false });
+              setCopiedPassword(false);
+            }}>
+              Fechar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Users className="h-6 w-6" />
@@ -630,7 +713,8 @@ const ManageUsers = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
