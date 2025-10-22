@@ -458,7 +458,7 @@ const ManageUsers = () => {
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
       case 'admin': return 'destructive' as const;
-      case 'mod': return 'default' as const;
+      case 'mod': return 'success' as const;
       default: return 'outline' as const;
     }
   };
