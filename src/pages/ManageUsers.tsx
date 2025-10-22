@@ -456,11 +456,20 @@ const ManageUsers = () => {
   };
 
   const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin': return 'destructive' as const;
-      case 'mod': return 'success' as const;
-      default: return 'outline' as const;
+    // Normalizar o role (remover acentos, converter para minúsculas, remover espaços)
+    const normalizedRole = role
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+    
+    if (normalizedRole === 'admin' || normalizedRole === 'administrador') {
+      return 'destructive' as const;
     }
+    if (normalizedRole === 'mod' || normalizedRole === 'moderador') {
+      return 'success' as const;
+    }
+    return 'outline' as const;
   };
 
   const handleCopyPassword = async () => {

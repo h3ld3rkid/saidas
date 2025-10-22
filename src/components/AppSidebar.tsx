@@ -411,7 +411,7 @@ export function AppSidebar() {
                       }
                     >
                       <item.icon className="h-4 w-4" />
-                      {isExpanded && <span>{item.title}</span>}
+                      {showLabels && <span>{item.title}</span>}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
