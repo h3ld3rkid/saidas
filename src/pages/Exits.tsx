@@ -376,7 +376,7 @@ const Exits = () => {
                         {new Date(exit.departure_date).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} • {exit.departure_time}
                       </div>
                       <div className="text-xs font-medium">
-                        Nº{exit.service_number} • Nº Ficha {exit.total_service_number}
+                        Nº{exit.service_number} • Ficha nº {exit.total_service_number}
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge className={`${getExitTypeColor(exit.exit_type)} text-xs`}>
@@ -470,7 +470,7 @@ const Exits = () => {
                       <td className="p-3">
                         <div className="text-xs">
                           <div className="font-medium">Nº{exit.service_number}</div>
-                          <div className="text-muted-foreground">F.{exit.total_service_number}</div>
+                          <div className="text-muted-foreground">Ficha nº {exit.total_service_number}</div>
                         </div>
                       </td>
                       <td className="p-3">
