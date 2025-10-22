@@ -19,6 +19,7 @@ import Exits from "./pages/Exits";
 import EditExit from "./pages/EditExit";
 import ManageNotices from "./pages/ManageNotices";
 import ManageUsers from "./pages/ManageUsers";
+import ManageSplashAnnouncements from "./pages/ManageSplashAnnouncements";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Home from "./pages/Home";
@@ -149,6 +150,13 @@ const AppContent = () => {
         <ProtectedRoute>
           <AppLayout>
             <ManageUsers />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/splash-announcements" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <ManageSplashAnnouncements />
           </AppLayout>
         </ProtectedRoute>
       } />

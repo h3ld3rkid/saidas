@@ -329,6 +329,39 @@ export type Database = {
         }
         Relationships: []
       }
+      splash_announcements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          message: string
+          target_roles: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          is_active?: boolean
+          message: string
+          target_roles?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          message?: string
+          target_roles?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       total_service_counter: {
         Row: {
           current_number: number
@@ -501,10 +534,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      auto_complete_old_services: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      auto_complete_old_services: { Args: never; Returns: undefined }
       check_codu_exists: {
         Args: { codu_number: string }
         Returns: {
@@ -515,7 +545,7 @@ export type Database = {
         }[]
       }
       get_all_users_details: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           access_role: Database["public"]["Enums"]["app_role"]
           created_at: string
@@ -530,7 +560,7 @@ export type Database = {
         }[]
       }
       get_current_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_limited_exit_data: {
@@ -572,7 +602,7 @@ export type Database = {
         }[]
       }
       get_users_with_email: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           created_at: string
           email: string
@@ -586,7 +616,7 @@ export type Database = {
         }[]
       }
       get_vehicle_exits_with_privacy: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           ambulance_number: string
           created_at: string

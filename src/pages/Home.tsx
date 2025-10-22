@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { getExitTypeBadgeStyle, displayExitType } from "@/lib/exitType";
+import { SplashAnnouncementModal } from "@/components/SplashAnnouncementModal";
 
 const fetchNotices = async () => {
   const { data, error } = await supabase
@@ -178,6 +179,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
+      <SplashAnnouncementModal />
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
         <div className="relative px-6 py-12 md:py-20">

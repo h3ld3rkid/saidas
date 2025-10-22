@@ -271,6 +271,12 @@ export function AppSidebar() {
       roles: ['admin'],
     },
     {
+      title: 'Avisos de Entrada',
+      icon: Shield,
+      path: '/splash-announcements',
+      roles: ['admin'],
+    },
+    {
       title: 'Telegram',
       icon: MessageCircle,
       path: '/telegram',
