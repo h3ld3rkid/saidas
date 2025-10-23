@@ -199,6 +199,9 @@ export default function RegisterExit() {
     departureTime: string;
     contact: string;
     coduNumber?: string;
+    district?: string;
+    municipality?: string;
+    parish?: string;
     address: string;
     observations?: string;
     mapLocation?: string;
@@ -222,6 +225,9 @@ export default function RegisterExit() {
           departureTime: data.departureTime,
           contact: data.contact,
           coduNumber: data.coduNumber,
+          district: data.district,
+          municipality: data.municipality,
+          parish: data.parish,
           address: data.address,
           observations: data.observations,
           mapLocation: data.mapLocation,
@@ -398,7 +404,10 @@ export default function RegisterExit() {
             departureTime: `${form.departure_date} ${form.departure_time}`,
             contact: form.patient_contact,
             coduNumber,
-            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            district: form.patient_district,
+            municipality: form.patient_municipality,
+            parish: form.patient_parish,
+            address: form.patient_address,
             observations: form.observations,
             mapLocation,
             crewUserIds: crewIdsForDb
@@ -411,7 +420,10 @@ export default function RegisterExit() {
             departureTime: `${form.departure_date} ${form.departure_time}`,
             contact: form.patient_contact,
             coduNumber,
-            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            district: form.patient_district,
+            municipality: form.patient_municipality,
+            parish: form.patient_parish,
+            address: form.patient_address,
             observations: `VSL para CODU: ${coduNumber}`,
             mapLocation,
             crewUserIds: vslCrewForDb
@@ -446,7 +458,10 @@ export default function RegisterExit() {
             departureTime: `${form.departure_date} ${form.departure_time}`,
             contact: form.patient_contact,
             coduNumber: exitType === 'Emergencia/CODU' ? coduNumber : undefined,
-            address: `${form.patient_district}, ${form.patient_municipality}, ${form.patient_parish}, ${form.patient_address}`,
+            district: form.patient_district,
+            municipality: form.patient_municipality,
+            parish: form.patient_parish,
+            address: form.patient_address,
             observations: form.observations,
             mapLocation,
             crewUserIds: crewIdsForDb
