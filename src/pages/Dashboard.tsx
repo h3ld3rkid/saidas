@@ -106,7 +106,9 @@ const Dashboard = () => {
         .eq('user_id', user.id)
         .single();
 
-      const closedByName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utilizador Desconhecido';
+      const closedByName = profile 
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilizador'
+        : 'Utilizador';
 
       // Now the edge function will compute responders and notify them server-side
       const { error } = await supabase.functions.invoke('clear-readiness-alert', {
@@ -145,7 +147,9 @@ const Dashboard = () => {
         .eq('user_id', user.id)
         .single();
 
-      const requesterName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utilizador Desconhecido';
+      const requesterName = profile 
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilizador'
+        : 'Utilizador';
 
       // Call the emergency alert function
       const { error } = await supabase.functions.invoke('emergency-alert', {
