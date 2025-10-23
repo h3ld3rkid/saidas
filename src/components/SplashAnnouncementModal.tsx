@@ -71,20 +71,31 @@ export const SplashAnnouncementModal = () => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <div className="p-2 rounded-full bg-primary/10">
-              <AlertCircle className="h-6 w-6 text-primary" />
+      <DialogContent className="sm:max-w-lg border-none shadow-2xl bg-gradient-to-br from-background via-background to-primary/5">
+        <DialogHeader className="space-y-4 pb-2">
+          <div className="flex items-start gap-4">
+            <div className="relative flex-shrink-0">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+              <div className="relative p-3 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg">
+                <AlertCircle className="h-7 w-7 text-primary-foreground" />
+              </div>
+            </div>
+            <div className="flex-1 pt-1">
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+                {announcement.title}
+              </DialogTitle>
             </div>
           </div>
-          <DialogTitle className="text-xl">{announcement.title}</DialogTitle>
-          <DialogDescription className="text-base pt-2 whitespace-pre-wrap">
+          <DialogDescription className="text-base leading-relaxed whitespace-pre-wrap text-muted-foreground pl-[4.5rem]">
             {announcement.message}
           </DialogDescription>
         </DialogHeader>
-        <div className="flex justify-end mt-4">
-          <Button onClick={handleClose}>
+        <div className="flex justify-end mt-6 pl-[4.5rem]">
+          <Button 
+            onClick={handleClose}
+            className="min-w-[120px] shadow-lg hover:shadow-xl transition-all duration-300"
+            size="lg"
+          >
             Entendi
           </Button>
         </div>
