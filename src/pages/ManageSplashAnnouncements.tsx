@@ -43,7 +43,7 @@ interface SplashAnnouncement {
 
 const ManageSplashAnnouncements = () => {
   const { user } = useAuth();
-  const { hasRole } = useUserRole();
+  const { hasRole, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
   const [announcements, setAnnouncements] = useState<SplashAnnouncement[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,12 +58,14 @@ const ManageSplashAnnouncements = () => {
   });
 
   useEffect(() => {
+    if (roleLoading) return;
+    
     if (!hasRole('admin')) {
-      navigate('/');
+      navigate('/home');
       return;
     }
     fetchAnnouncements();
-  }, [hasRole, navigate]);
+  }, [hasRole, navigate, roleLoading]);
 
   const fetchAnnouncements = async () => {
     try {
