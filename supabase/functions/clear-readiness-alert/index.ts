@@ -9,6 +9,7 @@ const corsHeaders = {
 interface ClearAlertRequest {
   alertId: string;
   alertType: string;
+  closedByName: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -32,8 +33,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { alertId, alertType }: ClearAlertRequest = await req.json();
-    console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType: ${alertType}`);
+    const { alertId, alertType, closedByName }: ClearAlertRequest = await req.json();
+    console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType: ${alertType}, closedBy: ${closedByName}`);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -107,7 +108,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send to positive responders
     for (const responder of positiveNotifications) {
-      const message = `✅ O alerta de ${alertType} foi resolvido. Obrigado pela sua disponibilidade!`;
+      const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+      const message = `✅ O alerta de ${alertType} foi resolvido por ${closedByName}. Obrigado pela sua disponibilidade!\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending positive notification to ${responder.name} (${responder.chatId})`);
@@ -135,7 +137,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Send to non-responders and negative responders
     for (const responder of cancelledNotifications) {
-      const message = `❌ Pedido de prontidão anulado. Obrigado`;
+      const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+      const message = `❌ Pedido de prontidão anulado por ${closedByName}. Obrigado\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending cancellation notification to ${responder.name} (${responder.chatId})`);

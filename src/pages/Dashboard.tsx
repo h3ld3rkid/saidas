@@ -24,10 +24,12 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchReadinessData = async () => {
       try {
-        // Fetch readiness alerts
+        // Fetch readiness alerts (only those less than 1 hour old)
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
         const { data: alertsData } = await supabase
           .from('readiness_alerts')
           .select('*')
+          .gte('created_at', oneHourAgo)
           .order('created_at', { ascending: false });
 
         // Fetch readiness responses (only fields needed; avoid profile join that requires FK/RLS)
@@ -94,12 +96,24 @@ const Dashboard = () => {
   }, []);
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
+    if (!user) return;
+
     try {
+      // Get user name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user.id)
+        .single();
+
+      const closedByName = profile ? `${profile.first_name} ${profile.last_name}` : 'Utilizador Desconhecido';
+
       // Now the edge function will compute responders and notify them server-side
       const { error } = await supabase.functions.invoke('clear-readiness-alert', {
         body: {
           alertId,
           alertType,
+          closedByName,
         }
       });
 
@@ -237,7 +251,7 @@ const Dashboard = () => {
                         <span className="capitalize">{alert.alert_type}</span>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Enviado por: {alert.requester_name} • {new Date(alert.created_at).toLocaleString('pt-PT')}
+                        Enviado por: {alert.requester_name} • {new Date(alert.created_at).toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' })}
                       </div>
                       {positiveResponses.length > 0 && (
                         <div className="text-sm text-green-600 mt-1">

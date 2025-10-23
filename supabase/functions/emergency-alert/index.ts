@@ -104,19 +104,21 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const message = `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${new Date().toLocaleString('pt-PT')}`;
+    const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+    const message = `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`;
 
     // Generate unique alert ID for tracking responses
     const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Store alert in database for tracking responses
+    // Store alert in database for tracking responses with Lisbon timezone
+    const lisbonDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
     await supabase
       .from('readiness_alerts')
       .insert({
         alert_id: alertId,
         alert_type: alertType,
         requester_name: requesterName,
-        created_at: new Date().toISOString()
+        created_at: lisbonDate.toISOString()
       });
 
     const results = [];
