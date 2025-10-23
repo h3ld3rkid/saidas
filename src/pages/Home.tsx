@@ -182,13 +182,13 @@ export default function Home() {
       <SplashAnnouncementModal />
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
-        <div className="relative px-6 py-12 md:py-20">
+        <div className="relative px-6 py-6 md:py-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="animate-float">
-              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
                 Cruz Vermelha Amares
               </h1>
-              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
                 Sistema de gestão de emergências e serviços
               </p>
             </div>
@@ -233,6 +233,25 @@ export default function Home() {
               )}
             </CardContent>
           </Card>
+
+          <Link to="/register-exit" className="block">
+            <Card className="bg-gradient-to-br from-destructive to-destructive/90 border-0 shadow-2xl hover:shadow-destructive/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+              <CardContent className="p-8 text-center">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse" />
+                    <div className="relative p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
+                      <Car className="h-10 w-10 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Registar Saída</h3>
+                    <p className="text-white/80 text-sm">Clique para registar um novo serviço rapidamente</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
 
           {readinessData && readinessData.length > 0 && (
             <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
