@@ -37,13 +37,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // FIRST: Get positive responders BEFORE deleting anything
-    console.log('Fetching positive responses (no FK join)...');
+    // FIRST: Get ALL responses BEFORE deleting anything
+    console.log('Fetching all responses...');
     const { data: responses, error: responsesError } = await supabase
       .from('readiness_responses')
-      .select('user_id')
-      .eq('alert_id', alertId)
-      .eq('response', true);
+      .select('user_id, response')
+      .eq('alert_id', alertId);
 
     if (responsesError) {
       console.error('Error fetching responses:', responsesError);
@@ -53,42 +52,65 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const userIds = Array.from(new Set((responses || []).map((r: any) => r.user_id).filter(Boolean)));
-    console.log(`Positive response userIds:`, userIds);
+    const positiveResponders = (responses || []).filter((r: any) => r.response === true).map((r: any) => r.user_id);
+    const negativeResponders = (responses || []).filter((r: any) => r.response === false).map((r: any) => r.user_id);
+    const allResponders = (responses || []).map((r: any) => r.user_id);
+    
+    console.log(`Positive responders:`, positiveResponders);
+    console.log(`Negative responders:`, negativeResponders);
 
-    let profilesMap = new Map<string, any>();
-    if (userIds.length > 0) {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name, telegram_chat_id')
-        .in('user_id', userIds);
+    // Get all active profiles with Telegram
+    console.log('Fetching all active profiles with Telegram...');
+    const { data: allProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('user_id, first_name, last_name, telegram_chat_id')
+      .eq('is_active', true)
+      .not('telegram_chat_id', 'is', null);
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      } else {
-        (profiles || []).forEach((p: any) => profilesMap.set(p.user_id, p));
-      }
+    if (profilesError) {
+      console.error('Error fetching profiles:', profilesError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch profiles' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
     }
 
-    const responders = userIds
+    const profilesMap = new Map<string, any>();
+    (allProfiles || []).forEach((p: any) => profilesMap.set(p.user_id, p));
+
+    // Separate into groups
+    const positiveNotifications = positiveResponders
       .map((uid: string) => {
-        const p = profilesMap.get(uid) || {};
-        return {
-          chatId: p.telegram_chat_id || '',
+        const p = profilesMap.get(uid);
+        return p ? {
+          chatId: p.telegram_chat_id,
           name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Utilizador',
-        };
+          type: 'positive'
+        } : null;
       })
-      .filter((r: any) => !!r.chatId);
+      .filter((r: any) => r && r.chatId);
 
-    console.log(`Found ${responders.length} responders with Telegram chat IDs:`, responders);
+    const cancelledNotifications = (allProfiles || [])
+      .filter((p: any) => !allResponders.includes(p.user_id) || negativeResponders.includes(p.user_id))
+      .map((p: any) => ({
+        chatId: p.telegram_chat_id,
+        name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Utilizador',
+        type: 'cancelled'
+      }))
+      .filter((r: any) => r && r.chatId);
 
-    // SECOND: Send notifications to responders
+    console.log(`Sending ${positiveNotifications.length} positive notifications`);
+    console.log(`Sending ${cancelledNotifications.length} cancellation notifications`);
+
+    // SECOND: Send notifications
     let notificationsSent = 0;
-    for (const responder of responders) {
+
+    // Send to positive responders
+    for (const responder of positiveNotifications) {
       const message = `✅ O alerta de ${alertType} foi resolvido. Obrigado pela sua disponibilidade!`;
 
       try {
-        console.log(`Sending notification to ${responder.name} (${responder.chatId})`);
+        console.log(`Sending positive notification to ${responder.name} (${responder.chatId})`);
         const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -104,6 +126,34 @@ const handler = async (req: Request): Promise<Response> => {
           console.error(`Failed to send message to ${responder.name}: ${response.status} ${response.statusText} - ${responseText}`);
         } else {
           console.log(`Notification sent successfully to ${responder.name}`);
+          notificationsSent++;
+        }
+      } catch (error) {
+        console.error(`Error sending message to ${responder.name}:`, error);
+      }
+    }
+
+    // Send to non-responders and negative responders
+    for (const responder of cancelledNotifications) {
+      const message = `❌ Pedido de prontidão anulado. Obrigado`;
+
+      try {
+        console.log(`Sending cancellation notification to ${responder.name} (${responder.chatId})`);
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: responder.chatId,
+            text: message,
+          }),
+        });
+
+        const responseText = await response.text();
+        
+        if (!response.ok) {
+          console.error(`Failed to send message to ${responder.name}: ${response.status} ${response.statusText} - ${responseText}`);
+        } else {
+          console.log(`Cancellation notification sent successfully to ${responder.name}`);
           notificationsSent++;
         }
       } catch (error) {
@@ -139,7 +189,8 @@ const handler = async (req: Request): Promise<Response> => {
     const result = {
       success: true, 
       notificationsSent: notificationsSent,
-      totalResponders: responders.length,
+      positiveNotifications: positiveNotifications.length,
+      cancelledNotifications: cancelledNotifications.length,
       deletedResponses: delRespCount ?? 0,
       deletedAlerts: delAlertCount ?? 0
     };
