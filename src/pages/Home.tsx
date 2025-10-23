@@ -154,10 +154,19 @@ export default function Home() {
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
     try {
-      const respondersToNotify: Array<{ chatId: string; name: string }> = [];
+      // Obter nome de quem está a terminar o alerta
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('user_id', user?.id)
+        .single();
+
+      const closedByName = profile
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilizador'
+        : 'Utilizador';
 
       const { data, error } = await supabase.functions.invoke('clear-readiness-alert', {
-        body: { alertId, alertType, responders: respondersToNotify }
+        body: { alertId, alertType, closedByName }
       });
 
       if (error) throw error;
