@@ -112,14 +112,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (registrarUserId) {
       const registrar = profiles.find((p) => p.user_id === registrarUserId);
-      const crewMembers = profiles.filter((p) => p.user_id !== registrarUserId);
 
       if (registrar) {
         opcpomName = `${registrar.first_name} ${registrar.last_name}`.trim();
       }
 
-      if (crewMembers.length > 0) {
-        crewNames = crewMembers.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
+      // Include ALL selected crew members, including the OPCOM if they were selected as crew
+      if (profiles.length > 0) {
+        crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
       }
     } else {
       crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
