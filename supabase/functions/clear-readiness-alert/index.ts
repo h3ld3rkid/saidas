@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to non-responders and negative responders
     for (const responder of cancelledNotifications) {
       const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
-      const message = `❌ Pedido de prontidão anulado. Obrigado\n⏰ ${lisbonTime}`;
+      const message = `❌ Pedido de prontidão anulado por ${safeClosedByName}. Obrigado\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending cancellation notification to ${responder.name} (${responder.chatId})`);
