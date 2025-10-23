@@ -235,18 +235,18 @@ export default function Home() {
           </Card>
 
           <Link to="/register-exit" className="block">
-            <Card className="bg-gradient-to-br from-destructive to-destructive/90 border-0 shadow-2xl hover:shadow-destructive/50 transition-all duration-300 hover:scale-[1.02] cursor-pointer">
-              <CardContent className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4">
+            <Card className="bg-gradient-to-br from-destructive to-destructive/90 border-0 shadow-lg hover:shadow-destructive/50 transition-all duration-300 hover:scale-[1.01] cursor-pointer">
+              <CardContent className="p-5 text-center">
+                <div className="flex items-center justify-center gap-3">
                   <div className="relative">
-                    <div className="absolute inset-0 bg-white/20 rounded-full blur-xl animate-pulse" />
-                    <div className="relative p-4 rounded-2xl bg-white/10 backdrop-blur-sm">
-                      <Car className="h-10 w-10 text-white" />
+                    <div className="absolute inset-0 bg-white/20 rounded-full blur-md animate-pulse" />
+                    <div className="relative p-2 rounded-xl bg-white/10 backdrop-blur-sm">
+                      <Car className="h-6 w-6 text-white" />
                     </div>
                   </div>
-                  <div>
-                    <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">Registar Saída</h3>
-                    <p className="text-white/80 text-sm">Clique para registar um novo serviço rapidamente</p>
+                  <div className="text-left">
+                    <h3 className="text-lg font-bold text-white">Registar Saída</h3>
+                    <p className="text-white/70 text-xs">Registar novo serviço</p>
                   </div>
                 </div>
               </CardContent>
