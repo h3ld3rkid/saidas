@@ -125,13 +125,13 @@ const handler = async (req: Request): Promise<Response> => {
       crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
     }
 
-    let message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ""}`;
+    let message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ""}\n📍 <b>Localização:</b>\n`;
     
-    // Add address fields separately
-    if (district) message += `📍 <b>Distrito:</b> ${district}\n`;
-    if (municipality) message += `   <b>Concelho:</b> ${municipality}\n`;
-    if (parish) message += `   <b>Freguesia:</b> ${parish}\n`;
-    if (address) message += `   <b>Morada:</b> ${address}\n`;
+    // Add address fields
+    if (district) message += `   • Distrito: ${district}\n`;
+    if (municipality) message += `   • Concelho: ${municipality}\n`;
+    if (parish) message += `   • Freguesia: ${parish}\n`;
+    if (address) message += `   • Morada: ${address}\n`;
     
     message += "\n";
 
