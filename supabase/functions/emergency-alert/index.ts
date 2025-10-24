@@ -110,15 +110,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Generate unique alert ID for tracking responses
     const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Store alert in database for tracking responses with Lisbon timezone
-    const lisbonDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Lisbon' }));
+    // Store alert in database - save in UTC, display will handle timezone
     await supabase
       .from('readiness_alerts')
       .insert({
         alert_id: alertId,
         alert_type: alertType,
         requester_name: requesterName,
-        created_at: lisbonDate.toISOString()
+        created_at: new Date().toISOString()
       });
 
     const results = [];

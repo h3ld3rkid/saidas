@@ -11,6 +11,7 @@ import { toast } from "@/hooks/use-toast";
 import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
 import { getExitTypeBadgeStyle, displayExitType } from "@/lib/exitType";
 import { SplashAnnouncementModal } from "@/components/SplashAnnouncementModal";
+import { formatInTimeZone } from "date-fns-tz";
 
 const fetchNotices = async () => {
   const { data, error } = await supabase
@@ -284,7 +285,7 @@ export default function Home() {
                           Alerta de {alert.alert_type} - {alert.requester_name}
                         </h4>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(alert.created_at).toLocaleString('pt-PT')}
+                          {formatInTimeZone(new Date(alert.created_at), 'Europe/Lisbon', 'dd/MM/yyyy, HH:mm:ss')}
                         </p>
                         {alert.totalResponses === 0 && (
                           <p className="text-xs text-orange-600 mt-1">
@@ -318,10 +319,7 @@ export default function Home() {
                                 <div key={idx} className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
                                   {response.profiles.first_name} {response.profiles.last_name}
                                   <span className="text-green-600 ml-2">
-                                    {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
-                                    })}
+                                    {formatInTimeZone(new Date(response.responded_at), 'Europe/Lisbon', 'HH:mm')}
                                   </span>
                                 </div>
                               ))}
@@ -344,10 +342,7 @@ export default function Home() {
                                 <div key={idx} className="text-xs bg-red-50 text-red-800 px-2 py-1 rounded">
                                   {response.profiles.first_name} {response.profiles.last_name}
                                   <span className="text-red-600 ml-2">
-                                    {new Date(response.responded_at).toLocaleTimeString('pt-PT', { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit' 
-                                    })}
+                                    {formatInTimeZone(new Date(response.responded_at), 'Europe/Lisbon', 'HH:mm')}
                                   </span>
                                 </div>
                               ))}
