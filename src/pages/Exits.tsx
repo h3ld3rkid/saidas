@@ -290,7 +290,7 @@ const Exits = () => {
             <Separator />
             <div>
               <h4 className="font-medium mb-2">Observações</h4>
-              <p className="text-sm text-muted-foreground break-words">{exit.observations}</p>
+              <p className="text-sm text-muted-foreground break-all overflow-hidden">{exit.observations}</p>
             </div>
           </>
         )}
