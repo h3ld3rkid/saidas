@@ -38,6 +38,7 @@ import {
   Calendar,
   Moon,
   Sun,
+  Ambulance,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -313,7 +314,7 @@ export function AppSidebar() {
     <Sidebar className={isMobile ? 'w-60' : (!open ? 'w-14' : 'w-60')} collapsible={isMobile ? 'offcanvas' : 'icon'}>
       <SidebarHeader className="border-b p-4">
         <div className="flex items-center gap-2">
-          <Car className="h-6 w-6 text-primary" />
+          <Ambulance className="h-6 w-6 text-primary" />
           {showLabels && <span className="font-semibold">Sistema Saídas</span>}
         </div>
       </SidebarHeader>

@@ -71,12 +71,12 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             {logoUrl ? (
-              <div className="w-24 h-24">
+              <div className="w-32 h-32 sm:w-36 sm:h-36">
                 <img src={logoUrl} alt="CV Amares Logo" className="w-full h-full object-contain" />
               </div>
             ) : (
-              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-                <Car className="h-8 w-8 text-primary-foreground" />
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-primary rounded-lg flex items-center justify-center">
+                <Car className="h-10 w-10 sm:h-12 sm:w-12 text-primary-foreground" />
               </div>
             )}
           </div>
