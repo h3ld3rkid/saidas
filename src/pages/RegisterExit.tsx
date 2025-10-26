@@ -208,13 +208,8 @@ export default function RegisterExit() {
     crewUserIds: string;
   }) => {
     try {
-      // Parse crew IDs (now UUIDs)
+      // Parse crew IDs (original crew selection without auto-adding registrar)
       const crewIds = data.crewUserIds.split(',').map(id => id.trim()).filter(Boolean);
-      
-      // Add current user ID if not already included
-      if (user && !crewIds.includes(user.id)) {
-        crewIds.push(user.id);
-      }
 
       // Delegate notification to edge function (bypasses RLS safely)
       const { data: notifyData, error: notifyError } = await supabase.functions.invoke('service-crew-notify', {
@@ -363,10 +358,18 @@ export default function RegisterExit() {
       const serviceNumber = numberData[0]?.service_num || 1;
       const totalServiceNumber = numberData[0]?.total_num || 1;
       
-      // Build crew IDs including current user
-      const existingCrewIds = (form.crew || '').split(',').map(s => s.trim()).filter(Boolean);
-      if (!existingCrewIds.includes(user.id)) existingCrewIds.push(user.id);
-      const crewIdsForDb = existingCrewIds.join(', ');
+      // Get crew IDs from form (these are the selected crew members only)
+      const selectedCrewIds = (form.crew || '').split(',').map(s => s.trim()).filter(Boolean);
+      
+      // Build crew IDs for DB - always include current user
+      const crewIdsForDb = [...selectedCrewIds];
+      if (!crewIdsForDb.includes(user.id)) {
+        crewIdsForDb.push(user.id);
+      }
+      const crewIdsForDbString = crewIdsForDb.join(', ');
+      
+      // For notifications, keep original selected crew (without auto-adding registrar)
+      const crewIdsForNotification = selectedCrewIds.join(', ');
       
       // If VSL is activated, we need to handle both CODU and VSL entries
       if (vslActivated && exitType === 'Emergencia/CODU') {
@@ -382,7 +385,7 @@ export default function RegisterExit() {
         // Insert CODU record
         const { error: coduError } = await supabase.from('vehicle_exits').insert({
           ...payload,
-          crew: crewIdsForDb,
+          crew: crewIdsForDbString,
           service_number: serviceNumber,
           total_service_number: totalServiceNumber,
           exit_type: 'Emergencia/CODU'
@@ -391,13 +394,17 @@ export default function RegisterExit() {
         if (coduError) throw coduError;
         
         // Insert VSL record with VSL crew
-        const vslCrewIds = selectedVslCrew.map(c => c.user_id);
-        if (!vslCrewIds.includes(user.id)) vslCrewIds.push(user.id);
-        const vslCrewForDb = vslCrewIds.join(', ');
+        const vslSelectedCrewIds = selectedVslCrew.map(c => c.user_id);
+        const vslCrewForDb = [...vslSelectedCrewIds];
+        if (!vslCrewForDb.includes(user.id)) {
+          vslCrewForDb.push(user.id);
+        }
+        const vslCrewForDbString = vslCrewForDb.join(', ');
+        const vslCrewForNotification = vslSelectedCrewIds.join(', ');
         
         const { error: vslError } = await supabase.from('vehicle_exits').insert({
           ...payload,
-          crew: vslCrewForDb,
+          crew: vslCrewForDbString,
           service_number: vslServiceNumber,
           total_service_number: totalServiceNumber, // Same total number
           exit_type: 'VSL',
@@ -429,7 +436,7 @@ export default function RegisterExit() {
             address: form.patient_address,
             observations: form.observations,
             mapLocation,
-            crewUserIds: crewIdsForDb
+            crewUserIds: crewIdsForNotification
           });
           
           // VSL crew notification
@@ -445,7 +452,7 @@ export default function RegisterExit() {
             address: form.patient_address,
             observations: `VSL para CODU: ${coduNumber}`,
             mapLocation,
-            crewUserIds: vslCrewForDb
+            crewUserIds: vslCrewForNotification
           });
         } catch (telegramError) {
           console.error('Failed to send Telegram notification:', telegramError);
@@ -454,7 +461,7 @@ export default function RegisterExit() {
         // Regular single service entry
         const { error } = await supabase.from('vehicle_exits').insert({
           ...payload,
-          crew: crewIdsForDb,
+          crew: crewIdsForDbString,
           service_number: serviceNumber,
           total_service_number: totalServiceNumber
         } as any);
@@ -469,7 +476,7 @@ export default function RegisterExit() {
           ambulanceNumber: form.ambulance_number
         });
         
-        // Send Telegram notification (always include current user)
+        // Send Telegram notification with original crew selection
         try {
           await sendTelegramNotification({
             serviceType: exitType,
@@ -483,7 +490,7 @@ export default function RegisterExit() {
             address: form.patient_address,
             observations: form.observations,
             mapLocation,
-            crewUserIds: crewIdsForDb
+            crewUserIds: crewIdsForNotification
           });
         } catch (telegramError) {
           console.error('Failed to send Telegram notification:', telegramError);

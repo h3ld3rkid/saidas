@@ -72,11 +72,17 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch crew profiles with Telegram chat IDs
+    // Build list of all user IDs to fetch (crew + registrar)
+    const allUserIds = [...crewIds];
+    if (registrarUserId && !allUserIds.includes(registrarUserId)) {
+      allUserIds.push(registrarUserId);
+    }
+
+    // Fetch profiles with Telegram chat IDs
     const { data: profiles, error } = await supabase
       .from("profiles")
       .select("user_id, telegram_chat_id, first_name, last_name, is_active")
-      .in("user_id", crewIds);
+      .in("user_id", allUserIds);
 
     if (error) {
       console.error("Error querying profiles:", error);
@@ -87,55 +93,40 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!profiles || profiles.length === 0) {
-      return new Response(JSON.stringify({ message: "No crew profiles found" }), {
+      return new Response(JSON.stringify({ message: "No profiles found" }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const crewWithTelegram = profiles.filter((p) => p.telegram_chat_id);
+    // Filter to get only users with Telegram configured for sending notifications
+    const usersWithTelegram = profiles.filter((p) => p.telegram_chat_id);
 
-    if (crewWithTelegram.length === 0) {
-      return new Response(JSON.stringify({ message: "No crew members with Telegram configured" }), {
+    if (usersWithTelegram.length === 0) {
+      return new Response(JSON.stringify({ message: "No users with Telegram configured" }), {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    const chatIds = crewWithTelegram
+    const chatIds = usersWithTelegram
       .map((p) => p.telegram_chat_id)
       .filter((id: string | null) => !!id && String(id).trim().length > 0) as string[];
 
-    // Separar OPCPOM (registrador) da tripulação
+    // Build OPCOM and crew names
     let opcpomName = "";
     let crewNames = "";
 
     if (registrarUserId) {
       const registrar = profiles.find((p) => p.user_id === registrarUserId);
-
       if (registrar) {
         opcpomName = `${registrar.first_name} ${registrar.last_name}`.trim();
       }
-
-      // Se o registrador está na tripulação escolhida:
-      // - Aparece em OPCOM e Tripulação
-      // Se não está na tripulação:
-      // - Só aparece em OPCOM, não na tripulação
-      const isRegistrarInCrew = crewIds.includes(registrarUserId);
-      
-      if (isRegistrarInCrew) {
-        // Registrador está na tripulação - mostrar todos incluindo ele
-        crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
-      } else {
-        // Registrador NÃO está na tripulação - excluir ele da lista de tripulação
-        crewNames = profiles
-          .filter((p) => p.user_id !== registrarUserId)
-          .map((p) => `${p.first_name} ${p.last_name}`.trim())
-          .join(", ");
-      }
-    } else {
-      crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
     }
+
+    // Crew names: only show the selected crew members (crewIds)
+    const crewProfiles = profiles.filter((p) => crewIds.includes(p.user_id));
+    crewNames = crewProfiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
 
     let message = `\n🚨 <b>Nova Saída Registrada</b>\n\n📋 <b>Tipo:</b> ${serviceType}\n🔢 <b>Número:</b> ${serviceNumber}\n⏰ <b>Hora:</b> ${departureTime}\n📞 <b>Contacto:</b> ${contact}\n${coduNumber ? `🆘 <b>CODU:</b> ${coduNumber}\n` : ""}\n📍 <b>Localização:</b>\n`;
     
