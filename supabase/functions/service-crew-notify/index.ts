@@ -117,9 +117,21 @@ const handler = async (req: Request): Promise<Response> => {
         opcpomName = `${registrar.first_name} ${registrar.last_name}`.trim();
       }
 
-      // Include ALL selected crew members, including the OPCOM if they were selected as crew
-      if (profiles.length > 0) {
+      // Se o registrador está na tripulação escolhida:
+      // - Aparece em OPCOM e Tripulação
+      // Se não está na tripulação:
+      // - Só aparece em OPCOM, não na tripulação
+      const isRegistrarInCrew = crewIds.includes(registrarUserId);
+      
+      if (isRegistrarInCrew) {
+        // Registrador está na tripulação - mostrar todos incluindo ele
         crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");
+      } else {
+        // Registrador NÃO está na tripulação - excluir ele da lista de tripulação
+        crewNames = profiles
+          .filter((p) => p.user_id !== registrarUserId)
+          .map((p) => `${p.first_name} ${p.last_name}`.trim())
+          .join(", ");
       }
     } else {
       crewNames = profiles.map((p) => `${p.first_name} ${p.last_name}`.trim()).join(", ");

@@ -292,6 +292,25 @@ export default function RegisterExit() {
       newErrors.patient_contact = true;
     }
 
+    // Validação da tripulação: mínimo 2, máximo 4 elementos
+    if (selectedCrew.length < 2) {
+      newErrors.crew = true;
+      toast({ 
+        title: 'Tripulação insuficiente', 
+        description: 'É necessário selecionar pelo menos 2 membros na tripulação.', 
+        variant: 'destructive' 
+      });
+    }
+    
+    if (selectedCrew.length > 4) {
+      newErrors.crew = true;
+      toast({ 
+        title: 'Tripulação excedida', 
+        description: 'É permitido no máximo 4 membros na tripulação.', 
+        variant: 'destructive' 
+      });
+    }
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -920,7 +939,7 @@ export default function RegisterExit() {
 
             {/* Linha 9: Tripulação com pesquisa ativa */}
             <div className="space-y-2 relative">
-              <Label>Tripulação</Label>
+              <Label>Tripulação <span className="text-red-500">*</span></Label>
               <div className="relative">
                 <Input
                   value={crewSearchTerm}
@@ -930,6 +949,7 @@ export default function RegisterExit() {
                   }}
                   onFocus={() => setShowCrewDropdown(true)}
                   placeholder="Procurar tripulação..."
+                  className={errors.crew ? 'border-red-500' : ''}
                 />
                 <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               </div>
@@ -942,8 +962,23 @@ export default function RegisterExit() {
                         onClick={() => {
                           setSelectedCrew((prev) => {
                             if (prev.some(m => m.user_id === member.user_id)) return prev;
+                            if (prev.length >= 4) {
+                              toast({ 
+                                title: 'Limite atingido', 
+                                description: 'Máximo de 4 membros na tripulação.', 
+                                variant: 'destructive' 
+                              });
+                              return prev;
+                            }
                             const updated = [...prev, { user_id: member.user_id, display_name: member.display_name }];
                             set('crew', updated.map(m => m.user_id).join(', '));
+                            if (errors.crew && updated.length >= 2 && updated.length <= 4) {
+                              setErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.crew;
+                                return newErrors;
+                              });
+                            }
                             return updated;
                           });
                           setCrewSearchTerm('');
@@ -956,7 +991,7 @@ export default function RegisterExit() {
                 </div>
               )}
                 <div className="space-y-2">
-                  <Label>Tripulação selecionada</Label>
+                  <Label>Tripulação selecionada ({selectedCrew.length}/4)</Label>
                   {selectedCrew.length > 0 ? (
                     <div className="flex flex-wrap gap-2">
                       {selectedCrew.map((m) => (
@@ -983,7 +1018,7 @@ export default function RegisterExit() {
                     <p className="text-xs text-muted-foreground">Sem membros selecionados ainda.</p>
                   )}
                   <input type="hidden" value={form.crew} readOnly />
-                  <p className="text-xs text-muted-foreground">Nota: Quem regista o serviço é incluído automaticamente</p>
+                  <p className="text-xs text-muted-foreground">Mínimo 2, máximo 4 elementos (quem regista não conta para o limite)</p>
                 </div>
             </div>
 
