@@ -37,10 +37,10 @@ export const SplashAnnouncementModal = () => {
         .select('id, title, message')
         .eq('is_active', true)
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (error) {
-        // No announcements found or error - don't show anything
+        console.error('Error fetching announcement:', error);
         return;
       }
 
@@ -56,6 +56,7 @@ export const SplashAnnouncementModal = () => {
       }
     } catch (error) {
       console.error('Error fetching announcement:', error);
+      // Don't block the page if there's an error
     }
   };
 
@@ -71,7 +72,7 @@ export const SplashAnnouncementModal = () => {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-lg border-none shadow-2xl bg-gradient-to-br from-background via-background to-primary/5">
+      <DialogContent className="sm:max-w-lg border-none shadow-2xl" style={{ background: 'linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
         <DialogHeader className="space-y-4 pb-2">
           <div className="flex items-start gap-4">
             <div className="relative flex-shrink-0">
@@ -81,7 +82,7 @@ export const SplashAnnouncementModal = () => {
               </div>
             </div>
             <div className="flex-1 pt-1">
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
+              <DialogTitle className="text-2xl font-bold text-foreground">
                 {announcement.title}
               </DialogTitle>
             </div>

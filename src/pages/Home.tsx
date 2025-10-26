@@ -191,11 +191,11 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20">
       <SplashAnnouncementModal />
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, hsl(345 82% 47%) 0%, hsl(200 100% 60%) 100%)', opacity: 0.1 }}></div>
         <div className="relative px-6 py-6 md:py-10">
           <div className="max-w-4xl mx-auto text-center">
             <div className="animate-float">
-              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-primary mb-2">
                 Cruz Vermelha Amares
               </h1>
               <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
@@ -208,7 +208,7 @@ export default function Home() {
 
       <section className="px-6 pb-12">
         <div className="max-w-7xl mx-auto space-y-8">
-          <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+          <Card className="border-0 shadow-card" style={{ background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="bg-yellow-500/10 p-2 rounded-lg">
@@ -223,7 +223,7 @@ export default function Home() {
             <CardContent className="space-y-3">
               {notices && notices.length > 0 ? (
                 notices.map((n: any) => (
-                  <div key={n.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                  <div key={n.id} className="bg-background/50 rounded-xl p-4 border transition-all hover:shadow-md">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
@@ -264,7 +264,7 @@ export default function Home() {
           </Link>
 
           {readinessData && readinessData.length > 0 && (
-            <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+            <Card className="border-0 shadow-card" style={{ background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-green-500/10 p-2 rounded-lg">
@@ -278,7 +278,7 @@ export default function Home() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {readinessData.map((alert: any) => (
-                  <div key={alert.alert_id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border">
+                  <div key={alert.alert_id} className="bg-background/50 rounded-xl p-4 border">
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground mb-1">
@@ -359,7 +359,7 @@ export default function Home() {
             </Card>
           )}
 
-          <Card className="bg-gradient-card backdrop-blur-sm border-0 shadow-card">
+          <Card className="border-0 shadow-card" style={{ background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="bg-blue-500/10 p-2 rounded-lg">
@@ -374,7 +374,7 @@ export default function Home() {
             <CardContent className="space-y-3">
               {services && services.length > 0 ? (
                 services.map((s: any) => (
-                  <div key={s.id} className="bg-background/50 backdrop-blur-sm rounded-xl p-4 border transition-all hover:shadow-md">
+                  <div key={s.id} className="bg-background/50 rounded-xl p-4 border transition-all hover:shadow-md">
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
