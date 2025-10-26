@@ -130,6 +130,25 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           console.log(`Notification sent successfully to ${responder.name}`);
           notificationsSent++;
+          
+          // Insert into realtime_notifications for app notification
+          try {
+            const { error: notifError } = await supabase
+              .from('realtime_notifications')
+              .insert({
+                alert_id: alertId,
+                responder_name: responder.name,
+                message: `Alerta de ${alertType} resolvido por ${safeClosedByName}`
+              });
+            
+            if (notifError) {
+              console.error(`Failed to insert realtime notification for ${responder.name}:`, notifError);
+            } else {
+              console.log(`Realtime notification inserted for ${responder.name}`);
+            }
+          } catch (notifInsertError) {
+            console.error(`Error inserting realtime notification:`, notifInsertError);
+          }
         }
       } catch (error) {
         console.error(`Error sending message to ${responder.name}:`, error);
