@@ -208,7 +208,7 @@ export default function Home() {
 
       <section className="px-6 pb-12">
         <div className="max-w-7xl mx-auto space-y-8">
-          <Card className="border-0 shadow-card" style={{ background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
+          <Card className="border-0 shadow-card bg-card">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="bg-yellow-500/10 p-2 rounded-lg">
@@ -223,7 +223,7 @@ export default function Home() {
             <CardContent className="space-y-3">
               {notices && notices.length > 0 ? (
                 notices.map((n: any) => (
-                  <div key={n.id} className="bg-background/50 rounded-xl p-4 border transition-all hover:shadow-md">
+                  <div key={n.id} className="bg-muted/30 rounded-xl p-4 border transition-all hover:shadow-md">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
                         <h4 className="font-semibold text-foreground mb-1">{n.title}</h4>
@@ -264,7 +264,7 @@ export default function Home() {
           </Link>
 
           {readinessData && readinessData.length > 0 && (
-            <Card className="border-0 shadow-card" style={{ background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
+            <Card className="border-0 shadow-card bg-card">
               <CardHeader className="pb-4">
                 <div className="flex items-center gap-3">
                   <div className="bg-green-500/10 p-2 rounded-lg">
@@ -316,9 +316,9 @@ export default function Home() {
                           {alert.yesResponses.length > 0 ? (
                             <div className="space-y-1">
                               {alert.yesResponses.map((response: any, idx: number) => (
-                                <div key={idx} className="text-xs bg-green-50 text-green-800 px-2 py-1 rounded">
+                                <div key={idx} className="text-xs bg-success/10 text-success-foreground px-2 py-1 rounded border border-success/20">
                                   {response.profiles.first_name} {response.profiles.last_name}
-                                  <span className="text-green-600 ml-2">
+                                  <span className="text-success ml-2">
                                     {formatInTimeZone(new Date(response.responded_at), 'Europe/Lisbon', 'HH:mm')}
                                   </span>
                                 </div>
@@ -339,9 +339,9 @@ export default function Home() {
                           {alert.noResponses.length > 0 ? (
                             <div className="space-y-1">
                               {alert.noResponses.map((response: any, idx: number) => (
-                                <div key={idx} className="text-xs bg-red-50 text-red-800 px-2 py-1 rounded">
+                                <div key={idx} className="text-xs bg-destructive/10 text-destructive-foreground px-2 py-1 rounded border border-destructive/20">
                                   {response.profiles.first_name} {response.profiles.last_name}
-                                  <span className="text-red-600 ml-2">
+                                  <span className="text-destructive ml-2">
                                     {formatInTimeZone(new Date(response.responded_at), 'Europe/Lisbon', 'HH:mm')}
                                   </span>
                                 </div>
@@ -359,7 +359,7 @@ export default function Home() {
             </Card>
           )}
 
-          <Card className="border-0 shadow-card" style={{ background: 'linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%)' }}>
+          <Card className="border-0 shadow-card bg-card">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-3">
                 <div className="bg-blue-500/10 p-2 rounded-lg">
@@ -374,7 +374,7 @@ export default function Home() {
             <CardContent className="space-y-3">
               {services && services.length > 0 ? (
                 services.map((s: any) => (
-                  <div key={s.id} className="bg-background/50 rounded-xl p-4 border transition-all hover:shadow-md">
+                  <div key={s.id} className="bg-muted/30 rounded-xl p-4 border transition-all hover:shadow-md">
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1 min-w-0">
