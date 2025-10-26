@@ -361,15 +361,8 @@ export default function RegisterExit() {
       // Get crew IDs from form (these are the selected crew members only)
       const selectedCrewIds = (form.crew || '').split(',').map(s => s.trim()).filter(Boolean);
       
-      // Build crew IDs for DB - always include current user
-      const crewIdsForDb = [...selectedCrewIds];
-      if (!crewIdsForDb.includes(user.id)) {
-        crewIdsForDb.push(user.id);
-      }
-      const crewIdsForDbString = crewIdsForDb.join(', ');
-      
-      // For notifications, keep original selected crew (without auto-adding registrar)
-      const crewIdsForNotification = selectedCrewIds.join(', ');
+      // Crew for DB and notifications is the same - only selected members
+      const crewIdsString = selectedCrewIds.join(', ');
       
       // If VSL is activated, we need to handle both CODU and VSL entries
       if (vslActivated && exitType === 'Emergencia/CODU') {
@@ -385,7 +378,7 @@ export default function RegisterExit() {
         // Insert CODU record
         const { error: coduError } = await supabase.from('vehicle_exits').insert({
           ...payload,
-          crew: crewIdsForDbString,
+          crew: crewIdsString,
           service_number: serviceNumber,
           total_service_number: totalServiceNumber,
           exit_type: 'Emergencia/CODU'
@@ -393,18 +386,13 @@ export default function RegisterExit() {
         
         if (coduError) throw coduError;
         
-        // Insert VSL record with VSL crew
+        // Insert VSL record with VSL crew (only selected members)
         const vslSelectedCrewIds = selectedVslCrew.map(c => c.user_id);
-        const vslCrewForDb = [...vslSelectedCrewIds];
-        if (!vslCrewForDb.includes(user.id)) {
-          vslCrewForDb.push(user.id);
-        }
-        const vslCrewForDbString = vslCrewForDb.join(', ');
-        const vslCrewForNotification = vslSelectedCrewIds.join(', ');
+        const vslCrewString = vslSelectedCrewIds.join(', ');
         
         const { error: vslError } = await supabase.from('vehicle_exits').insert({
           ...payload,
-          crew: vslCrewForDbString,
+          crew: vslCrewString,
           service_number: vslServiceNumber,
           total_service_number: totalServiceNumber, // Same total number
           exit_type: 'VSL',
@@ -436,7 +424,7 @@ export default function RegisterExit() {
             address: form.patient_address,
             observations: form.observations,
             mapLocation,
-            crewUserIds: crewIdsForNotification
+            crewUserIds: crewIdsString
           });
           
           // VSL crew notification
@@ -452,7 +440,7 @@ export default function RegisterExit() {
             address: form.patient_address,
             observations: `VSL para CODU: ${coduNumber}`,
             mapLocation,
-            crewUserIds: vslCrewForNotification
+            crewUserIds: vslCrewString
           });
         } catch (telegramError) {
           console.error('Failed to send Telegram notification:', telegramError);
@@ -461,7 +449,7 @@ export default function RegisterExit() {
         // Regular single service entry
         const { error } = await supabase.from('vehicle_exits').insert({
           ...payload,
-          crew: crewIdsForDbString,
+          crew: crewIdsString,
           service_number: serviceNumber,
           total_service_number: totalServiceNumber
         } as any);
@@ -476,7 +464,7 @@ export default function RegisterExit() {
           ambulanceNumber: form.ambulance_number
         });
         
-        // Send Telegram notification with original crew selection
+        // Send Telegram notification with selected crew
         try {
           await sendTelegramNotification({
             serviceType: exitType,
@@ -490,7 +478,7 @@ export default function RegisterExit() {
             address: form.patient_address,
             observations: form.observations,
             mapLocation,
-            crewUserIds: crewIdsForNotification
+            crewUserIds: crewIdsString
           });
         } catch (telegramError) {
           console.error('Failed to send Telegram notification:', telegramError);

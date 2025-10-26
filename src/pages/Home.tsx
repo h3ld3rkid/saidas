@@ -67,12 +67,12 @@ const fetchActiveServices = async () => {
 };
 
 const fetchReadinessResponses = async () => {
-  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   
   const { data: alerts, error: alertsError } = await supabase
     .from('readiness_alerts')
     .select('alert_id, alert_type, requester_name, created_at')
-    .gte('created_at', thirtyMinutesAgo)
+    .gte('created_at', oneHourAgo)
     .order('created_at', { ascending: false })
     .limit(1);
 
