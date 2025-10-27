@@ -316,9 +316,9 @@ export default function Home() {
                           {alert.yesResponses.length > 0 ? (
                             <div className="space-y-1">
                               {alert.yesResponses.map((response: any, idx: number) => (
-                                <div key={idx} className="text-xs bg-success/10 text-success-foreground px-2 py-1 rounded border border-success/20">
-                                  {response.profiles.first_name} {response.profiles.last_name}
-                                  <span className="text-success ml-2">
+                                <div key={idx} className="text-xs bg-success/10 px-2 py-1 rounded border border-success/20">
+                                  <span className="text-foreground font-medium">{response.profiles.first_name} {response.profiles.last_name}</span>
+                                  <span className="text-muted-foreground ml-2">
                                     {formatInTimeZone(new Date(response.responded_at), 'Europe/Lisbon', 'HH:mm')}
                                   </span>
                                 </div>
@@ -339,9 +339,9 @@ export default function Home() {
                           {alert.noResponses.length > 0 ? (
                             <div className="space-y-1">
                               {alert.noResponses.map((response: any, idx: number) => (
-                                <div key={idx} className="text-xs bg-destructive/10 text-destructive-foreground px-2 py-1 rounded border border-destructive/20">
-                                  {response.profiles.first_name} {response.profiles.last_name}
-                                  <span className="text-destructive ml-2">
+                                <div key={idx} className="text-xs bg-destructive/10 px-2 py-1 rounded border border-destructive/20">
+                                  <span className="text-foreground font-medium">{response.profiles.first_name} {response.profiles.last_name}</span>
+                                  <span className="text-muted-foreground ml-2">
                                     {formatInTimeZone(new Date(response.responded_at), 'Europe/Lisbon', 'HH:mm')}
                                   </span>
                                 </div>
