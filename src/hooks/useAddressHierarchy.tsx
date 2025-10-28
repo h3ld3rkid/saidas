@@ -180,11 +180,12 @@ export const useAddressHierarchy = () => {
           Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
+            transformHeader: (header) => header.trim(),
             complete: (results) => {
               const allStreets = results.data as Array<{ freguesia_id: string; nome: string; id?: string }>;
               
-              // Filter by parish and search term
-              let filtered = allStreets.filter(s => s.freguesia_id === selectedParish);
+              // Filter by parish and search term (trim values to handle spaces in CSV)
+              let filtered = allStreets.filter(s => s.freguesia_id?.trim() === selectedParish);
               
               if (streetSearch) {
                 filtered = filtered.filter(s => 
@@ -192,11 +193,11 @@ export const useAddressHierarchy = () => {
                 );
               }
               
-              // Generate IDs if not present
+              // Generate IDs if not present and trim values
               const streetsWithIds = filtered.map((s, idx) => ({
-                id: s.id || `csv-${idx}`,
-                nome: s.nome || '',
-                freguesia_id: s.freguesia_id
+                id: s.id?.trim() || `csv-${idx}`,
+                nome: s.nome?.trim() || '',
+                freguesia_id: s.freguesia_id?.trim()
               }));
               
               setStreets(streetsWithIds);
