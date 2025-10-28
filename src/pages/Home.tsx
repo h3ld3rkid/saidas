@@ -375,9 +375,9 @@ export default function Home() {
               {services && services.length > 0 ? (
                 services.map((s: any) => (
                   <div key={s.id} className="bg-muted/30 rounded-xl p-3 border transition-all hover:shadow-md">
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
                       <div className="flex-1 min-w-0 space-y-2">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-semibold text-foreground text-sm">
                             Ambulância {s.ambulance_number ?? 'N/A'}
                           </h4>
@@ -422,7 +422,7 @@ export default function Home() {
                         )}
                       </div>
 
-                      <div className="flex flex-col gap-1.5">
+                      <div className="flex flex-col gap-1.5 flex-shrink-0">
                         <Button 
                           size="icon"
                           variant="default"
