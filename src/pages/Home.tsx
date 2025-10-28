@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2 } from "lucide-react";
+import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2, Send } from "lucide-react";
 import { getExitTypeBadgeStyle, displayExitType } from "@/lib/exitType";
 import { SplashAnnouncementModal } from "@/components/SplashAnnouncementModal";
 import { formatInTimeZone } from "date-fns-tz";
@@ -374,62 +374,61 @@ export default function Home() {
             <CardContent className="space-y-3">
               {services && services.length > 0 ? (
                 services.map((s: any) => (
-                  <div key={s.id} className="bg-muted/30 rounded-xl p-4 border transition-all hover:shadow-md">
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between">
+                  <div key={s.id} className="bg-muted/30 rounded-xl p-3 border transition-all hover:shadow-md">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-foreground text-base mb-1">
-                            Ambulância {s.ambulance_number ?? 'N/A'}
-                          </h4>
-                          <div className="flex flex-wrap items-center gap-2 text-sm">
-                            {s.service_number && <span className="font-medium">Nº{s.service_number}</span>}
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-semibold text-foreground text-sm">
+                              Ambulância {s.ambulance_number ?? 'N/A'}
+                            </h4>
+                            {(() => {
+                              const style = getExitTypeBadgeStyle(s.exit_type);
+                              return (
+                                <Badge variant={style.variant} className={`shrink-0 text-xs ${style.className || ''}`}>
+                                  {displayExitType(s.exit_type)}
+                                </Badge>
+                              );
+                            })()}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            {s.service_number && <span>Nº{s.service_number}</span>}
                             {s.total_service_number && (
                               <>
-                                <span className="text-muted-foreground">•</span>
-                                <span className="text-muted-foreground">Nº Ficha {s.total_service_number}</span>
+                                <span>•</span>
+                                <span>Ficha {s.total_service_number}</span>
                               </>
                             )}
+                            <span>•</span>
+                            <span>{s.departure_date} às {s.departure_time}</span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {(() => {
-                            const style = getExitTypeBadgeStyle(s.exit_type);
-                            return (
-                              <Badge variant={style.variant} className={`shrink-0 ${style.className || ''}`}>
-                                {displayExitType(s.exit_type)}
-                              </Badge>
-                            );
-                          })()}
+                      <p className="text-xs text-muted-foreground break-words line-clamp-2">
+                        <strong className="text-foreground">Motivo:</strong> {s.purpose}
+                      </p>
+
+                      {(s.opcomName || s.crewNames) && (
+                        <div className="text-xs text-muted-foreground space-y-0.5">
+                          {s.opcomName && (
+                            <p className="truncate">
+                              <strong className="text-foreground">OPCOM:</strong> {s.opcomName}
+                            </p>
+                          )}
+                          {s.crewNames && (
+                            <p className="truncate">
+                              <strong className="text-foreground">Tripulação:</strong> {s.crewNames}
+                            </p>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground break-words">
-                          <strong className="text-foreground">Motivo:</strong> {s.purpose}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          <strong className="text-foreground">Partida:</strong> {s.departure_date} às {s.departure_time}
-                        </p>
-                      </div>
+                      )}
 
-                      <div className="space-y-1 text-xs">
-                        {s.opcomName && (
-                          <p className="text-muted-foreground break-words">
-                            <strong className="text-foreground">OPCOM:</strong> {s.opcomName}
-                          </p>
-                        )}
-                        {s.crewNames && (
-                          <p className="text-muted-foreground break-words">
-                            <strong className="text-foreground">Tripulação:</strong> {s.crewNames}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex gap-1.5 pt-1">
                         <Button 
                           size="icon"
                           variant="default"
-                          className="h-9 w-9 bg-green-600 hover:bg-green-700"
+                          className="h-8 w-8 bg-green-600 hover:bg-green-700"
                           title="Concluir"
                           onClick={async () => {
                             const isCreator = s.user_id === user?.id;
@@ -462,11 +461,48 @@ export default function Home() {
                             }
                           }}
                         >
-                          <CheckCircle className="h-4 w-4" />
+                          <CheckCircle className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          className="h-8 w-8"
+                          title="Reenviar Notificação"
+                          onClick={async () => {
+                            try {
+                              toast({ title: 'A enviar...', description: 'A reenviar notificação para a tripulação.' });
+                              
+                              const { error } = await supabase.functions.invoke('service-crew-notify', {
+                                body: {
+                                  crewUserIds: s.crew || '',
+                                  serviceType: displayExitType(s.exit_type),
+                                  serviceNumber: s.service_number || 0,
+                                  departureTime: s.departure_time,
+                                  contact: s.patient_contact || 'N/A',
+                                  district: s.patient_district || '',
+                                  municipality: s.patient_municipality || '',
+                                  parish: s.patient_parish || '',
+                                  address: s.patient_address || '',
+                                  observations: s.observations || '',
+                                  registrarUserId: s.user_id
+                                }
+                              });
+                              
+                              if (error) {
+                                toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+                              } else {
+                                toast({ title: 'Enviado!', description: 'Notificação reenviada com sucesso.' });
+                              }
+                            } catch (e: any) {
+                              toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          <Send className="h-3.5 w-3.5" />
                         </Button>
                         <Link to={`/exits/${s.id}/edit`}>
-                          <Button size="icon" variant="outline" className="h-9 w-9" title="Editar">
-                            <Edit3 className="h-4 w-4" />
+                          <Button size="icon" variant="outline" className="h-8 w-8" title="Editar">
+                            <Edit3 className="h-3.5 w-3.5" />
                           </Button>
                         </Link>
                       </div>
