@@ -370,7 +370,7 @@ const Exits = () => {
             <div className="md:hidden divide-y">
               {paginatedExits.map((exit) => (
                 <div key={exit.id} className="p-3 hover:bg-muted/30 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="text-xs text-muted-foreground">
                         {new Date(exit.departure_date).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: '2-digit' })} • {exit.departure_time}
@@ -387,55 +387,55 @@ const Exits = () => {
                         </Badge>
                       </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1 mt-2">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                      </DialogTrigger>
-                      <ExitDetailsModal exit={exit} />
-                    </Dialog>
-                    
-                    {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
-                      <Button 
-                        variant="outline" 
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => navigate(`/exits/${exit.id}/edit`)}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                    
-                    {hasRole('admin') && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8" disabled={deleting === exit.id}>
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    <div className="flex flex-col gap-1.5">
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="icon" className="h-8 w-8">
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Eliminar Serviço</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem a certeza que pretende eliminar este serviço? Esta ação não pode ser desfeita. 
-                              Todos os números de serviços posteriores serão atualizados.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction 
-                              onClick={() => handleDeleteExit(exit.id)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Eliminar
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
+                        </DialogTrigger>
+                        <ExitDetailsModal exit={exit} />
+                      </Dialog>
+                      
+                      {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
+                        <Button 
+                          variant="default" 
+                          size="icon"
+                          className="h-8 w-8 bg-orange-600 hover:bg-orange-700"
+                          onClick={() => navigate(`/exits/${exit.id}/edit`)}
+                        >
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                      
+                      {hasRole('admin') && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" disabled={deleting === exit.id}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Eliminar Serviço</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem a certeza que pretende eliminar este serviço? Esta ação não pode ser desfeita. 
+                                Todos os números de serviços posteriores serão atualizados.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteExit(exit.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Eliminar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
