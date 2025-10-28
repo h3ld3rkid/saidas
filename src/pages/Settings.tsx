@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeExitType, displayExitType, DEFAULT_EXIT_TYPE_KEYS } from '@/lib/exitType';
 
@@ -283,6 +283,117 @@ export default function Settings() {
     }
   };
 
+  const handleExportFreguesias = async () => {
+    try {
+      // Fetch all freguesias with their concelho and distrito names
+      const { data: freguesias, error } = await supabase
+        .from('freguesias')
+        .select(`
+          id,
+          nome,
+          concelhos:concelho_id (
+            nome,
+            distritos:distrito_id (
+              nome
+            )
+          )
+        `)
+        .order('nome');
+
+      if (error) throw error;
+
+      // Create CSV content
+      let csv = 'freguesia_id,freguesia_nome,concelho_nome,distrito_nome\n';
+      
+      freguesias?.forEach((f: any) => {
+        const freguesiaNome = f.nome || '';
+        const concelhoNome = f.concelhos?.nome || '';
+        const distritoNome = f.concelhos?.distritos?.nome || '';
+        csv += `${f.id},"${freguesiaNome}","${concelhoNome}","${distritoNome}"\n`;
+      });
+
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'freguesias_ids.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Ficheiro exportado',
+        description: 'O ficheiro com os IDs das freguesias foi descarregado.'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao exportar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleExportRuas = async () => {
+    try {
+      // Fetch all streets with their freguesia info
+      const { data: ruas, error } = await supabase
+        .from('ruas')
+        .select(`
+          id,
+          nome,
+          freguesia_id,
+          freguesias:freguesia_id (
+            nome,
+            concelhos:concelho_id (
+              nome,
+              distritos:distrito_id (
+                nome
+              )
+            )
+          )
+        `)
+        .order('nome');
+
+      if (error) throw error;
+
+      // Create CSV content in the format needed
+      let csv = 'freguesia_id,nome\n';
+      
+      ruas?.forEach((r: any) => {
+        csv += `${r.freguesia_id},"${r.nome || ''}"\n`;
+      });
+
+      // Download CSV
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', 'ruas_template.csv');
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Template exportado',
+        description: 'O template das ruas com IDs foi descarregado.'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao exportar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    }
+  };
+
   const loadServiceCounters = async () => {
     try {
       // Carregar contadores de serviço
@@ -446,30 +557,59 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="ruas-csv-url">URL do CSV no Google Drive</Label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="ruas-csv-url"
-                    type="url"
-                    placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing"
-                    value={ruasCsvUrl}
-                    onChange={(e) => setRuasCsvUrl(e.target.value)}
-                    className="pl-9"
-                  />
+            <div className="space-y-4">
+              <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                <Label className="text-sm font-semibold">Ferramentas de Exportação</Label>
+                <p className="text-sm text-muted-foreground">
+                  Exporte os IDs das freguesias ou o template das ruas para criar o seu CSV personalizado.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportFreguesias}
+                    className="flex-1"
+                  >
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Exportar IDs Freguesias
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleExportRuas}
+                    className="flex-1"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar Template Ruas
+                  </Button>
                 </div>
-                <Button 
-                  onClick={handleSaveRuasCsvUrl}
-                  disabled={ruasCsvLoading}
-                >
-                  {ruasCsvLoading ? 'A guardar...' : 'Guardar'}
-                </Button>
               </div>
-              <p className="text-sm text-muted-foreground">
-                O CSV deve ter as colunas: freguesia_id, nome (nome da rua). Se não configurado, usa a base de dados.
-              </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="ruas-csv-url">URL do CSV no Google Drive</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="ruas-csv-url"
+                      type="url"
+                      placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing"
+                      value={ruasCsvUrl}
+                      onChange={(e) => setRuasCsvUrl(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleSaveRuasCsvUrl}
+                    disabled={ruasCsvLoading}
+                  >
+                    {ruasCsvLoading ? 'A guardar...' : 'Guardar'}
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  O CSV deve ter as colunas: freguesia_id, nome (nome da rua). Use os botões acima para obter os IDs.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
