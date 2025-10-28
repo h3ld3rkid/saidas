@@ -188,6 +188,38 @@ export default function RegisterExit() {
 
   const set = (key: keyof typeof form, value: any) => setForm((f) => ({ ...f, [key]: value }));
 
+  // Format Portuguese phone number to 123-123-123
+  const formatPortuguesePhone = (value: string): string => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '');
+    
+    // If it's a Portuguese mobile (9 digits starting with 9)
+    if (digits.length === 9 && digits[0] === '9') {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`;
+    }
+    
+    return value;
+  };
+
+  // Validate contact field
+  const isValidContact = (value: string): boolean => {
+    if (!value) return false;
+    
+    // Accept "codu" (case insensitive)
+    if (value.toLowerCase() === 'codu') return true;
+    
+    // Accept Portuguese format 123-123-123
+    if (/^\d{3}-\d{3}-\d{3}$/.test(value)) return true;
+    
+    // Accept international numbers (starting with 00 followed by country code and digits)
+    if (/^00\d{10,15}$/.test(value.replace(/[\s-]/g, ''))) return true;
+    
+    // Accept plain 9-digit Portuguese numbers
+    if (/^9\d{8}$/.test(value)) return true;
+    
+    return false;
+  };
+
   const crewSuggestions = useMemo(
     () => crewOptions.map((c) => `${c.first_name} ${c.last_name}`).filter(Boolean),
     [crewOptions]
@@ -278,12 +310,24 @@ export default function RegisterExit() {
     if (!form.purpose) newErrors.purpose = true;
     
     // CODU obrigatório se emergencia/codu selecionado
-    if (exitType === 'Emergencia/CODU' && !coduNumber) {
-      newErrors.coduNumber = true;
+    if (exitType === 'Emergencia/CODU') {
+      if (!coduNumber) {
+        newErrors.coduNumber = true;
+      } else {
+        const coduNum = parseInt(coduNumber);
+        if (isNaN(coduNum) || coduNum < 1 || coduNum > 10000000) {
+          newErrors.coduNumber = true;
+          toast({ 
+            title: 'Número CODU inválido', 
+            description: 'O número CODU deve estar entre 1 e 10000000.', 
+            variant: 'destructive' 
+          });
+        }
+      }
     }
     
-    // Validação do contacto - aceitar números ou "CODU"
-    if (!form.patient_contact || (!form.patient_contact.match(/^\d+$/) && form.patient_contact.toLowerCase() !== 'codu')) {
+    // Validação do contacto
+    if (!isValidContact(form.patient_contact)) {
       newErrors.patient_contact = true;
     }
 
@@ -583,20 +627,27 @@ export default function RegisterExit() {
                 <div className="space-y-2">
                   <Label>Número CODU <span className="text-red-500">*</span></Label>
                   <Input 
+                    type="number"
+                    min={1}
+                    max={10000000}
                     value={coduNumber} 
                     onChange={(e) => {
-                      setCoduNumber(e.target.value);
-                      if (e.target.value && errors.coduNumber) {
-                        setErrors(prev => {
-                          const newErrors = { ...prev };
-                          delete newErrors.coduNumber;
-                          return newErrors;
-                        });
+                      const value = e.target.value;
+                      // Only allow numbers between 1 and 10000000
+                      if (value === '' || (parseInt(value) >= 1 && parseInt(value) <= 10000000)) {
+                        setCoduNumber(value);
+                        if (value && errors.coduNumber) {
+                          setErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.coduNumber;
+                            return newErrors;
+                          });
+                        }
                       }
                     }}
                     onBlur={checkCoduExists}
                     className={errors.coduNumber ? 'border-red-500' : ''}
-                    placeholder="Ex.: 123456" 
+                    placeholder="Ex.: 123456 (1-10000000)" 
                   />
                 </div>
               )}
@@ -680,7 +731,16 @@ export default function RegisterExit() {
                 inputMode="text" 
                 value={form.patient_contact}
                 onChange={(e) => {
-                  const value = e.target.value;
+                  let value = e.target.value;
+                  
+                  // Auto-format Portuguese numbers as user types
+                  if (/^9\d{0,8}$/.test(value.replace(/\D/g, ''))) {
+                    const digits = value.replace(/\D/g, '');
+                    if (digits.length === 9) {
+                      value = formatPortuguesePhone(digits);
+                    }
+                  }
+                  
                   set('patient_contact', value);
                   if (value && errors.patient_contact) {
                     setErrors(prev => {
@@ -690,10 +750,20 @@ export default function RegisterExit() {
                     });
                   }
                 }}
+                onBlur={(e) => {
+                  // Format on blur if it's a 9-digit Portuguese number
+                  const value = e.target.value;
+                  const digits = value.replace(/\D/g, '');
+                  if (digits.length === 9 && digits[0] === '9') {
+                    set('patient_contact', formatPortuguesePhone(digits));
+                  }
+                }}
                 className={errors.patient_contact ? 'border-red-500' : ''}
-                placeholder="123456789 ou CODU" 
+                placeholder="912-345-678, CODU ou 0033123456789" 
               />
-              <p className="text-xs text-muted-foreground">Número de telefone com 9 dígitos ou "CODU".</p>
+              <p className="text-xs text-muted-foreground">
+                Formato PT: 912-345-678 | Internacional: 0033123456789 | Ou escreva "CODU"
+              </p>
             </div>
 
             {/* Linha 6: Morada com pesquisa ativa */}
