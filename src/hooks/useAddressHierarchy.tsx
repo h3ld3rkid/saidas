@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import Papa from 'papaparse';
 
 interface District {
   id: string;
@@ -44,6 +45,23 @@ export const useAddressHierarchy = () => {
   const [filteredDistricts, setFilteredDistricts] = useState<District[]>([]);
   const [filteredMunicipalities, setFilteredMunicipalities] = useState<Municipality[]>([]);
   const [filteredParishes, setFilteredParishes] = useState<Parish[]>([]);
+  
+  // CSV URL from settings
+  const [csvUrl, setCsvUrl] = useState<string>('');
+
+  // Load CSV URL from settings
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('value')
+      .eq('key', 'ruas_csv_url')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) {
+          setCsvUrl(data.value);
+        }
+      });
+  }, []);
   
   // Load districts on mount
   useEffect(() => {
@@ -136,9 +154,71 @@ export const useAddressHierarchy = () => {
     }
   }, [parishes, parishSearch]);
 
+  // Helper function to convert Google Drive share link to download link
+  const getGoogleDriveDownloadUrl = (url: string): string => {
+    const fileIdMatch = url.match(/\/file\/d\/([^\/]+)/);
+    if (fileIdMatch) {
+      return `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;
+    }
+    return url;
+  };
+
   // Load streets when parish changes or search term updates
   useEffect(() => {
-    if (selectedParish) {
+    if (!selectedParish) {
+      setStreets([]);
+      return;
+    }
+
+    // If CSV URL is configured, fetch from CSV
+    if (csvUrl) {
+      const downloadUrl = getGoogleDriveDownloadUrl(csvUrl);
+      
+      fetch(downloadUrl)
+        .then(response => response.text())
+        .then(csvText => {
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+              const allStreets = results.data as Array<{ freguesia_id: string; nome: string; id?: string }>;
+              
+              // Filter by parish and search term
+              let filtered = allStreets.filter(s => s.freguesia_id === selectedParish);
+              
+              if (streetSearch) {
+                filtered = filtered.filter(s => 
+                  s.nome?.toLowerCase().includes(streetSearch.toLowerCase())
+                );
+              }
+              
+              // Generate IDs if not present
+              const streetsWithIds = filtered.map((s, idx) => ({
+                id: s.id || `csv-${idx}`,
+                nome: s.nome || '',
+                freguesia_id: s.freguesia_id
+              }));
+              
+              setStreets(streetsWithIds);
+            },
+            error: (error) => {
+              console.error('Error parsing CSV:', error);
+              // Fallback to database
+              loadStreetsFromDatabase();
+            }
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching CSV:', error);
+          // Fallback to database
+          loadStreetsFromDatabase();
+        });
+    } else {
+      // Use database
+      loadStreetsFromDatabase();
+    }
+
+    function loadStreetsFromDatabase() {
       let query = supabase
         .from('ruas')
         .select('id, nome, freguesia_id')
@@ -151,10 +231,8 @@ export const useAddressHierarchy = () => {
       query
         .order('nome')
         .then(({ data }) => setStreets(data || []));
-    } else {
-      setStreets([]);
     }
-  }, [selectedParish, streetSearch]);
+  }, [selectedParish, streetSearch, csvUrl]);
 
   const getSelectedNames = () => {
     const districtName = districts.find(d => d.id === selectedDistrict)?.nome || '';

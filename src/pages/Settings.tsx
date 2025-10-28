@@ -22,6 +22,8 @@ export default function Settings() {
   const [endDate, setEndDate] = useState<string>('');
   const [escalasUrl, setEscalasUrl] = useState<string>('');
   const [escalasLoading, setEscalasLoading] = useState(false);
+  const [ruasCsvUrl, setRuasCsvUrl] = useState<string>('');
+  const [ruasCsvLoading, setRuasCsvLoading] = useState(false);
   
   // Service counters state
   const [serviceCounters, setServiceCounters] = useState<{[key: string]: number}>({});
@@ -41,6 +43,7 @@ export default function Settings() {
     // Load current logo if exists
     loadCurrentLogo();
     loadEscalasUrl();
+    loadRuasCsvUrl();
     loadServiceCounters();
   }, [navigate, hasRole, roleLoading]);
 
@@ -57,6 +60,22 @@ export default function Settings() {
       }
     } catch (error) {
       console.log('No escalas URL found yet');
+    }
+  };
+
+  const loadRuasCsvUrl = async () => {
+    try {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'ruas_csv_url')
+        .single();
+      
+      if (data?.value) {
+        setRuasCsvUrl(data.value);
+      }
+    } catch (error) {
+      console.log('No ruas CSV URL found yet');
     }
   };
 
@@ -223,6 +242,47 @@ export default function Settings() {
     }
   };
 
+  const handleSaveRuasCsvUrl = async () => {
+    setRuasCsvLoading(true);
+    try {
+      // Check if setting exists
+      const { data: existing } = await supabase
+        .from('settings')
+        .select('id')
+        .eq('key', 'ruas_csv_url')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('settings')
+          .update({ value: ruasCsvUrl })
+          .eq('key', 'ruas_csv_url');
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('settings')
+          .insert({ key: 'ruas_csv_url', value: ruasCsvUrl });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'URL guardado',
+        description: 'O link do CSV das ruas foi atualizado com sucesso.'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao guardar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setRuasCsvLoading(false);
+    }
+  };
+
   const loadServiceCounters = async () => {
     try {
       // Carregar contadores de serviço
@@ -375,6 +435,45 @@ export default function Settings() {
       </div>
 
       <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              CSV das Ruas (Google Drive)
+            </CardTitle>
+            <CardDescription>
+              Configure o link do Google Drive para o ficheiro CSV das ruas. O CSV será usado no registo de saídas.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ruas-csv-url">URL do CSV no Google Drive</Label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="ruas-csv-url"
+                    type="url"
+                    placeholder="https://drive.google.com/file/d/FILE_ID/view?usp=sharing"
+                    value={ruasCsvUrl}
+                    onChange={(e) => setRuasCsvUrl(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <Button 
+                  onClick={handleSaveRuasCsvUrl}
+                  disabled={ruasCsvLoading}
+                >
+                  {ruasCsvLoading ? 'A guardar...' : 'Guardar'}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                O CSV deve ter as colunas: freguesia_id, nome (nome da rua). Se não configurado, usa a base de dados.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
