@@ -375,56 +375,54 @@ export default function Home() {
               {services && services.length > 0 ? (
                 services.map((s: any) => (
                   <div key={s.id} className="bg-muted/30 rounded-xl p-3 border transition-all hover:shadow-md">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold text-foreground text-sm">
-                              Ambulância {s.ambulance_number ?? 'N/A'}
-                            </h4>
-                            {(() => {
-                              const style = getExitTypeBadgeStyle(s.exit_type);
-                              return (
-                                <Badge variant={style.variant} className={`shrink-0 text-xs ${style.className || ''}`}>
-                                  {displayExitType(s.exit_type)}
-                                </Badge>
-                              );
-                            })()}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                            {s.service_number && <span>Nº{s.service_number}</span>}
-                            {s.total_service_number && (
-                              <>
-                                <span>•</span>
-                                <span>Ficha {s.total_service_number}</span>
-                              </>
-                            )}
-                            <span>•</span>
-                            <span>{s.departure_date} às {s.departure_time}</span>
-                          </div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold text-foreground text-sm">
+                            Ambulância {s.ambulance_number ?? 'N/A'}
+                          </h4>
+                          {(() => {
+                            const style = getExitTypeBadgeStyle(s.exit_type);
+                            return (
+                              <Badge variant={style.variant} className={`shrink-0 text-xs ${style.className || ''}`}>
+                                {displayExitType(s.exit_type)}
+                              </Badge>
+                            );
+                          })()}
                         </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          {s.service_number && <span>Nº{s.service_number}</span>}
+                          {s.total_service_number && (
+                            <>
+                              <span>•</span>
+                              <span>Ficha {s.total_service_number}</span>
+                            </>
+                          )}
+                          <span>•</span>
+                          <span>{s.departure_date} às {s.departure_time}</span>
+                        </div>
+
+                        <p className="text-xs text-muted-foreground break-words line-clamp-2">
+                          <strong className="text-foreground">Motivo:</strong> {s.purpose}
+                        </p>
+
+                        {(s.opcomName || s.crewNames) && (
+                          <div className="text-xs text-muted-foreground space-y-0.5">
+                            {s.opcomName && (
+                              <p className="truncate">
+                                <strong className="text-foreground">OPCOM:</strong> {s.opcomName}
+                              </p>
+                            )}
+                            {s.crewNames && (
+                              <p className="truncate">
+                                <strong className="text-foreground">Tripulação:</strong> {s.crewNames}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
 
-                      <p className="text-xs text-muted-foreground break-words line-clamp-2">
-                        <strong className="text-foreground">Motivo:</strong> {s.purpose}
-                      </p>
-
-                      {(s.opcomName || s.crewNames) && (
-                        <div className="text-xs text-muted-foreground space-y-0.5">
-                          {s.opcomName && (
-                            <p className="truncate">
-                              <strong className="text-foreground">OPCOM:</strong> {s.opcomName}
-                            </p>
-                          )}
-                          {s.crewNames && (
-                            <p className="truncate">
-                              <strong className="text-foreground">Tripulação:</strong> {s.crewNames}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex gap-1.5 pt-1">
+                      <div className="flex flex-col gap-1.5">
                         <Button 
                           size="icon"
                           variant="default"
@@ -465,8 +463,8 @@ export default function Home() {
                         </Button>
                         <Button
                           size="icon"
-                          variant="outline"
-                          className="h-8 w-8"
+                          variant="default"
+                          className="h-8 w-8 bg-blue-600 hover:bg-blue-700"
                           title="Reenviar Notificação"
                           onClick={async () => {
                             try {
@@ -501,7 +499,7 @@ export default function Home() {
                           <Send className="h-3.5 w-3.5" />
                         </Button>
                         <Link to={`/exits/${s.id}/edit`}>
-                          <Button size="icon" variant="outline" className="h-8 w-8" title="Editar">
+                          <Button size="icon" variant="default" className="h-8 w-8 bg-orange-600 hover:bg-orange-700" title="Editar">
                             <Edit3 className="h-3.5 w-3.5" />
                           </Button>
                         </Link>
