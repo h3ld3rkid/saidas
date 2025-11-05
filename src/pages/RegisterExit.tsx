@@ -904,6 +904,7 @@ export default function RegisterExit() {
                       setShowStreetDropdown(true);
                     }}
                     onFocus={() => setShowStreetDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)}
                     placeholder="Procurar rua..."
                     disabled={!selectedParish}
                   />
