@@ -1091,6 +1091,9 @@ export default function RegisterExit() {
             <MapLocationPicker
               value={mapLocation}
               onLocationSelect={setMapLocation}
+              address={form.patient_address}
+              parish={form.patient_parish}
+              municipality={form.patient_municipality}
             />
 
             {/* Seção VSL - só aparece quando VSL está ativado */}

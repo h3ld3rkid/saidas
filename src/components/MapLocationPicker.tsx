@@ -8,14 +8,22 @@ import { toast } from '@/hooks/use-toast';
 interface MapLocationPickerProps {
   onLocationSelect: (location: string) => void;
   value?: string;
+  address?: string;
+  parish?: string;
+  municipality?: string;
 }
 
-export function MapLocationPicker({ onLocationSelect, value }: MapLocationPickerProps) {
+export function MapLocationPicker({ onLocationSelect, value, address, parish, municipality }: MapLocationPickerProps) {
   const [mapUrl, setMapUrl] = useState(value || '');
 
   const openGoogleMaps = () => {
-    // Open Google Maps without specific coordinates so user can navigate freely
-    const mapsUrl = 'https://maps.google.com/';
+    // Build search query from address fields
+    const searchParts = [address, parish, municipality].filter(Boolean);
+    const searchQuery = searchParts.join(', ');
+    
+    const mapsUrl = searchQuery 
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`
+      : 'https://maps.google.com/';
     
     try {
       // Create and click a link element - this avoids popup blockers
@@ -38,7 +46,9 @@ export function MapLocationPicker({ onLocationSelect, value }: MapLocationPicker
       
       toast({
         title: 'Google Maps aberto',
-        description: 'Navegue até à localização desejada, clique no local e copie o URL completo.',
+        description: searchQuery 
+          ? `A pesquisar: ${searchQuery}` 
+          : 'Navegue até à localização desejada, clique no local e copie o URL completo.',
         duration: 5000
       });
     } catch (error) {
