@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, ExternalLink } from 'lucide-react';
+import { MapPin, ExternalLink, Copy, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface MapLocationPickerProps {
@@ -15,6 +15,7 @@ interface MapLocationPickerProps {
 
 export function MapLocationPicker({ onLocationSelect, value, address, parish, municipality }: MapLocationPickerProps) {
   const [mapUrl, setMapUrl] = useState(value || '');
+  const [copied, setCopied] = useState(false);
 
   const openGoogleMaps = () => {
     // Build search query from address fields: Morada + Freguesia + Concelho
@@ -70,6 +71,36 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
     }
   };
 
+  const copyUrlToClipboard = async () => {
+    if (!mapUrl) {
+      toast({
+        title: 'Nenhum URL para copiar',
+        description: 'Por favor, insira um URL do Google Maps primeiro.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(mapUrl);
+      setCopied(true);
+      toast({
+        title: 'URL copiado!',
+        description: 'O link do Google Maps foi copiado para a área de transferência.'
+      });
+      
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: 'Erro ao copiar',
+        description: 'Não foi possível copiar o URL.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -94,13 +125,27 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
           Cole aqui o URL do Google Maps após selecionar a localização:
         </Label>
         <div className="flex gap-2">
-        <Input
-          id="map-url"
-          placeholder="https://www.google.com/maps/@... ou https://maps.app.goo.gl/..."
-          value={mapUrl}
-          onChange={(e) => handleUrlChange(e.target.value)}
-          onBlur={validateAndFormatUrl}
-        />
+          <Input
+            id="map-url"
+            placeholder="https://www.google.com/maps/@... ou https://maps.app.goo.gl/..."
+            value={mapUrl}
+            onChange={(e) => handleUrlChange(e.target.value)}
+            onBlur={validateAndFormatUrl}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={copyUrlToClipboard}
+            disabled={!mapUrl}
+            className="shrink-0"
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-green-600" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+          </Button>
         </div>
         <p className="text-xs text-muted-foreground">
           <strong>Como usar:</strong><br/>
