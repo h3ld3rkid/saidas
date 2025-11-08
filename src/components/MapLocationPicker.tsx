@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, ExternalLink, Copy, Check } from 'lucide-react';
+import { MapPin, ExternalLink, ClipboardPaste } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface MapLocationPickerProps {
@@ -15,7 +15,6 @@ interface MapLocationPickerProps {
 
 export function MapLocationPicker({ onLocationSelect, value, address, parish, municipality }: MapLocationPickerProps) {
   const [mapUrl, setMapUrl] = useState(value || '');
-  const [copied, setCopied] = useState(false);
 
   const openGoogleMaps = () => {
     // Build search query from address fields: Morada + Freguesia + Concelho
@@ -71,31 +70,30 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
     }
   };
 
-  const copyUrlToClipboard = async () => {
-    if (!mapUrl) {
-      toast({
-        title: 'Nenhum URL para copiar',
-        description: 'Por favor, insira um URL do Google Maps primeiro.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
+  const pasteUrlFromClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(mapUrl);
-      setCopied(true);
-      toast({
-        title: 'URL copiado!',
-        description: 'O link do Google Maps foi copiado para a área de transferência.'
-      });
+      const text = await navigator.clipboard.readText();
       
-      setTimeout(() => {
-        setCopied(false);
-      }, 2000);
+      if (!text) {
+        toast({
+          title: 'Área de transferência vazia',
+          description: 'Não há nada para colar.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      setMapUrl(text);
+      handleUrlChange(text);
+      
+      toast({
+        title: 'URL colado!',
+        description: 'O link foi colado no campo.'
+      });
     } catch (error) {
       toast({
-        title: 'Erro ao copiar',
-        description: 'Não foi possível copiar o URL.',
+        title: 'Erro ao colar',
+        description: 'Não foi possível colar da área de transferência. Certifique-se de ter copiado um URL.',
         variant: 'destructive'
       });
     }
@@ -136,15 +134,11 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
             type="button"
             variant="outline"
             size="icon"
-            onClick={copyUrlToClipboard}
-            disabled={!mapUrl}
+            onClick={pasteUrlFromClipboard}
             className="shrink-0"
+            title="Colar URL da área de transferência"
           >
-            {copied ? (
-              <Check className="h-4 w-4 text-green-600" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
+            <ClipboardPaste className="h-4 w-4" />
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
