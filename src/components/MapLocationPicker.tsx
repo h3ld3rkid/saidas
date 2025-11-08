@@ -6,6 +6,7 @@ import { MapPin, ExternalLink, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MapLocationPickerProps {
   onLocationSelect: (location: string) => void;
@@ -17,13 +18,8 @@ interface MapLocationPickerProps {
 
 interface LocationSuggestion {
   formatted_address: string;
-  place_id: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
+  lat: number;
+  lng: number;
 }
 
 export function MapLocationPicker({ onLocationSelect, value, address, parish, municipality }: MapLocationPickerProps) {
@@ -33,10 +29,7 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const searchLocations = async () => {
-    const searchParts = [address, parish, municipality].filter(Boolean);
-    const searchQuery = searchParts.join(', ');
-    
-    if (!searchQuery) {
+    if (!address && !parish && !municipality) {
       toast({
         title: 'Morada incompleta',
         description: 'Por favor, preencha pelo menos um campo de morada.',
@@ -48,25 +41,32 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
     setLoading(true);
     
     try {
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&key=YOUR_API_KEY`
-      );
+      const { data, error } = await supabase.functions.invoke('google-maps-geocode', {
+        body: { 
+          address, 
+          parish, 
+          municipality 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast({
+          title: 'Erro',
+          description: data.error,
+          variant: 'destructive'
+        });
+        return;
+      }
       
-      const data = await response.json();
-      
-      if (data.status === 'OK' && data.results && data.results.length > 0) {
-        setSuggestions(data.results);
+      if (data.suggestions && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
         setShowSuggestions(true);
         
         toast({
           title: 'Sugestões encontradas',
-          description: `${data.results.length} localização(ões) encontrada(s).`
-        });
-      } else if (data.status === 'REQUEST_DENIED') {
-        toast({
-          title: 'API Key necessária',
-          description: 'Configure a Google Maps API Key nas definições.',
-          variant: 'destructive'
+          description: `${data.suggestions.length} localização(ões) encontrada(s).`
         });
       } else {
         toast({
@@ -75,14 +75,13 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
           variant: 'destructive'
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error searching locations:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível buscar localizações. A abrir Google Maps...',
+        description: error.message || 'Não foi possível buscar localizações.',
         variant: 'destructive'
       });
-      // Fallback: open Google Maps directly
-      openGoogleMapsDirectly(searchQuery);
     } finally {
       setLoading(false);
     }
@@ -94,7 +93,7 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
   };
 
   const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
-    const { lat, lng } = suggestion.geometry.location;
+    const { lat, lng } = suggestion;
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     
     setMapUrl(mapsUrl);
@@ -213,9 +212,9 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
           </DialogHeader>
           <ScrollArea className="max-h-[400px] pr-4">
             <div className="space-y-2">
-              {suggestions.map((suggestion) => (
+              {suggestions.map((suggestion, index) => (
                 <button
-                  key={suggestion.place_id}
+                  key={`${suggestion.lat}-${suggestion.lng}-${index}`}
                   onClick={() => handleSelectSuggestion(suggestion)}
                   className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent hover:border-primary transition-colors"
                 >
@@ -224,7 +223,7 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
                     <div>
                       <p className="font-medium text-foreground">{suggestion.formatted_address}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {suggestion.geometry.location.lat.toFixed(6)}, {suggestion.geometry.location.lng.toFixed(6)}
+                        {suggestion.lat.toFixed(6)}, {suggestion.lng.toFixed(6)}
                       </p>
                     </div>
                   </div>

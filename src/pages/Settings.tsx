@@ -24,6 +24,8 @@ export default function Settings() {
   const [escalasLoading, setEscalasLoading] = useState(false);
   const [ruasCsvUrl, setRuasCsvUrl] = useState<string>('');
   const [ruasCsvLoading, setRuasCsvLoading] = useState(false);
+  const [googleMapsApiKey, setGoogleMapsApiKey] = useState<string>('');
+  const [googleMapsLoading, setGoogleMapsLoading] = useState(false);
   
   // Service counters state
   const [serviceCounters, setServiceCounters] = useState<{[key: string]: number}>({});
@@ -44,6 +46,7 @@ export default function Settings() {
     loadCurrentLogo();
     loadEscalasUrl();
     loadRuasCsvUrl();
+    loadGoogleMapsApiKey();
     loadServiceCounters();
   }, [navigate, hasRole, roleLoading]);
 
@@ -76,6 +79,22 @@ export default function Settings() {
       }
     } catch (error) {
       console.log('No ruas CSV URL found yet');
+    }
+  };
+
+  const loadGoogleMapsApiKey = async () => {
+    try {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'google_maps_api_key')
+        .single();
+      
+      if (data?.value) {
+        setGoogleMapsApiKey(data.value);
+      }
+    } catch (error) {
+      console.log('No Google Maps API key found yet');
     }
   };
 
@@ -280,6 +299,47 @@ export default function Settings() {
       });
     } finally {
       setRuasCsvLoading(false);
+    }
+  };
+
+  const handleSaveGoogleMapsApiKey = async () => {
+    setGoogleMapsLoading(true);
+    try {
+      // Check if setting exists
+      const { data: existing } = await supabase
+        .from('settings')
+        .select('id')
+        .eq('key', 'google_maps_api_key')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('settings')
+          .update({ value: googleMapsApiKey })
+          .eq('key', 'google_maps_api_key');
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('settings')
+          .insert({ key: 'google_maps_api_key', value: googleMapsApiKey });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'API Key guardada',
+        description: 'A chave da Google Maps API foi guardada com sucesso.'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao guardar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setGoogleMapsLoading(false);
     }
   };
 
@@ -546,6 +606,41 @@ export default function Settings() {
       </div>
 
       <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link className="h-5 w-5" />
+              Google Maps API
+            </CardTitle>
+            <CardDescription>
+              Configure a chave da API do Google Maps para permitir a busca de localizações no registo de saídas
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="google-maps-key">Chave da API do Google Maps</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="google-maps-key"
+                  type="password"
+                  placeholder="AIzaSy..."
+                  value={googleMapsApiKey}
+                  onChange={(e) => setGoogleMapsApiKey(e.target.value)}
+                />
+                <Button 
+                  onClick={handleSaveGoogleMapsApiKey}
+                  disabled={googleMapsLoading}
+                >
+                  {googleMapsLoading ? 'A guardar...' : 'Guardar'}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Obtenha uma chave de API em: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
