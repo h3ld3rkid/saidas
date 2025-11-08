@@ -17,55 +17,24 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
   const [mapUrl, setMapUrl] = useState(value || '');
 
   const openGoogleMaps = () => {
-    // Build search query from address fields
+    // Build search query from address fields: Morada + Freguesia + Concelho
     const searchParts = [address, parish, municipality].filter(Boolean);
     const searchQuery = searchParts.join(', ');
     
     const mapsUrl = searchQuery 
       ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`
-      : 'https://maps.google.com/';
+      : 'https://www.google.com/maps/search/?api=1';
     
-    try {
-      // Create and click a link element - this avoids popup blockers
-      const link = document.createElement('a');
-      link.href = mapsUrl;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      
-      // Add some user-friendly attributes
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      
-      // Trigger the click
-      link.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 100);
-      
-      toast({
-        title: 'Google Maps aberto',
-        description: searchQuery 
-          ? `A pesquisar: ${searchQuery}` 
-          : 'Navegue até à localização desejada, clique no local e copie o URL completo.',
-        duration: 5000
-      });
-    } catch (error) {
-      // Fallback - copy URL to clipboard and show instructions
-      navigator.clipboard.writeText(mapsUrl).then(() => {
-        toast({
-          title: 'URL copiado para área de transferência',
-          description: 'Cole o URL numa nova aba do navegador para abrir o Google Maps.',
-        });
-      }).catch(() => {
-        toast({
-          title: 'Abrir manualmente',
-          description: `Vá para: ${mapsUrl}`,
-          variant: 'destructive'
-        });
-      });
-    }
+    // Open in new tab
+    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+    
+    toast({
+      title: 'Google Maps aberto',
+      description: searchQuery 
+        ? `A pesquisar: ${searchQuery}` 
+        : 'Navegue até à localização desejada, clique no local e copie o URL completo.',
+      duration: 5000
+    });
   };
 
   const handleUrlChange = (url: string) => {
