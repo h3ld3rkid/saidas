@@ -2,11 +2,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MapPin, ExternalLink, Loader2 } from 'lucide-react';
+import { MapPin, ExternalLink } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
 
 interface MapLocationPickerProps {
   onLocationSelect: (location: string) => void;
@@ -16,94 +13,59 @@ interface MapLocationPickerProps {
   municipality?: string;
 }
 
-interface LocationSuggestion {
-  formatted_address: string;
-  lat: number;
-  lng: number;
-}
-
 export function MapLocationPicker({ onLocationSelect, value, address, parish, municipality }: MapLocationPickerProps) {
   const [mapUrl, setMapUrl] = useState(value || '');
-  const [loading, setLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const searchLocations = async () => {
-    if (!address && !parish && !municipality) {
-      toast({
-        title: 'Morada incompleta',
-        description: 'Por favor, preencha pelo menos um campo de morada.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setLoading(true);
+  const openGoogleMaps = () => {
+    // Build search query from address fields
+    const searchParts = [address, parish, municipality].filter(Boolean);
+    const searchQuery = searchParts.join(', ');
+    
+    const mapsUrl = searchQuery 
+      ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`
+      : 'https://maps.google.com/';
     
     try {
-      const { data, error } = await supabase.functions.invoke('google-maps-geocode', {
-        body: { 
-          address, 
-          parish, 
-          municipality 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.error) {
-        toast({
-          title: 'Erro',
-          description: data.error,
-          variant: 'destructive'
-        });
-        return;
-      }
+      // Create and click a link element - this avoids popup blockers
+      const link = document.createElement('a');
+      link.href = mapsUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       
-      if (data.suggestions && data.suggestions.length > 0) {
-        setSuggestions(data.suggestions);
-        setShowSuggestions(true);
-        
+      // Add some user-friendly attributes
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // Trigger the click
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 100);
+      
+      toast({
+        title: 'Google Maps aberto',
+        description: searchQuery 
+          ? `A pesquisar: ${searchQuery}` 
+          : 'Navegue até à localização desejada, clique no local e copie o URL completo.',
+        duration: 5000
+      });
+    } catch (error) {
+      // Fallback - copy URL to clipboard and show instructions
+      navigator.clipboard.writeText(mapsUrl).then(() => {
         toast({
-          title: 'Sugestões encontradas',
-          description: `${data.suggestions.length} localização(ões) encontrada(s).`
+          title: 'URL copiado para área de transferência',
+          description: 'Cole o URL numa nova aba do navegador para abrir o Google Maps.',
         });
-      } else {
+      }).catch(() => {
         toast({
-          title: 'Nenhuma localização encontrada',
-          description: 'Tente refinar a morada ou usar o Google Maps manualmente.',
+          title: 'Abrir manualmente',
+          description: `Vá para: ${mapsUrl}`,
           variant: 'destructive'
         });
-      }
-    } catch (error: any) {
-      console.error('Error searching locations:', error);
-      toast({
-        title: 'Erro',
-        description: error.message || 'Não foi possível buscar localizações.',
-        variant: 'destructive'
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const openGoogleMapsDirectly = (searchQuery: string) => {
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
-    window.open(mapsUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  const handleSelectSuggestion = (suggestion: LocationSuggestion) => {
-    const { lat, lng } = suggestion;
-    const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
-    
-    setMapUrl(mapsUrl);
-    onLocationSelect(mapsUrl);
-    setShowSuggestions(false);
-    
-    toast({
-      title: 'Localização selecionada',
-      description: suggestion.formatted_address
-    });
   };
 
   const handleUrlChange = (url: string) => {
@@ -150,21 +112,11 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
         <Button
           type="button"
           variant="outline"
-          onClick={searchLocations}
-          disabled={loading}
+          onClick={openGoogleMaps}
           className="flex items-center gap-2"
         >
-          {loading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              A pesquisar...
-            </>
-          ) : (
-            <>
-              <MapPin className="h-4 w-4" />
-              Buscar Localizações
-            </>
-          )}
+          <ExternalLink className="h-4 w-4" />
+          Abrir Google Maps
         </Button>
       </div>
 
@@ -204,35 +156,6 @@ export function MapLocationPicker({ onLocationSelect, value, address, parish, mu
           </a>
         </div>
       )}
-
-      <Dialog open={showSuggestions} onOpenChange={setShowSuggestions}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Selecione a Localização</DialogTitle>
-          </DialogHeader>
-          <ScrollArea className="max-h-[400px] pr-4">
-            <div className="space-y-2">
-              {suggestions.map((suggestion, index) => (
-                <button
-                  key={`${suggestion.lat}-${suggestion.lng}-${index}`}
-                  onClick={() => handleSelectSuggestion(suggestion)}
-                  className="w-full text-left p-3 rounded-lg border border-border hover:bg-accent hover:border-primary transition-colors"
-                >
-                  <div className="flex items-start gap-2">
-                    <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="font-medium text-foreground">{suggestion.formatted_address}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {suggestion.lat.toFixed(6)}, {suggestion.lng.toFixed(6)}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

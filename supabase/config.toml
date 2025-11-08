@@ -1,8 +1,5 @@
 project_id = "mubuncckmiyxxnlxnecn"
 
-[functions.google-maps-geocode]
-verify_jwt = true
-
 [functions.emergency-alert]
 verify_jwt = false
 
