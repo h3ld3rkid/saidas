@@ -734,7 +734,7 @@ const ManageUsers = () => {
                         </div>
                       </div>
                       
-                      <div className="flex flex-col gap-1 shrink-0">
+                      <div className="grid grid-cols-2 gap-1 shrink-0">
                         <Button
                           size="icon"
                           variant="outline"
@@ -775,7 +775,7 @@ const ManageUsers = () => {
                           size="icon"
                           variant="destructive"
                           onClick={() => handleDeleteUser(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
-                          className="h-8 w-8"
+                          className="h-8 w-8 col-span-2"
                           title="Eliminar"
                         >
                           <Trash2 className="h-3 w-3" />
