@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check, KeyRound } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -553,26 +554,28 @@ const ManageUsers = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-2">
-          <Users className="h-6 w-6" />
-          <h1 className="text-3xl font-bold">Gestão de Utilizadores</h1>
+          <Users className="h-5 w-5 md:h-6 md:w-6" />
+          <h1 className="text-2xl md:text-3xl font-bold">Gestão de Utilizadores</h1>
         </div>
         <div className="flex gap-2">
           <Button 
             variant={activeTab === 'create' ? 'default' : 'outline'}
             onClick={() => setActiveTab('create')}
+            className="flex-1 sm:flex-initial"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            {editingUser ? 'Editar' : 'Criar'}
+            <Plus className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">{editingUser ? 'Editar' : 'Criar'}</span>
           </Button>
           <Button 
             variant={activeTab === 'list' ? 'default' : 'outline'}
             onClick={() => setActiveTab('list')}
+            className="flex-1 sm:flex-initial"
           >
-            <Users className="h-4 w-4 mr-2" />
-            Listar
+            <Users className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Listar</span>
           </Button>
         </div>
       </div>
@@ -704,34 +707,34 @@ const ManageUsers = () => {
                 <p className="text-muted-foreground">Nenhum utilizador encontrado</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {profiles.map((profile) => (
-                  <div key={profile.id} className="border rounded-lg p-4">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg">
+                  <div key={profile.id} className="border rounded-lg p-3 md:p-4">
+                    <div className="flex gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-base md:text-lg">
                             {profile.first_name} {profile.last_name}
                           </h3>
-                          <Badge variant={getRoleBadgeVariant(getUserRole(profile.user_id))}>
+                          <Badge variant={getRoleBadgeVariant(getUserRole(profile.user_id))} className="text-xs">
                             {getRoleLabel(getUserRole(profile.user_id))}
                           </Badge>
-                          <Badge variant={profile.is_active ? 'default' : 'secondary'}>
+                          <Badge variant={profile.is_active ? 'default' : 'secondary'} className="text-xs">
                             {profile.is_active ? 'Ativo' : 'Inativo'}
                           </Badge>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                          <p><strong>Email:</strong> {profile.email}</p>
-                          <p><strong>Nº Mecanográfico:</strong> {profile.employee_number}</p>
+                        <div className="space-y-1 text-sm text-muted-foreground">
+                          <p className="truncate"><strong>Email:</strong> {profile.email}</p>
+                          <p><strong>Nº:</strong> {profile.employee_number}</p>
                           {profile.function_role && (
                             <p><strong>Função:</strong> {profile.function_role}</p>
                           )}
-                          <p><strong>Criado em:</strong> {new Date(profile.created_at).toLocaleDateString('pt-PT')}</p>
+                          <p className="hidden md:block"><strong>Criado:</strong> {new Date(profile.created_at).toLocaleDateString('pt-PT')}</p>
                         </div>
                       </div>
                       
-                      <div className="flex flex-row gap-1 mt-2 sm:mt-0">
+                      <div className="flex flex-col gap-1 shrink-0">
                         <Button
                           size="icon"
                           variant="outline"
