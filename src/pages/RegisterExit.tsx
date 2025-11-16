@@ -951,7 +951,7 @@ export default function RegisterExit() {
                         </div>)}
                     </div> : <p className="text-xs text-muted-foreground">Sem membros selecionados ainda.</p>}
                   <input type="hidden" value={form.crew} readOnly />
-                  <p className="text-xs text-muted-foreground">Mínimo 2, máximo 4 elementos (quem regista não conta para o limite)</p>
+                  <p className="text-xs text-muted-foreground">Mínimo 2, máximo 4 elementos  </p>
                 </div>
             </div>
 
