@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/hooks/use-toast';
-import { MessageCircle, Users, UserPlus, CheckCircle, Settings } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, CheckCircle, Settings, X, Send } from 'lucide-react';
 
 interface Profile {
   user_id: string;
@@ -157,6 +157,43 @@ export default function TelegramSettings() {
         description: error.message,
         variant: 'destructive'
       });
+    }
+  };
+
+  const sendTestToUser = async (chatId: string, userName: string) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-notify', {
+        body: {
+          chatIds: [chatId],
+          message: '🧪 Teste individual de notificação Telegram'
+        }
+      });
+
+      if (error) throw error;
+
+      const success = data?.results?.[0]?.success;
+      
+      if (success) {
+        toast({
+          title: 'Teste enviado!',
+          description: `Mensagem de teste enviada para ${userName}`
+        });
+      } else {
+        toast({
+          title: 'Erro no envio',
+          description: `Falha ao enviar mensagem para ${userName}`,
+          variant: 'destructive'
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao enviar teste',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -378,7 +415,7 @@ export default function TelegramSettings() {
                   key={profile.user_id}
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium">
                       {profile.first_name} {profile.last_name}
                     </p>
@@ -391,11 +428,21 @@ export default function TelegramSettings() {
                       <>
                         <CheckCircle className="h-5 w-5 text-green-500" />
                         <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => removeChatId(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => sendTestToUser(profile.telegram_chat_id!, `${profile.first_name} ${profile.last_name}`)}
+                          disabled={loading}
+                          title="Enviar teste"
                         >
-                          Remover
+                          <Send className="h-4 w-4 text-blue-500" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeChatId(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
+                          title="Remover configuração"
+                        >
+                          <X className="h-4 w-4 text-destructive" />
                         </Button>
                       </>
                     ) : null}
