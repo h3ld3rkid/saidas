@@ -145,11 +145,11 @@ const Exits = () => {
         profile: profilesData?.find(p => p.user_id === exit.user_id)
       }));
 
-      // Ordenar do mais recente para o mais antigo
+      // Ordenar pelo número de ficha (total_service_number) do maior para o menor
       const sortedExits = exitsWithProfiles.sort((a: any, b: any) => {
-        const dateA = new Date(`${a.departure_date} ${a.departure_time}`).getTime();
-        const dateB = new Date(`${b.departure_date} ${b.departure_time}`).getTime();
-        return dateB - dateA;
+        const numA = a.total_service_number || 0;
+        const numB = b.total_service_number || 0;
+        return numB - numA;
       });
 
       setExits(sortedExits as any);
