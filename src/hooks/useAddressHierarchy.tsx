@@ -27,6 +27,8 @@ interface Street {
 
 export const useAddressHierarchy = () => {
   const [districts, setDistricts] = useState<District[]>([]);
+  const [allMunicipalities, setAllMunicipalities] = useState<Municipality[]>([]);
+  const [allParishes, setAllParishes] = useState<Parish[]>([]);
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [parishes, setParishes] = useState<Parish[]>([]);
   const [streets, setStreets] = useState<Street[]>([]);
@@ -46,34 +48,134 @@ export const useAddressHierarchy = () => {
   const [filteredMunicipalities, setFilteredMunicipalities] = useState<Municipality[]>([]);
   const [filteredParishes, setFilteredParishes] = useState<Parish[]>([]);
   
-  // CSV URL from settings
+  // CSV URLs from settings
   const [csvUrl, setCsvUrl] = useState<string>('');
+  const [distritosCsvUrl, setDistritosCsvUrl] = useState<string>('');
+  const [concelhosCsvUrl, setConcelhosCsvUrl] = useState<string>('');
+  const [freguesiasCsvUrl, setFreguesiasCsvUrl] = useState<string>('');
 
-  // Load CSV URL from settings
+  // Load CSV URLs from settings
   useEffect(() => {
     supabase
       .from('settings')
-      .select('value')
-      .eq('key', 'ruas_csv_url')
-      .maybeSingle()
+      .select('key, value')
+      .in('key', ['ruas_csv_url', 'distritos_csv_url', 'concelhos_csv_url', 'freguesias_csv_url'])
       .then(({ data }) => {
-        if (data?.value) {
-          setCsvUrl(data.value);
-        }
+        data?.forEach(setting => {
+          if (setting.key === 'ruas_csv_url') setCsvUrl(setting.value || '');
+          if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(setting.value || '');
+          if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(setting.value || '');
+          if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(setting.value || '');
+        });
       });
   }, []);
   
-  // Load districts on mount
+  // Load districts on mount (from CSV or database)
   useEffect(() => {
-    supabase
-      .from('distritos')
-      .select('id, nome')
-      .order('nome')
-      .then(({ data }) => {
-        setDistricts(data || []);
-        setFilteredDistricts(data || []);
-      });
-  }, []);
+    if (distritosCsvUrl) {
+      fetch(distritosCsvUrl)
+        .then(response => response.text())
+        .then(csvText => {
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (header) => header.trim(),
+            complete: (results) => {
+              const data = (results.data as Array<{ id: string; nome: string }>)
+                .map(d => ({ id: d.id?.trim(), nome: d.nome?.trim() }))
+                .filter(d => d.id && d.nome)
+                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+              setDistricts(data);
+              setFilteredDistricts(data);
+            }
+          });
+        })
+        .catch(() => loadDistrictsFromDatabase());
+    } else {
+      loadDistrictsFromDatabase();
+    }
+
+    function loadDistrictsFromDatabase() {
+      supabase
+        .from('distritos')
+        .select('id, nome')
+        .order('nome')
+        .then(({ data }) => {
+          setDistricts(data || []);
+          setFilteredDistricts(data || []);
+        });
+    }
+  }, [distritosCsvUrl]);
+
+  // Load all municipalities (from CSV or database)
+  useEffect(() => {
+    if (concelhosCsvUrl) {
+      fetch(concelhosCsvUrl)
+        .then(response => response.text())
+        .then(csvText => {
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (header) => header.trim(),
+            complete: (results) => {
+              const data = (results.data as Array<{ id: string; nome: string; distrito_id: string }>)
+                .map(m => ({ id: m.id?.trim(), nome: m.nome?.trim(), distrito_id: m.distrito_id?.trim() }))
+                .filter(m => m.id && m.nome && m.distrito_id)
+                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+              setAllMunicipalities(data);
+            }
+          });
+        })
+        .catch(() => loadMunicipalitiesFromDatabase());
+    } else {
+      loadMunicipalitiesFromDatabase();
+    }
+
+    function loadMunicipalitiesFromDatabase() {
+      supabase
+        .from('concelhos')
+        .select('id, nome, distrito_id')
+        .order('nome')
+        .then(({ data }) => {
+          setAllMunicipalities(data || []);
+        });
+    }
+  }, [concelhosCsvUrl]);
+
+  // Load all parishes (from CSV or database)
+  useEffect(() => {
+    if (freguesiasCsvUrl) {
+      fetch(freguesiasCsvUrl)
+        .then(response => response.text())
+        .then(csvText => {
+          Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            transformHeader: (header) => header.trim(),
+            complete: (results) => {
+              const data = (results.data as Array<{ id: string; nome: string; concelho_id: string }>)
+                .map(p => ({ id: p.id?.trim(), nome: p.nome?.trim(), concelho_id: p.concelho_id?.trim() }))
+                .filter(p => p.id && p.nome && p.concelho_id)
+                .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+              setAllParishes(data);
+            }
+          });
+        })
+        .catch(() => loadParishesFromDatabase());
+    } else {
+      loadParishesFromDatabase();
+    }
+
+    function loadParishesFromDatabase() {
+      supabase
+        .from('freguesias')
+        .select('id, nome, concelho_id')
+        .order('nome')
+        .then(({ data }) => {
+          setAllParishes(data || []);
+        });
+    }
+  }, [freguesiasCsvUrl]);
 
   // Filter districts based on search
   useEffect(() => {
@@ -88,25 +190,19 @@ export const useAddressHierarchy = () => {
     }
   }, [districts, districtSearch]);
 
-  // Load municipalities when district changes
+  // Filter municipalities when district changes
   useEffect(() => {
     if (selectedDistrict) {
-      supabase
-        .from('concelhos')
-        .select('id, nome, distrito_id')
-        .eq('distrito_id', selectedDistrict)
-        .order('nome')
-        .then(({ data }) => {
-          setMunicipalities(data || []);
-          setFilteredMunicipalities(data || []);
-        });
+      const filtered = allMunicipalities.filter(m => m.distrito_id === selectedDistrict);
+      setMunicipalities(filtered);
+      setFilteredMunicipalities(filtered);
     } else {
       setMunicipalities([]);
       setFilteredMunicipalities([]);
     }
     setSelectedMunicipality('');
     setMunicipalitySearch('');
-  }, [selectedDistrict]);
+  }, [selectedDistrict, allMunicipalities]);
 
   // Filter municipalities based on search
   useEffect(() => {
@@ -121,25 +217,19 @@ export const useAddressHierarchy = () => {
     }
   }, [municipalities, municipalitySearch]);
 
-  // Load parishes when municipality changes
+  // Filter parishes when municipality changes
   useEffect(() => {
     if (selectedMunicipality) {
-      supabase
-        .from('freguesias')
-        .select('id, nome, concelho_id')
-        .eq('concelho_id', selectedMunicipality)
-        .order('nome')
-        .then(({ data }) => {
-          setParishes(data || []);
-          setFilteredParishes(data || []);
-        });
+      const filtered = allParishes.filter(p => p.concelho_id === selectedMunicipality);
+      setParishes(filtered);
+      setFilteredParishes(filtered);
     } else {
       setParishes([]);
       setFilteredParishes([]);
     }
     setSelectedParish('');
     setParishSearch('');
-  }, [selectedMunicipality]);
+  }, [selectedMunicipality, allParishes]);
 
   // Filter parishes based on search
   useEffect(() => {
