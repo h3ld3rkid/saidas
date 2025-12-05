@@ -24,6 +24,12 @@ export default function Settings() {
   const [escalasLoading, setEscalasLoading] = useState(false);
   const [ruasCsvUrl, setRuasCsvUrl] = useState<string>('');
   const [ruasCsvLoading, setRuasCsvLoading] = useState(false);
+  const [distritosCsvUrl, setDistritosCsvUrl] = useState<string>('');
+  const [distritosCsvLoading, setDistritosCsvLoading] = useState(false);
+  const [concelhosCsvUrl, setConcelhosCsvUrl] = useState<string>('');
+  const [concelhosCsvLoading, setConcelhosCsvLoading] = useState(false);
+  const [freguesiasCsvUrl, setFreguesiasCsvUrl] = useState<string>('');
+  const [freguesiasCsvLoading, setFreguesiasCsvLoading] = useState(false);
   
   // Service counters state
   const [serviceCounters, setServiceCounters] = useState<{[key: string]: number}>({});
@@ -44,6 +50,7 @@ export default function Settings() {
     loadCurrentLogo();
     loadEscalasUrl();
     loadRuasCsvUrl();
+    loadAddressCsvUrls();
     loadServiceCounters();
   }, [navigate, hasRole, roleLoading]);
 
@@ -76,6 +83,23 @@ export default function Settings() {
       }
     } catch (error) {
       console.log('No ruas CSV URL found yet');
+    }
+  };
+
+  const loadAddressCsvUrls = async () => {
+    try {
+      const { data } = await supabase
+        .from('settings')
+        .select('key, value')
+        .in('key', ['distritos_csv_url', 'concelhos_csv_url', 'freguesias_csv_url']);
+      
+      data?.forEach(setting => {
+        if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(setting.value || '');
+        if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(setting.value || '');
+        if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(setting.value || '');
+      });
+    } catch (error) {
+      console.log('No address CSV URLs found yet');
     }
   };
 
@@ -280,6 +304,102 @@ export default function Settings() {
       });
     } finally {
       setRuasCsvLoading(false);
+    }
+  };
+
+  const handleSaveAddressCsvUrl = async (key: string, value: string, setLoading: (v: boolean) => void, label: string) => {
+    setLoading(true);
+    try {
+      const { data: existing } = await supabase
+        .from('settings')
+        .select('id')
+        .eq('key', key)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('settings')
+          .update({ value })
+          .eq('key', key);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('settings')
+          .insert({ key, value });
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: 'URL guardado',
+        description: `O link do CSV de ${label} foi atualizado com sucesso.`
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao guardar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportDistritosConcelhos = async () => {
+    try {
+      const { data: distritos } = await supabase.from('distritos').select('id, nome').order('nome');
+      const { data: concelhos } = await supabase.from('concelhos').select('id, nome, distrito_id').order('nome');
+      const { data: freguesias } = await supabase.from('freguesias').select('id, nome, concelho_id').order('nome');
+
+      // Export distritos
+      let distritosCsv = 'id,nome\n';
+      distritos?.forEach(d => {
+        distritosCsv += `${d.id},"${d.nome}"\n`;
+      });
+
+      // Export concelhos
+      let concelhosCsv = 'id,nome,distrito_id\n';
+      concelhos?.forEach(c => {
+        concelhosCsv += `${c.id},"${c.nome}",${c.distrito_id}\n`;
+      });
+
+      // Export freguesias
+      let freguesiasCsv = 'id,nome,concelho_id\n';
+      freguesias?.forEach(f => {
+        freguesiasCsv += `${f.id},"${f.nome}",${f.concelho_id}\n`;
+      });
+
+      // Download all three files
+      const downloadCsv = (content: string, filename: string) => {
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      };
+
+      downloadCsv(distritosCsv, 'distritos.csv');
+      setTimeout(() => downloadCsv(concelhosCsv, 'concelhos.csv'), 300);
+      setTimeout(() => downloadCsv(freguesiasCsv, 'freguesias.csv'), 600);
+
+      toast({
+        title: 'Ficheiros exportados',
+        description: '3 ficheiros CSV foram descarregados (distritos, concelhos, freguesias).'
+      });
+
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao exportar',
+        description: error.message,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -609,6 +729,96 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">
                   O CSV deve ter as colunas: freguesia_id, nome (nome da rua). Use os botões acima para obter os IDs.
                 </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Distritos, Concelhos e Freguesias (GitHub CSV)
+            </CardTitle>
+            <CardDescription>
+              Configure os links dos CSVs para gerir distritos, concelhos e freguesias. Edite diretamente no GitHub.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+              <Label className="text-sm font-semibold">Exportar Dados Actuais</Label>
+              <p className="text-sm text-muted-foreground">
+                Exporte os dados actuais para criar os seus CSVs no GitHub.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportDistritosConcelhos}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Exportar Distritos, Concelhos e Freguesias
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="distritos-csv-url">URL do CSV de Distritos</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="distritos-csv-url"
+                    type="url"
+                    placeholder="https://raw.githubusercontent.com/.../distritos.csv"
+                    value={distritosCsvUrl}
+                    onChange={(e) => setDistritosCsvUrl(e.target.value)}
+                  />
+                  <Button 
+                    onClick={() => handleSaveAddressCsvUrl('distritos_csv_url', distritosCsvUrl, setDistritosCsvLoading, 'distritos')}
+                    disabled={distritosCsvLoading}
+                  >
+                    {distritosCsvLoading ? '...' : 'Guardar'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Colunas: id, nome</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="concelhos-csv-url">URL do CSV de Concelhos</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="concelhos-csv-url"
+                    type="url"
+                    placeholder="https://raw.githubusercontent.com/.../concelhos.csv"
+                    value={concelhosCsvUrl}
+                    onChange={(e) => setConcelhosCsvUrl(e.target.value)}
+                  />
+                  <Button 
+                    onClick={() => handleSaveAddressCsvUrl('concelhos_csv_url', concelhosCsvUrl, setConcelhosCsvLoading, 'concelhos')}
+                    disabled={concelhosCsvLoading}
+                  >
+                    {concelhosCsvLoading ? '...' : 'Guardar'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Colunas: id, nome, distrito_id</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="freguesias-csv-url">URL do CSV de Freguesias</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="freguesias-csv-url"
+                    type="url"
+                    placeholder="https://raw.githubusercontent.com/.../freguesias.csv"
+                    value={freguesiasCsvUrl}
+                    onChange={(e) => setFreguesiasCsvUrl(e.target.value)}
+                  />
+                  <Button 
+                    onClick={() => handleSaveAddressCsvUrl('freguesias_csv_url', freguesiasCsvUrl, setFreguesiasCsvLoading, 'freguesias')}
+                    disabled={freguesiasCsvLoading}
+                  >
+                    {freguesiasCsvLoading ? '...' : 'Guardar'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Colunas: id, nome, concelho_id</p>
               </div>
             </div>
           </CardContent>
