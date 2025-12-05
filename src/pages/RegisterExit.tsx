@@ -208,8 +208,8 @@ export default function RegisterExit() {
     // Remove all non-digits
     const digits = value.replace(/\D/g, '');
 
-    // If it's a Portuguese mobile (9 digits starting with 9)
-    if (digits.length === 9 && digits[0] === '9') {
+    // If it's a Portuguese number (9 digits - mobile or landline)
+    if (digits.length === 9) {
       return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6, 9)}`;
     }
     return value;
@@ -228,8 +228,8 @@ export default function RegisterExit() {
     // Accept international numbers (starting with 00 followed by country code and digits)
     if (/^00\d{10,15}$/.test(value.replace(/[\s-]/g, ''))) return true;
 
-    // Accept plain 9-digit Portuguese numbers
-    if (/^9\d{8}$/.test(value)) return true;
+    // Accept plain 9-digit Portuguese numbers (mobile and landline)
+    if (/^\d{9}$/.test(value)) return true;
     return false;
   };
   const crewSuggestions = useMemo(() => crewOptions.map(c => `${c.first_name} ${c.last_name}`).filter(Boolean), [crewOptions]);
@@ -721,7 +721,7 @@ export default function RegisterExit() {
               // Format on blur if it's a 9-digit Portuguese number
               const value = e.target.value;
               const digits = value.replace(/\D/g, '');
-              if (digits.length === 9 && digits[0] === '9') {
+              if (digits.length === 9) {
                 set('patient_contact', formatPortuguesePhone(digits));
               }
             }} className={errors.patient_contact ? 'border-red-500' : ''} placeholder="912-345-678, CODU ou 0033123456789" />
