@@ -69,63 +69,67 @@ const fetchActiveServices = async () => {
 const fetchReadinessResponses = async () => {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   
+  // Fetch ALL alerts from the last hour (no limit)
   const { data: alerts, error: alertsError } = await supabase
     .from('readiness_alerts')
     .select('alert_id, alert_type, requester_name, created_at')
     .gte('created_at', oneHourAgo)
-    .order('created_at', { ascending: false })
-    .limit(1);
+    .order('created_at', { ascending: false });
 
   if (alertsError) throw alertsError;
   if (!alerts || alerts.length === 0) return [];
 
-  const alert = alerts[0];
+  // Get all alert IDs to fetch responses
+  const alertIds = alerts.map(a => a.alert_id);
+  
+  // Fetch all responses for all active alerts
   const { data: responses, error: responsesError } = await supabase
     .from('readiness_responses')
-    .select('user_id, response, responded_at')
-    .eq('alert_id', alert.alert_id);
+    .select('alert_id, user_id, response, responded_at')
+    .in('alert_id', alertIds);
 
   if (responsesError) throw responsesError;
 
-  if (!responses || responses.length === 0) {
-    return [{
-      ...alert,
-      yesResponses: [],
-      noResponses: [],
-      totalResponses: 0
-    }];
+  // Get unique user IDs from responses
+  const userIds = [...new Set((responses || []).map(r => r.user_id))];
+  
+  let nameMap = new Map<string, { first_name: string; last_name: string }>();
+  
+  if (userIds.length > 0) {
+    const { data: namesData, error: namesError } = await supabase
+      .rpc('get_user_names_by_ids', { _user_ids: userIds });
+
+    if (namesError) {
+      console.error('Erro ao obter nomes via RPC:', namesError);
+    }
+
+    (namesData || []).forEach((u: any) => {
+      nameMap.set(u.user_id, { first_name: u.first_name, last_name: u.last_name });
+    });
   }
 
-  const userIds = responses.map(r => r.user_id);
-  const { data: namesData, error: namesError } = await supabase
-    .rpc('get_user_names_by_ids', { _user_ids: userIds });
+  // Map each alert with its responses
+  return alerts.map(alert => {
+    const alertResponses = (responses || []).filter(r => r.alert_id === alert.alert_id);
+    
+    const responsesWithProfiles = alertResponses.map(response => {
+      const n = nameMap.get(response.user_id);
+      return {
+        ...response,
+        profiles: n || { first_name: 'Desconhecido', last_name: '' }
+      };
+    });
 
-  if (namesError) {
-    console.error('Erro ao obter nomes via RPC:', namesError);
-  }
+    const yesResponses = responsesWithProfiles.filter(r => r.response === true);
+    const noResponses = responsesWithProfiles.filter(r => r.response === false);
 
-  const nameMap = new Map<string, { first_name: string; last_name: string }>();
-  (namesData || []).forEach((u: any) => {
-    nameMap.set(u.user_id, { first_name: u.first_name, last_name: u.last_name });
-  });
-
-  const responsesWithProfiles = responses.map(response => {
-    const n = nameMap.get(response.user_id);
     return {
-      ...response,
-      profiles: n || { first_name: 'Desconhecido', last_name: '' }
+      ...alert,
+      yesResponses,
+      noResponses,
+      totalResponses: alertResponses.length
     };
   });
-
-  const yesResponses = responsesWithProfiles.filter(r => r.response === true);
-  const noResponses = responsesWithProfiles.filter(r => r.response === false);
-
-  return [{
-    ...alert,
-    yesResponses,
-    noResponses,
-    totalResponses: responses.length
-  }];
 };
 
 export default function Home() {
