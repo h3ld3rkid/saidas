@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [readinessAlerts, setReadinessAlerts] = useState<any[]>([]);
   const [readinessResponses, setReadinessResponses] = useState<any[]>([]);
   const [activeExits, setActiveExits] = useState<any[]>([]);
+  const [isAlertSending, setIsAlertSending] = useState(false);
 
   // exit type styles come from @/lib/exitType
 
@@ -138,6 +139,15 @@ const Dashboard = () => {
 
   const handleReadinessAlert = async (alertType: 'condutores' | 'socorristas') => {
     if (!user) return;
+    
+    // Prevent duplicate calls
+    if (isAlertSending) {
+      console.log('Alert already being sent, ignoring duplicate call');
+      return;
+    }
+    
+    setIsAlertSending(true);
+    console.log(`Sending readiness alert: ${alertType}`);
 
     try {
       // Get user name
@@ -172,6 +182,9 @@ const Dashboard = () => {
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      // Reset after 3 seconds to allow new alerts
+      setTimeout(() => setIsAlertSending(false), 3000);
     }
   };
 
