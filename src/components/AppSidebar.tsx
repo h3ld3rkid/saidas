@@ -18,6 +18,16 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
@@ -55,6 +65,7 @@ export function AppSidebar() {
   const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
   const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
   const [escalasUrl, setEscalasUrl] = useState<string>('');
+  const [confirmAlertType, setConfirmAlertType] = useState<'condutores' | 'socorristas' | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -349,7 +360,7 @@ export function AppSidebar() {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => sendEmergencyAlert('condutores')}
+                  onClick={() => setConfirmAlertType('condutores')}
                   className={
                     hasActiveCondutoresAlert 
                       ? 'animate-[pulse-alert_2s_ease-in-out_infinite] !bg-red-600 !text-white hover:!bg-red-700 hover:!text-white' 
@@ -362,7 +373,7 @@ export function AppSidebar() {
               </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
-                  onClick={() => sendEmergencyAlert('socorristas')}
+                  onClick={() => setConfirmAlertType('socorristas')}
                   className={
                     hasActiveSocorristasAlert 
                       ? 'animate-[pulse-alert_2s_ease-in-out_infinite] !bg-orange-500 !text-white hover:!bg-orange-600 hover:!text-white' 
@@ -376,6 +387,34 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* Confirmation Dialog for Readiness Alert */}
+        <AlertDialog open={confirmAlertType !== null} onOpenChange={(open) => !open && setConfirmAlertType(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Alerta de Prontidão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem a certeza que deseja ativar o alerta de prontidão para <strong>{confirmAlertType === 'condutores' ? 'Condutores' : 'Socorristas'}</strong>?
+                <br /><br />
+                Esta ação irá enviar uma notificação a todos os utilizadores via Telegram.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (confirmAlertType) {
+                    sendEmergencyAlert(confirmAlertType);
+                  }
+                  setConfirmAlertType(null);
+                }}
+                className={confirmAlertType === 'condutores' ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-500 hover:bg-orange-600'}
+              >
+                Confirmar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {escalasUrl && (
           <SidebarGroup>
