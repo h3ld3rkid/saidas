@@ -390,17 +390,37 @@ export function AppSidebar() {
 
         {/* Confirmation Dialog for Readiness Alert */}
         <AlertDialog open={confirmAlertType !== null} onOpenChange={(open) => !open && setConfirmAlertType(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirmar Alerta de Prontidão</AlertDialogTitle>
-              <AlertDialogDescription>
-                Tem a certeza que deseja ativar o alerta de prontidão para <strong>{confirmAlertType === 'condutores' ? 'Condutores' : 'Socorristas'}</strong>?
-                <br /><br />
-                Esta ação irá enviar uma notificação a todos os utilizadores via Telegram.
+          <AlertDialogContent className="max-w-[90vw] sm:max-w-md rounded-xl p-0 overflow-hidden">
+            {/* Warning Header */}
+            <div className={`p-4 sm:p-6 ${confirmAlertType === 'condutores' ? 'bg-red-600' : 'bg-orange-500'}`}>
+              <div className="flex items-center justify-center">
+                <div className="p-3 bg-white/20 rounded-full">
+                  <AlertTriangle className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+                </div>
+              </div>
+            </div>
+            
+            <AlertDialogHeader className="p-4 sm:p-6 pb-2 sm:pb-3 text-center">
+              <AlertDialogTitle className="text-lg sm:text-xl font-bold">
+                Confirmar Alerta de Prontidão
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm sm:text-base pt-2 space-y-3">
+                <span className="block">
+                  Tem a certeza que deseja ativar o alerta para{' '}
+                  <strong className={confirmAlertType === 'condutores' ? 'text-red-600' : 'text-orange-600'}>
+                    {confirmAlertType === 'condutores' ? 'Condutores' : 'Socorristas'}
+                  </strong>?
+                </span>
+                <span className="block text-muted-foreground text-xs sm:text-sm">
+                  Esta ação irá enviar uma notificação a todos os utilizadores via Telegram.
+                </span>
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            
+            <AlertDialogFooter className="p-4 sm:p-6 pt-2 sm:pt-3 flex-col gap-2 sm:flex-row">
+              <AlertDialogCancel className="w-full sm:w-auto order-2 sm:order-1 m-0">
+                Cancelar
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
                   if (confirmAlertType) {
@@ -408,9 +428,13 @@ export function AppSidebar() {
                   }
                   setConfirmAlertType(null);
                 }}
-                className={confirmAlertType === 'condutores' ? 'bg-red-600 hover:bg-red-700' : 'bg-orange-500 hover:bg-orange-600'}
+                className={`w-full sm:w-auto order-1 sm:order-2 m-0 ${
+                  confirmAlertType === 'condutores' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-orange-500 hover:bg-orange-600'
+                }`}
               >
-                Confirmar
+                Confirmar Alerta
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
