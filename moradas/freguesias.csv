@@ -4,6 +4,7 @@ df30f183-8bce-4058-acd3-be9e4e859acd,"Abaças",89965137-75e6-463d-a654-5b99c9ad2
 31137257-dc22-4177-9dfe-d8c481cc6800,"Abade de Neiva",3f394b11-8d66-4b14-b44c-34f7fca26923
 93150003-8aba-407d-97cc-9d2155e719e1,"Abadim",5ca4ba8b-6ab7-4dfd-8a96-ce213e7644fe
 c5e88fb5-d267-46f6-9424-8cea8a122597,"Abambres",f68999c2-eb27-4d64-9122-0378e6498650
+6bd7c447-81bf-4fad-87b7-2a32a0a4040d,"Aboim da Nóbrega e Gondomar",34790014-b808-4c18-89d1-e80fdb06d863
 bc0c45ae-0476-4505-9d3b-0df2e10a04ba,"Adaúfe",d6a576a1-5dfc-4a13-993f-7d2162729f3c
 e66013e7-562c-4f28-8198-d8164dbace1c,"Adoufe",89965137-75e6-463d-a654-5b99c9ad244d
 7d7b589c-1f2e-4701-8552-dcbfaa37ce72,"Agilde",76470250-5635-4478-83ab-c7445d87c8bf
@@ -53,7 +54,6 @@ a6207650-5612-4b1f-97de-82269583763f,"Bairro",be49d7eb-bc9d-4ac3-abbb-56b5106618
 6c54999b-69a6-43f6-afa7-31747b26c461,"Balança",8112f70c-1ee4-47d5-8037-7e85edbcfa9b
 a8a8b396-4092-41a1-a000-97bb0cf7d609,"Balugães",3f394b11-8d66-4b14-b44c-34f7fca26923
 29185762-aac0-4cc0-9db2-bfadb0351769,"Barbosa",e66573c3-ba07-4e93-add9-de7e7e252f9c
-390600a3-5482-401e-97d7-67646cc3bf18,"Barbudo",34790014-b808-4c18-89d1-e80fdb06d863
 b98e414b-4d1e-43bb-be67-26b26cfbc4e5,"Barcel",f68999c2-eb27-4d64-9122-0378e6498650
 cfa35d44-2143-416d-84d0-bc167fa04ab2,"Barcelinhos",3f394b11-8d66-4b14-b44c-34f7fca26923
 50e26e29-71ed-4933-9e1b-dd6b7c9dcaa0,"Barcelos, Vila Boa e Vila Frescainha (São Martinho e São Pedro)",3f394b11-8d66-4b14-b44c-34f7fca26923
@@ -107,6 +107,8 @@ fc618eb3-36e3-4d53-923f-f51baf7b7f7b,"Carvalhal",3f394b11-8d66-4b14-b44c-34f7fca
 148e665e-9add-44c9-8670-90c8fe0bed95,"Castelões",be49d7eb-bc9d-4ac3-abbb-56b51066180e
 fd713272-ab31-49c4-affa-4bb8e273c660,"Castrelos",d1e00313-f14e-425e-a17c-3f6ae2a8651b
 2c209b6a-c42c-45bd-84e5-1758434c50e8,"Cavalões",be49d7eb-bc9d-4ac3-abbb-56b51066180e
+3b0706e5-8c64-464e-b988-93e67d0a0af3,"Cabanelas",34790014-b808-4c18-89d1-e80fdb06d863
+3d8297e3-4cb4-4bb1-801f-6fba038c81bc,"Carreiras (São Miguel e Santiago)",34790014-b808-4c18-89d1-e80fdb06d863
 7cda32cc-2093-48a8-aed4-2af763385b8f,"Cavez",5ca4ba8b-6ab7-4dfd-8a96-ce213e7644fe
 63524a71-2812-4f0c-8697-4bf445d75947,"Cedães",f68999c2-eb27-4d64-9122-0378e6498650
 1c53a4e3-ee3a-4570-9a0f-d1dee1b96a92,"Cedofeita",d0e81732-cd18-48f6-9beb-65550f1164b1
@@ -143,7 +145,7 @@ e2874419-e4f7-45f0-b8fe-484ba90ae0df,"Dossãos",34790014-b808-4c18-89d1-e80fdb06
 1adb2158-f3c9-4ed3-8cae-c7c20bd7663a,"Durrães e Tregosa",3f394b11-8d66-4b14-b44c-34f7fca26923
 f7c393e3-f418-4c76-aa01-7fe876cd310c,"Eira Vedra",1e615ca8-ce98-4bdb-a06d-ef84d3708f01
 a78ba049-a184-4cb1-82e7-7a3bfa04ca58,"Ervededo",f1cbd75d-209d-4568-9d49-2e4954675a27
-a0be7a47-197e-4c0a-9fe0-065616da60cb,"Escariz (São Mamede)",34790014-b808-4c18-89d1-e80fdb06d863
+a0be7a47-197e-4c0a-9fe0-065616da60cb,"Escariz (São Mamede e São Martinho)",34790014-b808-4c18-89d1-e80fdb06d863
 7f470f85-7a1d-48db-a3a9-edc79d244785,"Escudeiros e Penso (Santo Estêvão e São Vicente)",d6a576a1-5dfc-4a13-993f-7d2162729f3c
 8eaf7870-72bd-40b3-8705-4afb1e58eec4,"Esmeriz e Cabeçudos",be49d7eb-bc9d-4ac3-abbb-56b51066180e
 b2486672-7d03-4240-999a-65bc816e8388,"Esperança e Brunhais",e66573c3-ba07-4e93-add9-de7e7e252f9c
@@ -312,7 +314,6 @@ eccfa36a-bf49-4e5c-8098-e85e45a54392,"Ponte de Lima",95feade8-a9b4-498c-ac10-b34
 12e2a12c-2ad0-4998-a914-fd1e0324b891,"Pousa",3f394b11-8d66-4b14-b44c-34f7fca26923
 7a1b96df-e16c-4e6f-97f3-1b7535b7dc70,"Pousada de Saramagos",be49d7eb-bc9d-4ac3-abbb-56b51066180e
 8909e583-91f9-4935-8df1-5d105a3fbde2,"Póvoa de Lanhoso (Nossa Senhora do Amparo)",e66573c3-ba07-4e93-add9-de7e7e252f9c
-3a29e7b7-56ee-477b-8bba-3afc3440fe15,"Prado (São João)",34790014-b808-4c18-89d1-e80fdb06d863
 dcccc16e-1909-4b31-a9c4-06ec566cf94c,"Prado (São Miguel)",34790014-b808-4c18-89d1-e80fdb06d863
 4a1f57ae-77c9-42d2-b66b-39b88e881441,"Prazins (Santa Eufémia)",cf71b268-c254-47cf-a8e7-7db0929d2f63
 aab09769-6162-4977-a6be-cc9b1dd26164,"Prazins (Santo Tirso) e Corvite",cf71b268-c254-47cf-a8e7-7db0929d2f63
@@ -332,6 +333,7 @@ e2604827-3044-4701-8e03-bd72f4052ae5,"Riba de Âncora",fea61c32-43f0-4913-a64a-d
 9cef889d-3350-442c-b8f4-3f5d42dad593,"Riba de Ave",be49d7eb-bc9d-4ac3-abbb-56b51066180e
 dae7e5cb-ed14-4af6-9c6d-c7bd0a6226dd,"Ribas",76470250-5635-4478-83ab-c7445d87c8bf
 506efc16-0883-4e99-a1e8-ca80275d4177,"Ribeira",8112f70c-1ee4-47d5-8037-7e85edbcfa9b
+ae8c5a3c-1a5c-428a-9d94-26647b540286,"Ribeira do Neiva",34790014-b808-4c18-89d1-e80fdb06d863
 08b1f7b7-1ce6-4406-a34f-bf1f6fd31481,"Ribeirão",be49d7eb-bc9d-4ac3-abbb-56b51066180e
 e0feb007-5070-4e73-a841-a83731b97fc2,"Ribeiros",17a3fd41-dd27-4d9a-9185-355302e1f051
 0199d333-7143-441e-a495-54b531ae1fd0,"Rio Caldo",8112f70c-1ee4-47d5-8037-7e85edbcfa9b
@@ -348,6 +350,7 @@ d1db6007-871e-4d63-89eb-9b6a67fff342,"Ruivães e Novais",be49d7eb-bc9d-4ac3-abbb
 ea75451c-9e50-4a9b-acc6-867a194a646f,"Sande (São Lourenço e Balazar)",cf71b268-c254-47cf-a8e7-7db0929d2f63
 2502483a-c611-4728-bb7e-77527b4d69c1,"Sande (São Martinho)",cf71b268-c254-47cf-a8e7-7db0929d2f63
 b42fdbfe-0bee-41c1-b99b-783e89c2eb87,"Sande (Vila Nova e São Clemente)",cf71b268-c254-47cf-a8e7-7db0929d2f63
+ea951a19-6e3a-4499-bf54-61107fbcafba,"Sande, Vilarinho, Barros e Gomide",34790014-b808-4c18-89d1-e80fdb06d863
 f40a0324-31d5-47dc-9b91-81b5c6597d03,"Santa Cruz",f1cbd75d-209d-4568-9d49-2e4954675a27
 7da17af3-662d-45fa-b3c1-93841d15f4fb,"Santa Cruz do Bispo",5a06a413-0cd9-4a57-bc73-59d14b1940b4
 659ab485-9518-4233-bc8c-b5583b1f6255,"Santa Eulália",a2f36121-9fe6-488f-8749-a5cdae689af8
@@ -410,6 +413,7 @@ b44fe93e-7483-480d-964c-98d5b1bb898c,"Travassos",e66573c3-ba07-4e93-add9-de7e7e2
 a9d91c83-fa9a-4bd2-a95a-16cd8af68ddd,"Turiz",34790014-b808-4c18-89d1-e80fdb06d863
 31894490-93a6-4f2c-970a-3ccce33d6af9,"Ucha",3f394b11-8d66-4b14-b44c-34f7fca26923
 814004f2-161b-4d28-a944-f7471a4bea89,"Urgezes",cf71b268-c254-47cf-a8e7-7db0929d2f63
+63218e8d-47a4-4af7-b194-f08e51a1ca71,"Vade",34790014-b808-4c18-89d1-e80fdb06d863
 b14113ed-e206-48d0-82c2-bdaac2684508,"Valadares",3b3280f2-9bb0-4990-ad70-cbb823445eab
 39b190a1-3599-407a-9e21-7041c6df5a94,"Valbom",8cb8a138-2eee-47b2-8193-d1436cb6a067
 25f0df2f-8bc3-4600-997c-e855dd159cba,"Valbom (São Pedro), Passô e Valbom (São Martinho)",34790014-b808-4c18-89d1-e80fdb06d863
