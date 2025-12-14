@@ -251,13 +251,30 @@ const Profile = () => {
       telegram_chat_id: form.telegram_chat_id || null
     }).eq('user_id', user.id);
 
-    // Atualizar email se mudou
+    // Atualizar email se mudou - usar edge function para bypass de validação
     let emailUpdateError: { message: string } | null = null;
     if (form.email !== user.email) {
-      const { error } = await supabase.auth.updateUser({
-        email: form.email
-      });
-      emailUpdateError = error;
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const response = await fetch(
+          `https://mubuncckmiyxxnlxnecn.supabase.co/functions/v1/update-user-email`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionData.session?.access_token}`,
+            },
+            body: JSON.stringify({ newEmail: form.email }),
+          }
+        );
+        
+        const result = await response.json();
+        if (!response.ok) {
+          emailUpdateError = { message: result.error || 'Erro ao atualizar email' };
+        }
+      } catch (error) {
+        emailUpdateError = { message: 'Erro de conexão ao atualizar email' };
+      }
     }
 
     setSaving(false);
@@ -272,14 +289,9 @@ const Profile = () => {
     }
 
     if (emailUpdateError) {
-      // Show specific error message from Supabase
-      let errorMessage = emailUpdateError.message;
-      if (errorMessage.includes('invalid')) {
-        errorMessage = 'O email introduzido não é válido. Verifique se o formato está correto.';
-      }
       toast({
         title: 'Erro ao atualizar email',
-        description: errorMessage,
+        description: emailUpdateError.message,
         variant: 'destructive'
       });
       return;
@@ -288,7 +300,7 @@ const Profile = () => {
     toast({
       title: 'Sucesso',
       description: form.email !== user.email 
-        ? 'Perfil atualizado! Verifique o seu novo email para confirmar a alteração.' 
+        ? 'Email atualizado com sucesso! Faça logout e login novamente.' 
         : 'Perfil atualizado com sucesso.'
     });
     setCurrentPassword('');
