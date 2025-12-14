@@ -73,7 +73,12 @@ export const useAddressHierarchy = () => {
   // Load districts on mount (from CSV or database)
   useEffect(() => {
     if (distritosCsvUrl) {
-      fetch(distritosCsvUrl)
+      const cacheBuster = `?t=${Date.now()}`;
+      const urlWithCacheBuster = distritosCsvUrl.includes('?') 
+        ? `${distritosCsvUrl}&_cb=${Date.now()}` 
+        : `${distritosCsvUrl}${cacheBuster}`;
+      
+      fetch(urlWithCacheBuster)
         .then(response => response.text())
         .then(csvText => {
           Papa.parse(csvText, {
@@ -110,7 +115,12 @@ export const useAddressHierarchy = () => {
   // Load all municipalities (from CSV or database)
   useEffect(() => {
     if (concelhosCsvUrl) {
-      fetch(concelhosCsvUrl)
+      const cacheBuster = `?t=${Date.now()}`;
+      const urlWithCacheBuster = concelhosCsvUrl.includes('?') 
+        ? `${concelhosCsvUrl}&_cb=${Date.now()}` 
+        : `${concelhosCsvUrl}${cacheBuster}`;
+      
+      fetch(urlWithCacheBuster)
         .then(response => response.text())
         .then(csvText => {
           Papa.parse(csvText, {
@@ -145,7 +155,13 @@ export const useAddressHierarchy = () => {
   // Load all parishes (from CSV or database)
   useEffect(() => {
     if (freguesiasCsvUrl) {
-      fetch(freguesiasCsvUrl)
+      // Add cache-buster to avoid browser/CDN caching
+      const cacheBuster = `?t=${Date.now()}`;
+      const urlWithCacheBuster = freguesiasCsvUrl.includes('?') 
+        ? `${freguesiasCsvUrl}&_cb=${Date.now()}` 
+        : `${freguesiasCsvUrl}${cacheBuster}`;
+      
+      fetch(urlWithCacheBuster)
         .then(response => response.text())
         .then(csvText => {
           Papa.parse(csvText, {
