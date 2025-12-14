@@ -252,20 +252,34 @@ const Profile = () => {
     }).eq('user_id', user.id);
 
     // Atualizar email se mudou
-    let emailUpdate = { error: null };
+    let emailUpdateError: { message: string } | null = null;
     if (form.email !== user.email) {
-      emailUpdate = await supabase.auth.updateUser({
+      const { error } = await supabase.auth.updateUser({
         email: form.email
       });
+      emailUpdateError = error;
     }
 
-    const error = profileUpdate.error || emailUpdate.error;
     setSaving(false);
     
-    if (error) {
+    if (profileUpdate.error) {
       toast({
         title: 'Erro',
-        description: 'Falha ao atualizar o perfil.',
+        description: profileUpdate.error.message || 'Falha ao atualizar o perfil.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (emailUpdateError) {
+      // Show specific error message from Supabase
+      let errorMessage = emailUpdateError.message;
+      if (errorMessage.includes('invalid')) {
+        errorMessage = 'O email introduzido não é válido. Verifique se o formato está correto.';
+      }
+      toast({
+        title: 'Erro ao atualizar email',
+        description: errorMessage,
         variant: 'destructive'
       });
       return;
@@ -273,7 +287,9 @@ const Profile = () => {
     
     toast({
       title: 'Sucesso',
-      description: 'Perfil atualizado com sucesso.'
+      description: form.email !== user.email 
+        ? 'Perfil atualizado! Verifique o seu novo email para confirmar a alteração.' 
+        : 'Perfil atualizado com sucesso.'
     });
     setCurrentPassword('');
   };
