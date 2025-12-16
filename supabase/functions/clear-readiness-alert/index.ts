@@ -61,13 +61,22 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Positive responders:`, positiveResponders);
     console.log(`Negative responders:`, negativeResponders);
 
-    // Get all active profiles with Telegram
-    console.log('Fetching all active profiles with Telegram...');
-    const { data: allProfiles, error: profilesError } = await supabase
+    // Get profiles based on alert type - same logic as emergency-alert activation
+    // condutores -> only profiles with function_role = 'Condutor'
+    // socorristas -> all active users
+    console.log(`Fetching profiles for alertType: ${alertType}`);
+    let profilesQuery = supabase
       .from('profiles')
       .select('user_id, first_name, last_name, telegram_chat_id')
       .eq('is_active', true)
       .not('telegram_chat_id', 'is', null);
+
+    if (alertType === 'condutores') {
+      profilesQuery = profilesQuery.eq('function_role', 'Condutor');
+    }
+    // For socorristas, send to all active users (no additional filter)
+
+    const { data: allProfiles, error: profilesError } = await profilesQuery;
 
     if (profilesError) {
       console.error('Error fetching profiles:', profilesError);
@@ -76,6 +85,8 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
+
+    console.log(`Found ${allProfiles?.length || 0} profiles for alertType: ${alertType}`);
 
     const profilesMap = new Map<string, any>();
     (allProfiles || []).forEach((p: any) => profilesMap.set(p.user_id, p));
@@ -159,7 +170,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to non-responders and negative responders
     for (const responder of cancelledNotifications) {
       const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
-      const message = `❌ Pedido de prontidão anulado por ${safeClosedByName}. Obrigado\n⏰ ${lisbonTime}`;
+      const message = `❌ Pedido de prontidão (${alertType}) anulado por ${safeClosedByName}. Obrigado\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending cancellation notification to ${responder.name} (${responder.chatId})`);
@@ -216,7 +227,8 @@ const handler = async (req: Request): Promise<Response> => {
       positiveNotifications: positiveNotifications.length,
       cancelledNotifications: cancelledNotifications.length,
       deletedResponses: delRespCount ?? 0,
-      deletedAlerts: delAlertCount ?? 0
+      deletedAlerts: delAlertCount ?? 0,
+      alertType: alertType
     };
 
     console.log('Final result:', result);
