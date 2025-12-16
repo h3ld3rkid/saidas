@@ -208,8 +208,8 @@ export function AppSidebar() {
         .single();
 
       const requesterName = profile 
-        ? `${profile.first_name} ${profile.last_name}`.trim()
-        : user?.email || 'Utilizador';
+        ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Utilizador'
+        : 'Utilizador';
 
       const { data, error } = await supabase.functions.invoke('emergency-alert', {
         body: {
