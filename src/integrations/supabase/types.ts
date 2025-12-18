@@ -139,11 +139,13 @@ export type Database = {
         Row: {
           created_at: string
           employee_number: string
+          failed_login_attempts: number
           first_name: string
           function_role: string | null
           id: string
           is_active: boolean
           last_name: string
+          locked_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           telegram_chat_id: string | null
           updated_at: string
@@ -152,11 +154,13 @@ export type Database = {
         Insert: {
           created_at?: string
           employee_number: string
+          failed_login_attempts?: number
           first_name: string
           function_role?: string | null
           id?: string
           is_active?: boolean
           last_name: string
+          locked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           telegram_chat_id?: string | null
           updated_at?: string
@@ -165,11 +169,13 @@ export type Database = {
         Update: {
           created_at?: string
           employee_number?: string
+          failed_login_attempts?: number
           first_name?: string
           function_role?: string | null
           id?: string
           is_active?: boolean
           last_name?: string
+          locked_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           telegram_chat_id?: string | null
           updated_at?: string
@@ -656,6 +662,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      reset_failed_login_attempts: {
+        Args: { user_email: string }
+        Returns: undefined
       }
       search_active_crew_profiles: {
         Args: { q: string }
