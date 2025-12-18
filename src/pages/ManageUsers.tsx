@@ -739,7 +739,7 @@ const ManageUsers = () => {
                           size="icon"
                           variant="outline"
                           onClick={() => handleEditUser(profile)}
-                          className="h-8 w-8"
+                          className="h-8 w-8 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                           title="Editar"
                         >
                           <Edit2 className="h-3 w-3" />
@@ -755,18 +755,18 @@ const ManageUsers = () => {
                         </Button>
                         <Button
                           size="icon"
-                          variant="secondary"
+                          variant="outline"
                           onClick={() => handleResetToDefaultPassword(profile.user_id, profile.employee_number, profile.email)}
-                          className="h-8 w-8"
+                          className="h-8 w-8 border-amber-500 text-amber-600 hover:bg-amber-500 hover:text-white dark:border-amber-400 dark:text-amber-400 dark:hover:bg-amber-500"
                           title="Repor Password Padrão (CVA2025!)"
                         >
                           <KeyRound className="h-3 w-3" />
                         </Button>
                         <Button
                           size="icon"
-                          variant="secondary"
+                          variant="outline"
                           onClick={() => handleResetPassword(profile.user_id, profile.employee_number, profile.email)}
-                          className="h-8 w-8"
+                          className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-500"
                           title="Gerar Password Temporária"
                         >
                           <Key className="h-3 w-3" />
