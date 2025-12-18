@@ -48,12 +48,47 @@ const Auth = () => {
     const { error } = await signIn(email, password);
 
     if (error) {
-      toast({
-        title: "Erro no login",
-        description: error.message,
-        variant: "destructive",
-      });
+      // Track failed login attempt
+      try {
+        const { data } = await supabase.functions.invoke('handle-failed-login', {
+          body: { email }
+        });
+        
+        if (data?.locked) {
+          toast({
+            title: "Conta bloqueada",
+            description: "A sua conta foi bloqueada após várias tentativas falhadas. Contacte um administrador.",
+            variant: "destructive",
+          });
+        } else if (data?.remaining !== undefined && data.remaining > 0) {
+          toast({
+            title: "Erro no login",
+            description: `${error.message}. Tentativas restantes: ${data.remaining}`,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro no login",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } catch (trackError) {
+        console.error('Error tracking failed login:', trackError);
+        toast({
+          title: "Erro no login",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } else {
+      // Reset failed attempts on successful login
+      try {
+        await supabase.rpc('reset_failed_login_attempts', { user_email: email });
+      } catch (resetError) {
+        console.error('Error resetting failed attempts:', resetError);
+      }
+      
       toast({
         title: "Login realizado com sucesso",
         description: "Bem-vindo de volta!",

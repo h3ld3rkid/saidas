@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.auto-close-old-alerts]
 verify_jwt = false
+
+[functions.handle-failed-login]
+verify_jwt = false
