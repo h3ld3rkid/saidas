@@ -735,22 +735,24 @@ export default function RegisterExit() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Morada</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    refreshAddressData();
-                    toast({
-                      title: "Dados atualizados",
-                      description: "Os dados de moradas foram recarregados."
-                    });
-                  }}
-                  className="h-8 px-2 text-muted-foreground hover:text-foreground"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Atualizar
-                </Button>
+                {hasRole('admin') && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      refreshAddressData();
+                      toast({
+                        title: "Dados atualizados",
+                        description: "Os dados de moradas foram recarregados."
+                      });
+                    }}
+                    className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Atualizar
+                  </Button>
+                )}
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
