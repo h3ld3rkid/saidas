@@ -48,6 +48,9 @@ export const useAddressHierarchy = () => {
   const [filteredMunicipalities, setFilteredMunicipalities] = useState<Municipality[]>([]);
   const [filteredParishes, setFilteredParishes] = useState<Parish[]>([]);
   
+  // Refresh counter to force reload
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  
   // CSV URLs from settings
   const [csvUrl, setCsvUrl] = useState<string>('');
   const [distritosCsvUrl, setDistritosCsvUrl] = useState<string>('');
@@ -68,7 +71,7 @@ export const useAddressHierarchy = () => {
           if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(setting.value || '');
         });
       });
-  }, []);
+  }, [refreshCounter]);
   
   // Load districts on mount (from CSV or database)
   useEffect(() => {
@@ -110,7 +113,7 @@ export const useAddressHierarchy = () => {
           setFilteredDistricts(data || []);
         });
     }
-  }, [distritosCsvUrl]);
+  }, [distritosCsvUrl, refreshCounter]);
 
   // Load all municipalities (from CSV or database)
   useEffect(() => {
@@ -150,7 +153,7 @@ export const useAddressHierarchy = () => {
           setAllMunicipalities(data || []);
         });
     }
-  }, [concelhosCsvUrl]);
+  }, [concelhosCsvUrl, refreshCounter]);
 
   // Load all parishes (from CSV or database)
   useEffect(() => {
@@ -174,6 +177,7 @@ export const useAddressHierarchy = () => {
                 .filter(p => p.id && p.nome && p.concelho_id)
                 .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
               setAllParishes(data);
+              console.log('Loaded parishes from CSV:', data.length);
             }
           });
         })
@@ -191,7 +195,7 @@ export const useAddressHierarchy = () => {
           setAllParishes(data || []);
         });
     }
-  }, [freguesiasCsvUrl]);
+  }, [freguesiasCsvUrl, refreshCounter]);
 
   // Filter districts based on search
   useEffect(() => {
@@ -353,6 +357,11 @@ export const useAddressHierarchy = () => {
     };
   };
 
+  // Manual refresh function
+  const refreshAddressData = () => {
+    setRefreshCounter(prev => prev + 1);
+  };
+
   return {
     districts: filteredDistricts,
     municipalities: filteredMunicipalities,
@@ -372,6 +381,7 @@ export const useAddressHierarchy = () => {
     setDistrictSearch,
     setMunicipalitySearch,
     setParishSearch,
-    getSelectedNames
+    getSelectedNames,
+    refreshAddressData
   };
 };

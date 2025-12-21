@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Search, X, CalendarIcon, Clock } from 'lucide-react';
+import { ArrowLeft, Search, X, CalendarIcon, Clock, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
@@ -70,7 +70,8 @@ export default function RegisterExit() {
     setDistrictSearch,
     setMunicipalitySearch,
     setParishSearch,
-    getSelectedNames
+    getSelectedNames,
+    refreshAddressData
   } = useAddressHierarchy();
 
   // Crew search hook
@@ -732,7 +733,25 @@ export default function RegisterExit() {
 
             {/* Linha 6: Morada com pesquisa ativa */}
             <div className="space-y-4">
-              <Label>Morada</Label>
+              <div className="flex items-center justify-between">
+                <Label>Morada</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    refreshAddressData();
+                    toast({
+                      title: "Dados atualizados",
+                      description: "Os dados de moradas foram recarregados."
+                    });
+                  }}
+                  className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Atualizar
+                </Button>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2 relative">
