@@ -125,14 +125,16 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('alert_id', alertId)
       .single();
 
-    // Answer the callback query
+    // Answer the callback query with a visible popup
     await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         callback_query_id: callbackQuery.id,
-        text: isAvailable ? "✅ Resposta registada: Disponível" : "❌ Resposta registada: Não disponível",
-        show_alert: false
+        text: isAvailable 
+          ? "✅ Resposta registada com sucesso!\n\nEstás disponível para este alerta." 
+          : "❌ Resposta registada com sucesso!\n\nNão estás disponível para este alerta.",
+        show_alert: true
       })
     });
 
