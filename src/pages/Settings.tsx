@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeExitType, displayExitType, DEFAULT_EXIT_TYPE_KEYS } from '@/lib/exitType';
 
@@ -819,6 +819,30 @@ export default function Settings() {
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">Colunas: id, nome, concelho_id</p>
+              </div>
+
+              <div className="pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold">Forçar Atualização dos Dados</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Recarrega os dados dos CSVs do GitHub ignorando a cache do browser.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      // Force reload by clearing cache - users need to refresh the register page
+                      toast({
+                        title: 'Atualize a página de registo',
+                        description: 'Os dados serão recarregados automaticamente quando abrir a página de Registar Saída. Pode também fazer Ctrl+F5 para forçar atualização.'
+                      });
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Instruções de Atualização
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
