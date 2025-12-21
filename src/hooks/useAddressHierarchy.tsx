@@ -245,8 +245,11 @@ export const useAddressHierarchy = () => {
 
   // Filter parishes when municipality changes
   useEffect(() => {
+    console.log('Municipality changed to:', selectedMunicipality);
+    console.log('All parishes count:', allParishes.length);
     if (selectedMunicipality) {
       const filtered = allParishes.filter(p => p.concelho_id === selectedMunicipality);
+      console.log('Filtered parishes for municipality:', filtered.length, filtered.map(p => p.nome));
       setParishes(filtered);
       setFilteredParishes(filtered);
     } else {
