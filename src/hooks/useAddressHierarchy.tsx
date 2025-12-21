@@ -157,6 +157,8 @@ export const useAddressHierarchy = () => {
 
   // Load all parishes (from CSV or database)
   useEffect(() => {
+    console.log('Loading parishes, CSV URL:', freguesiasCsvUrl ? 'SET' : 'EMPTY');
+    
     if (freguesiasCsvUrl) {
       // Add cache-buster to avoid browser/CDN caching
       const cacheBuster = `?t=${Date.now()}`;
@@ -177,28 +179,30 @@ export const useAddressHierarchy = () => {
                 .filter(p => p.id && p.nome && p.concelho_id)
                 .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
               setAllParishes(data);
-              console.log('Loaded parishes from CSV:', data.length);
+              console.log('✅ Loaded parishes from CSV:', data.length);
               // Debug: check for Vila Verde parishes
               const vilaVerdeParishes = data.filter(p => p.concelho_id === '34790014-b808-4c18-89d1-e80fdb06d863');
-              console.log('Vila Verde parishes:', vilaVerdeParishes.length, vilaVerdeParishes.map(p => p.nome));
-              // Debug: check for Sande specifically
-              const sandeParish = data.find(p => p.nome.includes('Sande') && p.concelho_id === '34790014-b808-4c18-89d1-e80fdb06d863');
-              console.log('Sande parish found:', sandeParish);
+              console.log('Vila Verde parishes from CSV:', vilaVerdeParishes.length);
             }
           });
         })
-        .catch(() => loadParishesFromDatabase());
+        .catch((err) => {
+          console.error('CSV fetch error:', err);
+          loadParishesFromDatabase();
+        });
     } else {
       loadParishesFromDatabase();
     }
 
     function loadParishesFromDatabase() {
+      console.log('⚠️ Loading parishes from DATABASE (no CSV URL)');
       supabase
         .from('freguesias')
         .select('id, nome, concelho_id')
         .order('nome')
         .then(({ data }) => {
           setAllParishes(data || []);
+          console.log('Loaded parishes from DB:', data?.length);
         });
     }
   }, [freguesiasCsvUrl, refreshCounter]);
