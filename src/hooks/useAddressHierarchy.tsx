@@ -155,8 +155,17 @@ export const useAddressHierarchy = () => {
     }
   }, [concelhosCsvUrl, refreshCounter]);
 
+  // Track if CSV data was loaded to prevent DB from overwriting
+  const [parishesSource, setParishesSource] = useState<'none' | 'csv' | 'db'>('none');
+
   // Load all parishes (from CSV or database)
   useEffect(() => {
+    // If we already have CSV data, don't load from DB
+    if (!freguesiasCsvUrl && parishesSource === 'csv') {
+      console.log('Skipping DB load - already have CSV data');
+      return;
+    }
+    
     console.log('Loading parishes, CSV URL:', freguesiasCsvUrl ? 'SET' : 'EMPTY');
     
     if (freguesiasCsvUrl) {
@@ -179,8 +188,8 @@ export const useAddressHierarchy = () => {
                 .filter(p => p.id && p.nome && p.concelho_id)
                 .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
               setAllParishes(data);
+              setParishesSource('csv');
               console.log('✅ Loaded parishes from CSV:', data.length);
-              // Debug: check for Vila Verde parishes
               const vilaVerdeParishes = data.filter(p => p.concelho_id === '34790014-b808-4c18-89d1-e80fdb06d863');
               console.log('Vila Verde parishes from CSV:', vilaVerdeParishes.length);
             }
@@ -190,22 +199,31 @@ export const useAddressHierarchy = () => {
           console.error('CSV fetch error:', err);
           loadParishesFromDatabase();
         });
-    } else {
+    } else if (parishesSource === 'none') {
+      // Only load from DB if we haven't loaded anything yet
       loadParishesFromDatabase();
     }
 
     function loadParishesFromDatabase() {
-      console.log('⚠️ Loading parishes from DATABASE (no CSV URL)');
+      console.log('⚠️ Loading parishes from DATABASE');
       supabase
         .from('freguesias')
         .select('id, nome, concelho_id')
         .order('nome')
         .then(({ data }) => {
-          setAllParishes(data || []);
-          console.log('Loaded parishes from DB:', data?.length);
+          // Only use DB data if we haven't loaded CSV data yet
+          setAllParishes(prev => {
+            if (parishesSource === 'csv') {
+              console.log('Ignoring DB data - CSV already loaded');
+              return prev;
+            }
+            setParishesSource('db');
+            console.log('Loaded parishes from DB:', data?.length);
+            return data || [];
+          });
         });
     }
-  }, [freguesiasCsvUrl, refreshCounter]);
+  }, [freguesiasCsvUrl, refreshCounter, parishesSource]);
 
   // Filter districts based on search
   useEffect(() => {
