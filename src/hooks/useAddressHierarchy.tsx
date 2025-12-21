@@ -178,6 +178,12 @@ export const useAddressHierarchy = () => {
                 .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
               setAllParishes(data);
               console.log('Loaded parishes from CSV:', data.length);
+              // Debug: check for Vila Verde parishes
+              const vilaVerdeParishes = data.filter(p => p.concelho_id === '34790014-b808-4c18-89d1-e80fdb06d863');
+              console.log('Vila Verde parishes:', vilaVerdeParishes.length, vilaVerdeParishes.map(p => p.nome));
+              // Debug: check for Sande specifically
+              const sandeParish = data.find(p => p.nome.includes('Sande') && p.concelho_id === '34790014-b808-4c18-89d1-e80fdb06d863');
+              console.log('Sande parish found:', sandeParish);
             }
           });
         })
