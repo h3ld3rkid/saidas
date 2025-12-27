@@ -57,11 +57,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    return { error };
+    
+    if (error) {
+      return { error };
+    }
+    
+    // Check if user profile is active
+    if (data?.user) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_active')
+        .eq('user_id', data.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error checking profile:', profileError);
+        // Don't block login if profile check fails
+        return { error: null };
+      }
+      
+      if (profile && !profile.is_active) {
+        // User is deactivated - sign them out immediately
+        await supabase.auth.signOut();
+        return { 
+          error: { 
+            message: 'A sua conta está bloqueada. Contacte um administrador.' 
+          } 
+        };
+      }
+    }
+    
+    return { error: null };
   };
 
   const signOut = async () => {
