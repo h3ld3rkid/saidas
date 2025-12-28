@@ -95,8 +95,13 @@ const ManageUsers = () => {
         access_role: item.access_role,
       }));
       
-      // Ordenar alfabeticamente por nome e apelido
+      // Ordenar: ativos primeiro (alfabeticamente), depois inativos (alfabeticamente)
       mappedProfiles.sort((a, b) => {
+        // Primeiro, separar por is_active (ativos primeiro)
+        if (a.is_active !== b.is_active) {
+          return a.is_active ? -1 : 1;
+        }
+        // Depois, ordenar alfabeticamente por nome
         const nameA = `${a.first_name} ${a.last_name}`.toLowerCase();
         const nameB = `${b.first_name} ${b.last_name}`.toLowerCase();
         return nameA.localeCompare(nameB);
@@ -719,7 +724,10 @@ const ManageUsers = () => {
                           <Badge variant={getRoleBadgeVariant(getUserRole(profile.user_id))} className="text-xs">
                             {getRoleLabel(getUserRole(profile.user_id))}
                           </Badge>
-                          <Badge variant={profile.is_active ? 'default' : 'secondary'} className="text-xs">
+                          <Badge 
+                            variant={profile.is_active ? 'default' : 'secondary'} 
+                            className={`text-xs ${!profile.is_active ? 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : ''}`}
+                          >
                             {profile.is_active ? 'Ativo' : 'Inativo'}
                           </Badge>
                         </div>
