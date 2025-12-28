@@ -714,7 +714,7 @@ const ManageUsers = () => {
             ) : (
               <div className="space-y-3">
                 {profiles.map((profile) => (
-                  <div key={profile.id} className="border rounded-lg p-3 md:p-4">
+                  <div key={profile.id} className={`border rounded-lg p-3 md:p-4 ${!profile.is_active ? 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900' : ''}`}>
                     <div className="flex gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
