@@ -268,53 +268,53 @@ export default function EditExit() {
 
       <div className="grid gap-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Status do Serviço</CardTitle>
-            <CardDescription>Controle o estado atual do serviço</CardDescription>
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-base">Status do Serviço</CardTitle>
+            <CardDescription className="text-xs">Controle o estado atual do serviço</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex justify-center gap-6">
+          <CardContent className="pt-2 pb-3">
+            <div className="flex justify-center gap-4 md:gap-6">
               <button 
                 type="button"
                 onClick={() => handleStatusChange('active')}
                 disabled={!canChangeStatus}
-                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all ${
+                className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-lg transition-all ${
                   exit.status === 'active' 
                     ? 'bg-blue-100 dark:bg-blue-900/40 ring-2 ring-blue-500' 
                     : 'hover:bg-muted'
                 } ${!canChangeStatus ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <Play className={`h-8 w-8 ${exit.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} />
-                <span className={`text-sm font-medium ${exit.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>Ativo</span>
+                <Play className={`h-6 w-6 ${exit.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                <span className={`text-xs font-medium ${exit.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>Ativo</span>
               </button>
               <button 
                 type="button"
                 onClick={() => handleStatusChange('completed')}
-                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all cursor-pointer ${
+                className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-lg transition-all cursor-pointer ${
                   exit.status === 'completed' 
                     ? 'bg-green-100 dark:bg-green-900/40 ring-2 ring-green-500' 
                     : 'hover:bg-muted'
                 }`}
               >
-                <CheckCircle className={`h-8 w-8 ${exit.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
-                <span className={`text-sm font-medium ${exit.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>Concluído</span>
+                <CheckCircle className={`h-6 w-6 ${exit.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                <span className={`text-xs font-medium ${exit.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>Concluído</span>
               </button>
               <button 
                 type="button"
                 onClick={() => handleStatusChange('cancelled')}
                 disabled={!canChangeStatus}
-                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all ${
+                className={`flex flex-col items-center gap-1 p-2 md:p-3 rounded-lg transition-all ${
                   exit.status === 'cancelled' 
                     ? 'bg-red-100 dark:bg-red-900/40 ring-2 ring-red-500' 
                     : 'hover:bg-muted'
                 } ${!canChangeStatus ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                <XCircle className={`h-8 w-8 ${exit.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
-                <span className={`text-sm font-medium ${exit.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>Cancelado</span>
+                <XCircle className={`h-6 w-6 ${exit.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                <span className={`text-xs font-medium ${exit.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>Cancelado</span>
               </button>
             </div>
             {isOlderThan3Hours && !hasRole('admin') && (
-              <p className="text-xs text-muted-foreground mt-2">
+              <p className="text-xs text-muted-foreground mt-2 text-center">
                 Não é possível alterar o status após 3 horas da criação do serviço.
               </p>
             )}
