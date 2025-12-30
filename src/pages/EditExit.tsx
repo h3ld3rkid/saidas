@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Search, Play, CheckCircle, XCircle } from 'lucide-react';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 
 interface Vehicle {
@@ -273,27 +273,45 @@ export default function EditExit() {
             <CardDescription>Controle o estado atual do serviço</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
-              <Button 
-                variant={exit.status === 'active' ? 'default' : 'outline'}
+            <div className="flex justify-center gap-6">
+              <button 
+                type="button"
                 onClick={() => handleStatusChange('active')}
                 disabled={!canChangeStatus}
+                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all ${
+                  exit.status === 'active' 
+                    ? 'bg-blue-100 dark:bg-blue-900/40 ring-2 ring-blue-500' 
+                    : 'hover:bg-muted'
+                } ${!canChangeStatus ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                Ativo
-              </Button>
-              <Button 
-                variant={exit.status === 'completed' ? 'default' : 'outline'}
+                <Play className={`h-8 w-8 ${exit.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`} />
+                <span className={`text-sm font-medium ${exit.status === 'active' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>Ativo</span>
+              </button>
+              <button 
+                type="button"
                 onClick={() => handleStatusChange('completed')}
+                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all cursor-pointer ${
+                  exit.status === 'completed' 
+                    ? 'bg-green-100 dark:bg-green-900/40 ring-2 ring-green-500' 
+                    : 'hover:bg-muted'
+                }`}
               >
-                Concluir Serviço
-              </Button>
-              <Button 
-                variant={exit.status === 'cancelled' ? 'destructive' : 'outline'}
+                <CheckCircle className={`h-8 w-8 ${exit.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+                <span className={`text-sm font-medium ${exit.status === 'completed' ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>Concluído</span>
+              </button>
+              <button 
+                type="button"
                 onClick={() => handleStatusChange('cancelled')}
                 disabled={!canChangeStatus}
+                className={`flex flex-col items-center gap-2 p-4 rounded-lg transition-all ${
+                  exit.status === 'cancelled' 
+                    ? 'bg-red-100 dark:bg-red-900/40 ring-2 ring-red-500' 
+                    : 'hover:bg-muted'
+                } ${!canChangeStatus ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
-                Cancelar
-              </Button>
+                <XCircle className={`h-8 w-8 ${exit.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                <span className={`text-sm font-medium ${exit.status === 'cancelled' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>Cancelado</span>
+              </button>
             </div>
             {isOlderThan3Hours && !hasRole('admin') && (
               <p className="text-xs text-muted-foreground mt-2">
