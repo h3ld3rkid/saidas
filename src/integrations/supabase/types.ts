@@ -386,6 +386,44 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_exit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: string | null
+          exit_id: string
+          id: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: string | null
+          exit_id: string
+          id?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: string | null
+          exit_id?: string
+          id?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_exit_logs_exit_id_fkey"
+            columns: ["exit_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_exits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_exits: {
         Row: {
           ambulance_number: string | null
