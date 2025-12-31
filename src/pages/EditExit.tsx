@@ -41,6 +41,8 @@ export default function EditExit() {
   const [coduNumber, setCoduNumber] = useState('');
   const [showSummaryModal, setShowSummaryModal] = useState(false);
   const [summaryData, setSummaryData] = useState<any>(null);
+  const [exitLogs, setExitLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
   
   // Address hooks
   const {
@@ -724,74 +726,101 @@ export default function EditExit() {
 
               {/* Logs Button - Admin Only */}
               {hasRole('admin') && (
-                <Dialog>
+                <Dialog onOpenChange={(open) => {
+                  if (open && exitLogs.length === 0) {
+                    setLogsLoading(true);
+                    supabase
+                      .from('vehicle_exit_logs')
+                      .select('*')
+                      .eq('exit_id', id)
+                      .order('created_at', { ascending: true })
+                      .then(({ data, error }) => {
+                        if (!error && data) {
+                          setExitLogs(data);
+                        }
+                        setLogsLoading(false);
+                      });
+                  }
+                }}>
                   <DialogTrigger asChild>
                     <Button type="button" variant="outline" className="w-full">
                       <History className="h-4 w-4 mr-2" />
                       Logs do Serviço
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle className="flex items-center gap-2">
                         <History className="h-5 w-5" />
                         Histórico do Serviço
                       </DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                        <div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium">Criação</p>
-                          <p className="text-xs text-muted-foreground">
-                            {exit.created_at ? format(new Date(exit.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
+                    <div className="space-y-3">
+                      {logsLoading ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">A carregar logs...</p>
+                      ) : exitLogs.length === 0 ? (
+                        <div className="space-y-3">
+                          <p className="text-xs text-muted-foreground text-center py-2">
+                            Sem logs registados (serviço criado antes da implementação do sistema de auditoria)
                           </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                        <div className="w-3 h-3 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium">Última Modificação</p>
-                          <p className="text-xs text-muted-foreground">
-                            {exit.updated_at ? format(new Date(exit.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-
-                      {exit.status === 'completed' && (
-                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                          <div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium">Conclusão</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exit.updated_at ? format(new Date(exit.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1 italic">
-                              (Data aproximada - última atualização)
-                            </p>
+                          <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                            <div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                            <div>
+                              <p className="text-sm font-medium">Criação</p>
+                              <p className="text-xs text-muted-foreground">
+                                {exit.created_at ? format(new Date(exit.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                      ) : (
+                        exitLogs.map((log, index) => {
+                          const getActionColor = (action: string) => {
+                            switch (action) {
+                              case 'created': return 'bg-blue-500';
+                              case 'updated': return 'bg-amber-500';
+                              case 'completed': return 'bg-green-500';
+                              case 'cancelled': return 'bg-red-500';
+                              case 'reactivated': return 'bg-purple-500';
+                              default: return 'bg-gray-500';
+                            }
+                          };
+                          const getActionLabel = (action: string) => {
+                            switch (action) {
+                              case 'created': return 'Criação';
+                              case 'updated': return 'Modificação';
+                              case 'completed': return 'Conclusão';
+                              case 'cancelled': return 'Cancelamento';
+                              case 'reactivated': return 'Reativação';
+                              default: return action;
+                            }
+                          };
+                          return (
+                            <div key={log.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                              <div className={`w-3 h-3 rounded-full ${getActionColor(log.action)} mt-1.5 shrink-0`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="text-sm font-medium">{getActionLabel(log.action)}</p>
+                                  <span className="text-xs text-muted-foreground shrink-0">#{index + 1}</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(new Date(log.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: pt })}
+                                </p>
+                                {log.user_name && (
+                                  <p className="text-xs text-primary mt-1">
+                                    Por: {log.user_name}
+                                  </p>
+                                )}
+                                {log.details && (
+                                  <p className="text-xs text-muted-foreground mt-1 italic">
+                                    {log.details}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })
                       )}
-
-                      {exit.status === 'cancelled' && (
-                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                          <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                          <div>
-                            <p className="text-sm font-medium">Cancelamento</p>
-                            <p className="text-xs text-muted-foreground">
-                              {exit.updated_at ? format(new Date(exit.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1 italic">
-                              (Data aproximada - última atualização)
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-muted-foreground text-center border-t pt-3">
-                        Para rastreamento completo de utilizadores, seria necessário implementar uma tabela de auditoria.
-                      </p>
                     </div>
                   </DialogContent>
                 </Dialog>
