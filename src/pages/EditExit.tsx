@@ -13,7 +13,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
-import { ArrowLeft, Search, Play, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Search, Play, CheckCircle, XCircle, History } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { format } from 'date-fns';
+import { pt } from 'date-fns/locale';
 import { ServiceSummaryModal } from '@/components/ServiceSummaryModal';
 
 interface Vehicle {
@@ -718,6 +721,81 @@ export default function EditExit() {
               <Button type="submit" disabled={loading || !canEdit}>
                 {loading ? 'A guardar...' : 'Guardar Alterações'}
               </Button>
+
+              {/* Logs Button - Admin Only */}
+              {hasRole('admin') && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full">
+                      <History className="h-4 w-4 mr-2" />
+                      Logs do Serviço
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <History className="h-5 w-5" />
+                        Histórico do Serviço
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="w-3 h-3 rounded-full bg-blue-500 mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium">Criação</p>
+                          <p className="text-xs text-muted-foreground">
+                            {exit.created_at ? format(new Date(exit.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="w-3 h-3 rounded-full bg-amber-500 mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-sm font-medium">Última Modificação</p>
+                          <p className="text-xs text-muted-foreground">
+                            {exit.updated_at ? format(new Date(exit.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {exit.status === 'completed' && (
+                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                          <div className="w-3 h-3 rounded-full bg-green-500 mt-1.5 shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium">Conclusão</p>
+                            <p className="text-xs text-muted-foreground">
+                              {exit.updated_at ? format(new Date(exit.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              (Data aproximada - última atualização)
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {exit.status === 'cancelled' && (
+                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                          <div className="w-3 h-3 rounded-full bg-red-500 mt-1.5 shrink-0" />
+                          <div>
+                            <p className="text-sm font-medium">Cancelamento</p>
+                            <p className="text-xs text-muted-foreground">
+                              {exit.updated_at ? format(new Date(exit.updated_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm:ss", { locale: pt }) : 'N/A'}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1 italic">
+                              (Data aproximada - última atualização)
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-muted-foreground text-center border-t pt-3">
+                        Para rastreamento completo de utilizadores, seria necessário implementar uma tabela de auditoria.
+                      </p>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </form>
           </CardContent>
         </Card>
