@@ -88,6 +88,8 @@ const Exits = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [currentPage, setCurrentPage] = useState(1);
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   // Component to display crew names
   const CrewDisplay = ({ crewString }: { crewString: string }) => {
@@ -325,10 +327,19 @@ const Exits = () => {
     );
   }
 
+  // Filtrar por ano
+  const filteredExits = exits.filter(exit => {
+    const exitYear = new Date(exit.departure_date).getFullYear();
+    return exitYear === selectedYear;
+  });
+
+  // Obter anos disponíveis para o dropdown
+  const availableYears = [...new Set(exits.map(exit => new Date(exit.departure_date).getFullYear()))].sort((a, b) => b - a);
+
   // Paginação
-  const totalPages = Math.ceil(exits.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredExits.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedExits = exits.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedExits = filteredExits.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="p-4 md:p-6 space-y-4">
@@ -336,10 +347,27 @@ const Exits = () => {
         <div>
           <h1 className="text-xl md:text-2xl font-bold">Saídas</h1>
           <p className="text-sm text-muted-foreground">
-            {exits.length} {exits.length === 1 ? 'registo' : 'registos'}
+            {filteredExits.length} {filteredExits.length === 1 ? 'registo' : 'registos'} em {selectedYear}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Select value={selectedYear.toString()} onValueChange={(v) => {
+            setSelectedYear(Number(v));
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger className="w-24 h-9">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {availableYears.length > 0 ? (
+                availableYears.map(year => (
+                  <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                ))
+              ) : (
+                <SelectItem value={currentYear.toString()}>{currentYear}</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
           <Select value={itemsPerPage.toString()} onValueChange={(v) => {
             setItemsPerPage(Number(v));
             setCurrentPage(1);
