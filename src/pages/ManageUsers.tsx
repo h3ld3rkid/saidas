@@ -278,9 +278,17 @@ const ManageUsers = () => {
 
   const handleToggleActive = async (profileId: string, currentStatus: boolean) => {
     try {
+      // Se estamos a ativar o utilizador, resetar também as tentativas falhadas
+      const updateData: Record<string, unknown> = { is_active: !currentStatus };
+      if (!currentStatus) {
+        // Ativar utilizador - resetar tentativas falhadas e locked_at
+        updateData.failed_login_attempts = 0;
+        updateData.locked_at = null;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({ is_active: !currentStatus })
+        .update(updateData)
         .eq('id', profileId);
 
       if (error) throw error;
