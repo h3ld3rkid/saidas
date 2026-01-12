@@ -238,10 +238,12 @@ export default function EditExit() {
     return <div className="p-6">A carregar...</div>;
   }
 
-  const canEdit = exit.status !== 'completed' || hasRole('admin');
-  
   // Check if service is older than 3 hours
   const isOlderThan3Hours = new Date(exit.created_at).getTime() < Date.now() - 3 * 60 * 60 * 1000;
+  
+  // Normal users can only edit active services OR completed/cancelled services within 3h of creation
+  // Admins can always edit
+  const canEdit = hasRole('admin') || exit.status === 'active' || !isOlderThan3Hours;
   const canChangeStatus = !isOlderThan3Hours || hasRole('admin');
 
   return (
@@ -320,7 +322,7 @@ export default function EditExit() {
             </div>
             {isOlderThan3Hours && !hasRole('admin') && (
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                Não é possível alterar o status após 3 horas da criação do serviço.
+                Não é possível alterar o status ou editar dados após 3 horas da criação do serviço.
               </p>
             )}
           </CardContent>
