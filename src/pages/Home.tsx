@@ -22,13 +22,35 @@ const fetchNotices = async () => {
   return data ?? [];
 };
 
+const fetchLastServiceNumbers = async () => {
+  // Get the total service counter (ficha number)
+  const { data: totalCounter } = await supabase
+    .from('total_service_counter')
+    .select('current_number')
+    .limit(1)
+    .single();
+  
+  // Get the last registered exit to show the last service number by type
+  const { data: lastExit } = await supabase
+    .from('vehicle_exits')
+    .select('service_number, total_service_number, exit_type')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+  
+  return {
+    lastServiceNumber: lastExit?.service_number || 0,
+    lastExitType: lastExit?.exit_type || '',
+    lastTotalNumber: totalCounter?.current_number || lastExit?.total_service_number || 0
+  };
+};
+
 const fetchActiveServices = async () => {
   const { data, error } = await supabase
     .from('vehicle_exits')
     .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
     .eq('status', 'active')
     .order('departure_date', { ascending: false });
-
   if (error) throw error;
 
   // Para cada serviço, buscar o nome do OPCOM e da tripulação
@@ -151,6 +173,12 @@ export default function Home() {
     refetchInterval: 3000
   });
 
+  const { data: lastNumbers } = useQuery({
+    queryKey: ['last-service-numbers'],
+    queryFn: fetchLastServiceNumbers,
+    refetchInterval: 5000
+  });
+
   const { hasRole } = useUserRole();
   const { user } = useAuth();
 
@@ -245,24 +273,39 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          <Link to="/register-exit" className="block">
-            <Card className="bg-gradient-to-br from-destructive to-destructive/90 border-0 shadow-lg hover:shadow-destructive/50 transition-all duration-300 hover:scale-[1.01] cursor-pointer">
-              <CardContent className="p-5 text-center">
-                <div className="flex items-center justify-center gap-3">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-white/20 rounded-full blur-md animate-pulse" />
-                    <div className="relative p-2 rounded-xl bg-white/10 backdrop-blur-sm">
-                      <Car className="h-6 w-6 text-white" />
+          <div className="space-y-2">
+            <Link to="/register-exit" className="block">
+              <Card className="bg-gradient-to-br from-destructive to-destructive/90 border-0 shadow-lg hover:shadow-destructive/50 transition-all duration-300 hover:scale-[1.01] cursor-pointer">
+                <CardContent className="p-5 text-center">
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="relative">
+                      <div className="absolute inset-0 bg-white/20 rounded-full blur-md animate-pulse" />
+                      <div className="relative p-2 rounded-xl bg-white/10 backdrop-blur-sm">
+                        <Car className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <h3 className="text-lg font-bold text-white">Registar Saída</h3>
+                      <p className="text-white/70 text-xs">Registar novo serviço</p>
                     </div>
                   </div>
-                  <div className="text-left">
-                    <h3 className="text-lg font-bold text-white">Registar Saída</h3>
-                    <p className="text-white/70 text-xs">Registar novo serviço</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            {lastNumbers && lastNumbers.lastTotalNumber > 0 && (
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                <span>
+                  Último serviço: <strong className="text-foreground">Nº{lastNumbers.lastServiceNumber}</strong>
+                  {lastNumbers.lastExitType && <span className="text-muted-foreground/70"> ({lastNumbers.lastExitType})</span>}
+                </span>
+                <span className="text-muted-foreground/50">•</span>
+                <span>
+                  Última ficha: <strong className="text-foreground">Nº{lastNumbers.lastTotalNumber}</strong>
+                </span>
+              </div>
+            )}
+          </div>
 
           {readinessData && readinessData.length > 0 && (
             <Card className="border-0 shadow-card bg-card">
