@@ -237,21 +237,21 @@ export default function Home() {
 
       <section className="px-6 pb-12">
         <div className="max-w-7xl mx-auto space-y-8">
-          <Card className="border-0 shadow-card bg-card">
-            <CardHeader className="pb-4">
-              <div className="flex items-center gap-3">
-                <div className="bg-yellow-500/10 p-2 rounded-lg">
-                  <Megaphone className="h-5 w-5 text-yellow-600" />
+          {notices && notices.length > 0 && (
+            <Card className="border-0 shadow-card bg-card">
+              <CardHeader className="pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="bg-yellow-500/10 p-2 rounded-lg">
+                    <Megaphone className="h-5 w-5 text-yellow-600" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Avisos Ativos</CardTitle>
+                    <CardDescription>Informações importantes em vigor</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-xl">Avisos Ativos</CardTitle>
-                  <CardDescription>Informações importantes em vigor</CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {notices && notices.length > 0 ? (
-                notices.map((n: any) => (
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {notices.map((n: any) => (
                   <div key={n.id} className="bg-muted/30 rounded-xl p-4 border transition-all hover:shadow-md">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
@@ -261,17 +261,10 @@ export default function Home() {
                       <Badge variant="secondary" className="shrink-0">Ativo</Badge>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-12">
-                  <div className="bg-muted/50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Megaphone className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                  <p className="text-muted-foreground">Sem avisos ativos no momento</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <div className="space-y-2">
             <Link to="/register-exit" className="block">
@@ -294,14 +287,14 @@ export default function Home() {
             </Link>
             
             {lastNumbers && lastNumbers.lastTotalNumber > 0 && (
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
-                <span>
-                  Último serviço: <strong className="text-foreground">Nº{lastNumbers.lastServiceNumber}</strong>
-                  {lastNumbers.lastExitType && <span className="text-muted-foreground/70"> ({lastNumbers.lastExitType})</span>}
+              <div className="flex items-center justify-center gap-4 text-sm bg-primary/10 border border-primary/20 rounded-lg px-4 py-2.5">
+                <span className="text-foreground">
+                  Último serviço: <strong className="text-primary font-semibold">Nº{lastNumbers.lastServiceNumber}</strong>
+                  {lastNumbers.lastExitType && <span className="text-muted-foreground text-xs ml-1">({lastNumbers.lastExitType})</span>}
                 </span>
-                <span className="text-muted-foreground/50">•</span>
-                <span>
-                  Última ficha: <strong className="text-foreground">Nº{lastNumbers.lastTotalNumber}</strong>
+                <span className="text-primary/30">|</span>
+                <span className="text-foreground">
+                  Última ficha: <strong className="text-primary font-semibold">Nº{lastNumbers.lastTotalNumber}</strong>
                 </span>
               </div>
             )}
