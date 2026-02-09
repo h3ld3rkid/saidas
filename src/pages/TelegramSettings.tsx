@@ -240,6 +240,62 @@ export default function TelegramSettings() {
     }
   };
 
+  const pingAllUsers = async () => {
+    const configuredProfiles = profiles.filter(p => p.telegram_chat_id);
+
+    if (configuredProfiles.length === 0) {
+      toast({
+        title: 'Erro',
+        description: 'Nenhum utilizador com Telegram configurado.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-notify', {
+        body: {
+          chatIds: configuredProfiles.map(p => p.telegram_chat_id),
+          message: '🔔 Verificação de conectividade - A sua ligação ao bot está ativa!\n\nSe recebeu esta mensagem, está tudo OK. Não precisa fazer nada.'
+        }
+      });
+
+      if (error) throw error;
+
+      const results = data?.results || [];
+      const successCount = results.filter((r: any) => r.success).length;
+      const failedResults = results.filter((r: any) => !r.success);
+      
+      // Find which users failed
+      const failedUsers = failedResults.map((r: any) => {
+        const profile = configuredProfiles.find(p => p.telegram_chat_id === r.chatId);
+        return profile ? `${profile.first_name} ${profile.last_name}` : r.chatId;
+      });
+
+      if (failedUsers.length > 0) {
+        toast({
+          title: 'Verificação concluída com falhas',
+          description: `${successCount}/${configuredProfiles.length} OK. Falharam: ${failedUsers.join(', ')}. Estes utilizadores devem enviar /start novamente.`,
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Todos os utilizadores OK!',
+          description: `${successCount}/${configuredProfiles.length} mensagens enviadas com sucesso.`
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao verificar',
+        description: error.message,
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const setupWebhook = async () => {
     setWebhookLoading(true);
     try {
@@ -456,26 +512,43 @@ export default function TelegramSettings() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Teste de Notificação</CardTitle>
+          <CardTitle>Verificação e Teste</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="test-message">Mensagem de teste</Label>
+          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <p className="text-sm text-amber-800 mb-2">
+              <strong>⚠️ Utilizadores não recebem notificações?</strong>
+            </p>
+            <p className="text-sm text-amber-700 mb-3">
+              Se um utilizador bloqueou o bot ou não interage há muito tempo, pode deixar de receber mensagens. 
+              Use o botão abaixo para verificar quem está com problemas.
+            </p>
+            <Button 
+              onClick={pingAllUsers} 
+              disabled={loading || profiles.filter(p => p.telegram_chat_id).length === 0}
+              variant="secondary"
+              className="w-full"
+            >
+              {loading ? 'Verificando...' : `🔍 Verificar Conectividade (${profiles.filter(p => p.telegram_chat_id).length} utilizadores)`}
+            </Button>
+          </div>
+
+          <div className="border-t pt-4 space-y-2">
+            <Label htmlFor="test-message">Mensagem de teste personalizada</Label>
             <Input
               id="test-message"
               value={testMessage}
               onChange={(e) => setTestMessage(e.target.value)}
               placeholder="Mensagem para testar as notificações"
             />
+            <Button 
+              onClick={sendTestMessage} 
+              disabled={loading || profiles.filter(p => p.telegram_chat_id).length === 0}
+              variant="outline"
+            >
+              {loading ? 'Enviando...' : `Enviar Teste (${profiles.filter(p => p.telegram_chat_id).length} destinatários)`}
+            </Button>
           </div>
-
-          <Button 
-            onClick={sendTestMessage} 
-            disabled={loading || profiles.filter(p => p.telegram_chat_id).length === 0}
-            variant="outline"
-          >
-            {loading ? 'Enviando...' : `Enviar Teste (${profiles.filter(p => p.telegram_chat_id).length} destinatários)`}
-          </Button>
         </CardContent>
       </Card>
 
