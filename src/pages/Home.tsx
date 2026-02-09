@@ -235,7 +235,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="px-6 pb-12">
+      <section className="px-6 pt-4 pb-12">
         <div className="max-w-7xl mx-auto space-y-8">
           {notices && notices.length > 0 && (
             <Card className="border-0 shadow-card bg-card">
