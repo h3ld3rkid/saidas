@@ -28,7 +28,7 @@ export default function TelegramSettings() {
   const [webhookLoading, setWebhookLoading] = useState(false);
   const [manualLoading, setManualLoading] = useState(false);
   const [failedChatIds, setFailedChatIds] = useState<Set<string>>(new Set());
-  const [lastCheckDone, setLastCheckDone] = useState(false);
+  const [checkedChatIds, setCheckedChatIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     document.title = 'Configurações Telegram';
@@ -187,7 +187,9 @@ export default function TelegramSettings() {
         toast({ title: '⚠️ Falha', description: `${userName} precisa enviar /start.`, variant: 'destructive' });
       }
       setFailedChatIds(newFailed);
-      setLastCheckDone(true);
+      const newChecked = new Set(checkedChatIds);
+      newChecked.add(chatId);
+      setCheckedChatIds(newChecked);
     } catch (error: any) {
       toast({ title: 'Erro', description: error.message, variant: 'destructive' });
     } finally {
@@ -278,7 +280,7 @@ export default function TelegramSettings() {
 
     setLoading(true);
     setFailedChatIds(new Set());
-    setLastCheckDone(false);
+    setCheckedChatIds(new Set());
     try {
       const { data, error } = await supabase.functions.invoke('telegram-notify', {
         body: {
@@ -297,7 +299,8 @@ export default function TelegramSettings() {
         failedResults.map((r: any) => r.chatId as string)
       );
       setFailedChatIds(newFailedIds);
-      setLastCheckDone(true);
+      const allChecked = new Set<string>(configuredProfiles.map(p => p.telegram_chat_id!));
+      setCheckedChatIds(allChecked);
 
       const failedUsers = failedResults.map((r: any) => {
         const profile = configuredProfiles.find(p => p.telegram_chat_id === r.chatId);
@@ -498,8 +501,9 @@ export default function TelegramSettings() {
               <p className="text-sm text-muted-foreground">Nenhum utilizador encontrado.</p>
             ) : (
               profiles.map((profile) => {
-                const isFailed = lastCheckDone && profile.telegram_chat_id && failedChatIds.has(profile.telegram_chat_id);
-                const isOk = lastCheckDone && profile.telegram_chat_id && !failedChatIds.has(profile.telegram_chat_id);
+                const isChecked = profile.telegram_chat_id && checkedChatIds.has(profile.telegram_chat_id);
+                const isFailed = isChecked && failedChatIds.has(profile.telegram_chat_id!);
+                const isOk = isChecked && !failedChatIds.has(profile.telegram_chat_id!);
                 return (
                 <div
                   key={profile.user_id}
