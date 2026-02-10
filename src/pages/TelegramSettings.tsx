@@ -27,6 +27,8 @@ export default function TelegramSettings() {
   const [setupLoading, setSetupLoading] = useState(false);
   const [webhookLoading, setWebhookLoading] = useState(false);
   const [manualLoading, setManualLoading] = useState(false);
+  const [failedChatIds, setFailedChatIds] = useState<Set<string>>(new Set());
+  const [lastCheckDone, setLastCheckDone] = useState(false);
 
   useEffect(() => {
     document.title = 'Configurações Telegram';
@@ -253,6 +255,8 @@ export default function TelegramSettings() {
     }
 
     setLoading(true);
+    setFailedChatIds(new Set());
+    setLastCheckDone(false);
     try {
       const { data, error } = await supabase.functions.invoke('telegram-notify', {
         body: {
@@ -267,7 +271,12 @@ export default function TelegramSettings() {
       const successCount = results.filter((r: any) => r.success).length;
       const failedResults = results.filter((r: any) => !r.success);
       
-      // Find which users failed
+      const newFailedIds = new Set<string>(
+        failedResults.map((r: any) => r.chatId as string)
+      );
+      setFailedChatIds(newFailedIds);
+      setLastCheckDone(true);
+
       const failedUsers = failedResults.map((r: any) => {
         const profile = configuredProfiles.find(p => p.telegram_chat_id === r.chatId);
         return profile ? `${profile.first_name} ${profile.last_name}` : r.chatId;
@@ -276,7 +285,7 @@ export default function TelegramSettings() {
       if (failedUsers.length > 0) {
         toast({
           title: 'Verificação concluída com falhas',
-          description: `${successCount}/${configuredProfiles.length} OK. Falharam: ${failedUsers.join(', ')}. Estes utilizadores devem enviar /start novamente.`,
+          description: `${successCount}/${configuredProfiles.length} OK. Falharam: ${failedUsers.join(', ')}`,
           variant: 'destructive'
         });
       } else {
@@ -466,14 +475,27 @@ export default function TelegramSettings() {
             {profiles.length === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum utilizador encontrado.</p>
             ) : (
-              profiles.map((profile) => (
+              profiles.map((profile) => {
+                const isFailed = lastCheckDone && profile.telegram_chat_id && failedChatIds.has(profile.telegram_chat_id);
+                const isOk = lastCheckDone && profile.telegram_chat_id && !failedChatIds.has(profile.telegram_chat_id);
+                return (
                 <div
                   key={profile.user_id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className={`flex items-center justify-between p-3 border rounded-lg ${isFailed ? 'border-destructive/50 bg-destructive/5' : ''}`}
                 >
                   <div className="flex-1">
-                    <p className="font-medium">
+                    <p className="font-medium flex items-center gap-2">
                       {profile.first_name} {profile.last_name}
+                      {isFailed && (
+                        <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+                          ⚠️ Precisa /start
+                        </span>
+                      )}
+                      {isOk && (
+                        <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                          ✅ OK
+                        </span>
+                      )}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {profile.telegram_chat_id ? `Telegram: ${profile.telegram_chat_id}` : 'Telegram não configurado'}
@@ -504,7 +526,8 @@ export default function TelegramSettings() {
                     ) : null}
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </CardContent>
