@@ -9,7 +9,6 @@ const corsHeaders = {
 const MAX_ATTEMPTS = 3;
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -30,27 +29,41 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
-    // Find the user by email
-    const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
-    
-    if (authError) {
-      console.error("Error listing users:", authError);
-      return new Response(
-        JSON.stringify({ error: "Internal error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Find user by email - use paginated search to handle large user lists
+    let authUser = null;
+    let page = 1;
+    const perPage = 100;
+
+    while (!authUser) {
+      const { data: pageData, error: pageError } = await supabase.auth.admin.listUsers({
+        page,
+        perPage,
+      });
+
+      if (pageError) {
+        console.error("Error listing users page", page, ":", pageError);
+        return new Response(
+          JSON.stringify({ error: "Internal error" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      console.log(`Page ${page}: ${pageData.users.length} users, checking emails...`);
+      authUser = pageData.users.find(u => u.email?.toLowerCase() === email.toLowerCase()) || null;
+
+      if (authUser || pageData.users.length < perPage) break;
+      page++;
     }
 
-    const authUser = authUsers.users.find(u => u.email?.toLowerCase() === email.toLowerCase());
-    
     if (!authUser) {
-      // User doesn't exist - don't reveal this, just return silently
-      console.log("User not found, ignoring");
+      console.log("User not found after checking all pages, ignoring");
       return new Response(
         JSON.stringify({ attempts: 0, locked: false }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log(`Found user: ${authUser.id}`);
 
     // Get current profile
     const { data: profile, error: profileError } = await supabase
@@ -111,7 +124,6 @@ serve(async (req) => {
       const telegramBotToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
       
       if (telegramBotToken) {
-        // Get all admin profiles with telegram configured
         const { data: admins, error: adminsError } = await supabase
           .from("profiles")
           .select("telegram_chat_id, first_name, last_name")
