@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from '@/hooks/use-toast';
-import { MessageCircle, Users, UserPlus, CheckCircle, Settings, X, Send } from 'lucide-react';
+import { MessageCircle, Users, UserPlus, CheckCircle, Settings, X, Send, Wifi } from 'lucide-react';
 
 interface Profile {
   user_id: string;
@@ -162,6 +162,39 @@ export default function TelegramSettings() {
     }
   };
 
+  const [checkingUserId, setCheckingUserId] = useState<string | null>(null);
+
+  const checkSingleUser = async (chatId: string, userId: string, userName: string) => {
+    setCheckingUserId(userId);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-notify', {
+        body: {
+          chatIds: [chatId],
+          message: '🔔 Verificação de conectividade individual - A sua ligação ao bot está ativa!'
+        }
+      });
+
+      if (error) throw error;
+
+      const success = data?.results?.[0]?.success;
+      
+      const newFailed = new Set(failedChatIds);
+      if (success) {
+        newFailed.delete(chatId);
+        toast({ title: '✅ OK', description: `${userName} está conectado.` });
+      } else {
+        newFailed.add(chatId);
+        toast({ title: '⚠️ Falha', description: `${userName} precisa enviar /start.`, variant: 'destructive' });
+      }
+      setFailedChatIds(newFailed);
+      setLastCheckDone(true);
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } finally {
+      setCheckingUserId(null);
+    }
+  };
+
   const sendTestToUser = async (chatId: string, userName: string) => {
     setLoading(true);
     try {
@@ -177,23 +210,12 @@ export default function TelegramSettings() {
       const success = data?.results?.[0]?.success;
       
       if (success) {
-        toast({
-          title: 'Teste enviado!',
-          description: `Mensagem de teste enviada para ${userName}`
-        });
+        toast({ title: 'Teste enviado!', description: `Mensagem de teste enviada para ${userName}` });
       } else {
-        toast({
-          title: 'Erro no envio',
-          description: `Falha ao enviar mensagem para ${userName}`,
-          variant: 'destructive'
-        });
+        toast({ title: 'Erro no envio', description: `Falha ao enviar mensagem para ${userName}`, variant: 'destructive' });
       }
     } catch (error: any) {
-      toast({
-        title: 'Erro ao enviar teste',
-        description: error.message,
-        variant: 'destructive'
-      });
+      toast({ title: 'Erro ao enviar teste', description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -505,6 +527,15 @@ export default function TelegramSettings() {
                     {profile.telegram_chat_id ? (
                       <>
                         <CheckCircle className="h-5 w-5 text-green-500" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => checkSingleUser(profile.telegram_chat_id!, profile.user_id, `${profile.first_name} ${profile.last_name}`)}
+                          disabled={checkingUserId === profile.user_id}
+                          title="Verificar conectividade"
+                        >
+                          <Wifi className={`h-4 w-4 ${checkingUserId === profile.user_id ? 'animate-pulse' : ''}`} />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
