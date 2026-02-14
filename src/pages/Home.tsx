@@ -23,25 +23,26 @@ const fetchNotices = async () => {
 };
 
 const fetchLastServiceNumbers = async () => {
-  // Get the total service counter (ficha number)
+  // Get the total service counter (ficha number) - accessible to all authenticated users
   const { data: totalCounter } = await supabase
     .from('total_service_counter')
     .select('current_number')
     .limit(1)
     .single();
   
-  // Get the last registered exit to show the last service number by type
-  const { data: lastExit } = await supabase
-    .from('vehicle_exits')
-    .select('service_number, total_service_number, exit_type')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+  // Get all service counters to find the latest by type - accessible to all authenticated users
+  const { data: serviceCounters } = await supabase
+    .from('service_counters')
+    .select('service_type, current_number')
+    .order('updated_at', { ascending: false })
+    .limit(1);
+  
+  const lastCounter = serviceCounters?.[0];
   
   return {
-    lastServiceNumber: lastExit?.service_number || 0,
-    lastExitType: lastExit?.exit_type || '',
-    lastTotalNumber: totalCounter?.current_number || lastExit?.total_service_number || 0
+    lastServiceNumber: lastCounter?.current_number || 0,
+    lastExitType: lastCounter?.service_type || '',
+    lastTotalNumber: totalCounter?.current_number || 0
   };
 };
 
