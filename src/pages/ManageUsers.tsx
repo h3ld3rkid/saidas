@@ -33,6 +33,7 @@ interface Profile {
   created_at: string;
   email: string;
   access_role?: 'user' | 'mod' | 'admin';
+  manually_blocked?: boolean;
 }
 
 interface UserRole {
