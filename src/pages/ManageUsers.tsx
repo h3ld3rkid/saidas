@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check, KeyRound } from 'lucide-react';
+import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check, KeyRound, Ban } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';

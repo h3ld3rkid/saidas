@@ -14,6 +14,9 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [recoverLoading, setRecoverLoading] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recoveryEmail, setRecoveryEmail] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +30,6 @@ const Auth = () => {
           .getPublicUrl('logo.png');
 
         if (data?.publicUrl) {
-          // Check if file actually exists by trying to fetch it
           const response = await fetch(data.publicUrl);
           if (response.ok) {
             setLogoUrl(data.publicUrl);
@@ -48,7 +50,6 @@ const Auth = () => {
     const { error } = await signIn(email, password);
 
     if (error) {
-      // Track failed login attempt
       try {
         const { data } = await supabase.functions.invoke('handle-failed-login', {
           body: { email }
@@ -82,7 +83,6 @@ const Auth = () => {
         });
       }
     } else {
-      // Reset failed attempts on successful login
       try {
         await supabase.rpc('reset_failed_login_attempts', { user_email: email });
       } catch (resetError) {
@@ -99,6 +99,42 @@ const Auth = () => {
     setLoading(false);
   };
 
+  const handleRecoverPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!recoveryEmail) {
+      toast({ title: "Erro", description: "Introduza o seu email", variant: "destructive" });
+      return;
+    }
+    setRecoverLoading(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('recover-password', {
+        body: { email: recoveryEmail }
+      });
+
+      if (error) {
+        let msg = 'Erro ao recuperar password';
+        try {
+          const ctx: any = error;
+          if (ctx?.context?.response) {
+            const body = await ctx.context.response.json();
+            msg = body?.error || msg;
+          }
+        } catch (_) {}
+        toast({ title: "Erro", description: msg, variant: "destructive" });
+      } else if (data?.success === false) {
+        toast({ title: "Erro", description: data.error, variant: "destructive" });
+      } else {
+        toast({ title: "Sucesso", description: data?.message || "Verifique o seu Telegram." });
+        setShowRecovery(false);
+        setRecoveryEmail('');
+      }
+    } catch (err: any) {
+      toast({ title: "Erro", description: err?.message || "Erro inesperado", variant: "destructive" });
+    }
+
+    setRecoverLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4">
@@ -117,34 +153,75 @@ const Auth = () => {
           </div>
           <CardTitle className="text-2xl font-bold">Sistema de Saídas</CardTitle>
           <CardDescription>
-            Faça login para aceder ao sistema de registo de saídas de viaturas
+            {showRecovery 
+              ? 'Introduza o seu email para receber uma nova password no Telegram'
+              : 'Faça login para aceder ao sistema de registo de saídas de viaturas'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Palavra-passe</Label>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'A entrar...' : 'Entrar'}
-            </Button>
-          </form>
+          {showRecovery ? (
+            <form onSubmit={handleRecoverPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="recovery-email">Email</Label>
+                <Input
+                  id="recovery-email"
+                  type="email"
+                  value={recoveryEmail}
+                  onChange={(e) => setRecoveryEmail(e.target.value)}
+                  placeholder="O seu email registado"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={recoverLoading}>
+                {recoverLoading ? 'A enviar...' : 'Enviar password por Telegram'}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full" 
+                onClick={() => { setShowRecovery(false); setRecoveryEmail(''); }}
+              >
+                Voltar ao login
+              </Button>
+            </form>
+          ) : (
+            <>
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Palavra-passe</Label>
+                  <PasswordInput
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? 'A entrar...' : 'Entrar'}
+                </Button>
+              </form>
+              <div className="mt-3 text-center">
+                <Button 
+                  variant="link" 
+                  className="text-sm text-muted-foreground"
+                  onClick={() => setShowRecovery(true)}
+                >
+                  Esqueci a minha password
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>
