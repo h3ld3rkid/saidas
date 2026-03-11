@@ -786,7 +786,7 @@ const ManageUsers = () => {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-1 shrink-0">
+                      <div className="grid grid-cols-3 gap-1 shrink-0">
                         <Button
                           size="icon"
                           variant="outline"
