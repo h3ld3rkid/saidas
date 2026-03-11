@@ -70,18 +70,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (data?.user) {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('is_active')
+        .select('is_active, manually_blocked')
         .eq('user_id', data.user.id)
         .single();
       
       if (profileError) {
         console.error('Error checking profile:', profileError);
-        // Don't block login if profile check fails
         return { error: null };
       }
       
+      if (profile && profile.manually_blocked) {
+        await supabase.auth.signOut();
+        return { 
+          error: { 
+            message: 'A sua conta está bloqueada por um administrador. Contacte um administrador.' 
+          } 
+        };
+      }
+      
       if (profile && !profile.is_active) {
-        // User is deactivated - sign them out immediately
         await supabase.auth.signOut();
         return { 
           error: { 
