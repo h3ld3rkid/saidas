@@ -602,6 +602,7 @@ export type Database = {
           function_role: string
           is_active: boolean
           last_name: string
+          manually_blocked: boolean
           profile_id: string
           user_id: string
         }[]
