@@ -769,6 +769,11 @@ const ManageUsers = () => {
                           >
                             {profile.is_active ? 'Ativo' : 'Inativo'}
                           </Badge>
+                          {profile.manually_blocked && (
+                            <Badge variant="destructive" className="text-xs">
+                              🔒 Bloqueado
+                            </Badge>
+                          )}
                         </div>
                         
                         <div className="space-y-1 text-sm text-muted-foreground">
