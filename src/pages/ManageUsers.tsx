@@ -825,9 +825,20 @@ const ManageUsers = () => {
                         </Button>
                         <Button
                           size="icon"
+                          variant="outline"
+                          onClick={() => handleToggleManualBlock(profile.id, !!profile.manually_blocked)}
+                          className={`h-8 w-8 ${profile.manually_blocked 
+                            ? 'border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground' 
+                            : 'border-muted-foreground text-muted-foreground hover:bg-muted-foreground hover:text-background'}`}
+                          title={profile.manually_blocked ? "Remover Bloqueio Manual" : "Bloquear Manualmente (impede recuperação)"}
+                        >
+                          <Ban className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
                           variant="destructive"
                           onClick={() => handleDeleteUser(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
-                          className="h-8 w-8 col-span-2"
+                          className="h-8 w-8"
                           title="Eliminar"
                         >
                           <Trash2 className="h-3 w-3" />
