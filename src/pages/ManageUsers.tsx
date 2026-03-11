@@ -94,6 +94,7 @@ const ManageUsers = () => {
         is_active: item.is_active,
         created_at: item.created_at,
         access_role: item.access_role,
+        manually_blocked: item.manually_blocked,
       }));
       
       // Ordenar: ativos primeiro (alfabeticamente), depois inativos (alfabeticamente)
