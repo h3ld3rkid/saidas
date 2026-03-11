@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check, KeyRound } from 'lucide-react';
+import { Users, Plus, Edit2, UserX, Key, Mail, User, Shield, Trash2, Copy, Check, KeyRound, Ban } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,6 +33,7 @@ interface Profile {
   created_at: string;
   email: string;
   access_role?: 'user' | 'mod' | 'admin';
+  manually_blocked?: boolean;
 }
 
 interface UserRole {
@@ -93,6 +94,7 @@ const ManageUsers = () => {
         is_active: item.is_active,
         created_at: item.created_at,
         access_role: item.access_role,
+        manually_blocked: item.manually_blocked,
       }));
       
       // Ordenar: ativos primeiro (alfabeticamente), depois inativos (alfabeticamente)
@@ -278,10 +280,8 @@ const ManageUsers = () => {
 
   const handleToggleActive = async (profileId: string, currentStatus: boolean) => {
     try {
-      // Se estamos a ativar o utilizador, resetar também as tentativas falhadas
       const updateData: Record<string, unknown> = { is_active: !currentStatus };
       if (!currentStatus) {
-        // Ativar utilizador - resetar tentativas falhadas e locked_at
         updateData.failed_login_attempts = 0;
         updateData.locked_at = null;
       }
@@ -302,6 +302,37 @@ const ManageUsers = () => {
       toast({
         title: 'Erro',
         description: 'Erro ao alterar estado do utilizador: ' + error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleManualBlock = async (profileId: string, currentlyBlocked: boolean) => {
+    try {
+      const updateData: Record<string, unknown> = { manually_blocked: !currentlyBlocked };
+      if (!currentlyBlocked) {
+        // Blocking: also deactivate
+        updateData.is_active = false;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', profileId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: !currentlyBlocked 
+          ? 'Utilizador bloqueado manualmente. Não poderá recuperar a password.'
+          : 'Bloqueio manual removido.',
+      });
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao alterar bloqueio: ' + error.message,
         variant: 'destructive',
       });
     }
@@ -738,6 +769,11 @@ const ManageUsers = () => {
                           >
                             {profile.is_active ? 'Ativo' : 'Inativo'}
                           </Badge>
+                          {profile.manually_blocked && (
+                            <Badge variant="destructive" className="text-xs">
+                              🔒 Bloqueado
+                            </Badge>
+                          )}
                         </div>
                         
                         <div className="space-y-1 text-sm text-muted-foreground">
@@ -750,7 +786,7 @@ const ManageUsers = () => {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-1 shrink-0">
+                      <div className="grid grid-cols-3 gap-1 shrink-0">
                         <Button
                           size="icon"
                           variant="outline"
@@ -789,9 +825,20 @@ const ManageUsers = () => {
                         </Button>
                         <Button
                           size="icon"
+                          variant="outline"
+                          onClick={() => handleToggleManualBlock(profile.id, !!profile.manually_blocked)}
+                          className={`h-8 w-8 ${profile.manually_blocked 
+                            ? 'border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground' 
+                            : 'border-muted-foreground text-muted-foreground hover:bg-muted-foreground hover:text-background'}`}
+                          title={profile.manually_blocked ? "Remover Bloqueio Manual" : "Bloquear Manualmente (impede recuperação)"}
+                        >
+                          <Ban className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="icon"
                           variant="destructive"
                           onClick={() => handleDeleteUser(profile.user_id, `${profile.first_name} ${profile.last_name}`)}
-                          className="h-8 w-8 col-span-2"
+                          className="h-8 w-8"
                           title="Eliminar"
                         >
                           <Trash2 className="h-3 w-3" />

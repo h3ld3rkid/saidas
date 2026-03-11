@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS manually_blocked boolean NOT NULL DEFAULT false;
