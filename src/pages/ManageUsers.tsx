@@ -278,10 +278,8 @@ const ManageUsers = () => {
 
   const handleToggleActive = async (profileId: string, currentStatus: boolean) => {
     try {
-      // Se estamos a ativar o utilizador, resetar também as tentativas falhadas
       const updateData: Record<string, unknown> = { is_active: !currentStatus };
       if (!currentStatus) {
-        // Ativar utilizador - resetar tentativas falhadas e locked_at
         updateData.failed_login_attempts = 0;
         updateData.locked_at = null;
       }
@@ -302,6 +300,37 @@ const ManageUsers = () => {
       toast({
         title: 'Erro',
         description: 'Erro ao alterar estado do utilizador: ' + error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleManualBlock = async (profileId: string, currentlyBlocked: boolean) => {
+    try {
+      const updateData: Record<string, unknown> = { manually_blocked: !currentlyBlocked };
+      if (!currentlyBlocked) {
+        // Blocking: also deactivate
+        updateData.is_active = false;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', profileId);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Sucesso',
+        description: !currentlyBlocked 
+          ? 'Utilizador bloqueado manualmente. Não poderá recuperar a password.'
+          : 'Bloqueio manual removido.',
+      });
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Erro ao alterar bloqueio: ' + error.message,
         variant: 'destructive',
       });
     }
