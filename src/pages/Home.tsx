@@ -281,7 +281,7 @@ export default function Home() {
               </Card>
             </Link>
             
-            {lastNumbers && lastNumbers.lastTotalNumber > 0 && (
+            {lastNumbers && lastNumbers.lastTotalNumber > 0 && lastNumbers.counters && (
               <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 space-y-2">
                 <div className="flex flex-wrap gap-2 justify-center">
                   {lastNumbers.counters.map((c: any) => (
