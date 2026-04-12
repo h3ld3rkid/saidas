@@ -56,6 +56,7 @@ export default function RegisterExit() {
     municipalities,
     parishes,
     streets,
+    hasStreetData,
     selectedDistrict,
     selectedMunicipality,
     selectedParish,
@@ -806,12 +807,12 @@ export default function RegisterExit() {
               </div>
 
               <div className="space-y-2 relative">
-                <Label>Rua {selectedParish && streets.length === 0 && <span className="text-muted-foreground text-xs">(sem dados disponíveis)</span>}</Label>
+                <Label>Rua {selectedParish && !hasStreetData && <span className="text-muted-foreground text-xs">(sem dados disponíveis)</span>}</Label>
                 <div className="relative">
                   <Input value={streetSearch} onChange={e => {
                   setStreetSearch(e.target.value);
                   setShowStreetDropdown(true);
-                }} onFocus={() => streets.length > 0 && setShowStreetDropdown(true)} onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)} placeholder={!selectedParish ? "Selecione primeiro uma freguesia..." : streets.length === 0 ? "Sem ruas disponíveis para esta freguesia" : "Procurar rua..."} disabled={!selectedParish || streets.length === 0} />
+                }} onFocus={() => streets.length > 0 && setShowStreetDropdown(true)} onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)} placeholder={!selectedParish ? "Selecione primeiro uma freguesia..." : !hasStreetData ? "Sem ruas disponíveis para esta freguesia" : "Procurar rua..."} disabled={!selectedParish || !hasStreetData} />
                   <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                 </div>
                 {showStreetDropdown && streets.length > 0 && <div className="absolute z-10 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
