@@ -27,15 +27,29 @@ const fetchLastServiceNumbers = async () => {
     .from('total_service_counter')
     .select('current_number')
     .limit(1)
-    .single();
+    .maybeSingle();
   
   const { data: serviceCounters } = await supabase
     .from('service_counters')
     .select('service_type, current_number')
     .order('service_type');
   
+  // Deduplicate by normalized type, summing counts
+  const typeMap = new Map<string, { type: string; count: number }>();
+  (serviceCounters || []).forEach(c => {
+    const normalized = c.service_type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    // Merge VLS/VSL
+    const key = (normalized === 'vls' || normalized === 'vsl') ? 'vsl' : normalized;
+    const existing = typeMap.get(key);
+    if (existing) {
+      existing.count += c.current_number;
+    } else {
+      typeMap.set(key, { type: c.service_type, count: c.current_number });
+    }
+  });
+  
   return {
-    counters: (serviceCounters || []).filter(c => c.current_number > 0),
+    counters: Array.from(typeMap.values()).map(v => ({ service_type: v.type, current_number: v.count })),
     lastTotalNumber: totalCounter?.current_number || 0
   };
 };
@@ -281,14 +295,17 @@ export default function Home() {
               </Card>
             </Link>
             
-            {lastNumbers && lastNumbers.lastTotalNumber > 0 && lastNumbers.counters && (
+            {lastNumbers && lastNumbers.counters && lastNumbers.counters.length > 0 && (
               <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 space-y-2">
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {lastNumbers.counters.map((c: any) => (
-                    <Badge key={c.service_type} variant="outline" className="text-xs px-2.5 py-1 border-primary/30 bg-background">
-                      {displayExitType(c.service_type)}: <strong className="text-primary ml-1">Nº{c.current_number}</strong>
-                    </Badge>
-                  ))}
+                  {lastNumbers.counters.map((c: any) => {
+                    const style = getExitTypeBadgeStyle(c.service_type);
+                    return (
+                      <Badge key={c.service_type} variant={style.variant} className={`text-xs px-2.5 py-1 ${style.className || ''}`}>
+                        {displayExitType(c.service_type)}: Nº{c.current_number}
+                      </Badge>
+                    );
+                  })}
                 </div>
                 <div className="text-center text-sm text-foreground">
                   Total fichas: <strong className="text-primary">Nº{lastNumbers.lastTotalNumber}</strong>
