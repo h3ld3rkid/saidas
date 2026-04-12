@@ -23,25 +23,19 @@ const fetchNotices = async () => {
 };
 
 const fetchLastServiceNumbers = async () => {
-  // Get the total service counter (ficha number) - accessible to all authenticated users
   const { data: totalCounter } = await supabase
     .from('total_service_counter')
     .select('current_number')
     .limit(1)
     .single();
   
-  // Get all service counters to find the latest by type - accessible to all authenticated users
   const { data: serviceCounters } = await supabase
     .from('service_counters')
     .select('service_type, current_number')
-    .order('updated_at', { ascending: false })
-    .limit(1);
-  
-  const lastCounter = serviceCounters?.[0];
+    .order('service_type');
   
   return {
-    lastServiceNumber: lastCounter?.current_number || 0,
-    lastExitType: lastCounter?.service_type || '',
+    counters: (serviceCounters || []).filter(c => c.current_number > 0),
     lastTotalNumber: totalCounter?.current_number || 0
   };
 };
@@ -288,15 +282,17 @@ export default function Home() {
             </Link>
             
             {lastNumbers && lastNumbers.lastTotalNumber > 0 && (
-              <div className="flex items-center justify-center gap-4 text-sm bg-primary/10 border border-primary/20 rounded-lg px-4 py-2.5">
-                <span className="text-foreground">
-                  Último serviço: <strong className="text-primary font-semibold">Nº{lastNumbers.lastServiceNumber}</strong>
-                  {lastNumbers.lastExitType && <span className="text-muted-foreground text-xs ml-1">({lastNumbers.lastExitType})</span>}
-                </span>
-                <span className="text-primary/30">|</span>
-                <span className="text-foreground">
-                  Última ficha: <strong className="text-primary font-semibold">Nº{lastNumbers.lastTotalNumber}</strong>
-                </span>
+              <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-3 space-y-2">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {lastNumbers.counters.map((c: any) => (
+                    <Badge key={c.service_type} variant="outline" className="text-xs px-2.5 py-1 border-primary/30 bg-background">
+                      {displayExitType(c.service_type)}: <strong className="text-primary ml-1">Nº{c.current_number}</strong>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="text-center text-sm text-foreground">
+                  Total fichas: <strong className="text-primary">Nº{lastNumbers.lastTotalNumber}</strong>
+                </div>
               </div>
             )}
           </div>
