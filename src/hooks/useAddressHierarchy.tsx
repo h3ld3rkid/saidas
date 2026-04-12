@@ -32,6 +32,7 @@ export const useAddressHierarchy = () => {
   const [municipalities, setMunicipalities] = useState<Municipality[]>([]);
   const [parishes, setParishes] = useState<Parish[]>([]);
   const [streets, setStreets] = useState<Street[]>([]);
+  const [hasStreetData, setHasStreetData] = useState(false);
   
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedMunicipality, setSelectedMunicipality] = useState('');
@@ -308,6 +309,7 @@ export const useAddressHierarchy = () => {
   useEffect(() => {
     if (!selectedParish) {
       setStreets([]);
+      setHasStreetData(false);
       return;
     }
 
@@ -325,9 +327,11 @@ export const useAddressHierarchy = () => {
             complete: (results) => {
               const allStreets = results.data as Array<{ freguesia_id: string; nome: string; id?: string }>;
               
-              // Filter by parish and search term (trim values to handle spaces in CSV)
-              let filtered = allStreets.filter(s => s.freguesia_id?.trim() === selectedParish);
+              // Filter by parish (trim values to handle spaces in CSV)
+              const parishStreets = allStreets.filter(s => s.freguesia_id?.trim() === selectedParish);
+              setHasStreetData(parishStreets.length > 0);
               
+              let filtered = parishStreets;
               if (streetSearch) {
                 filtered = filtered.filter(s => 
                   s.nome?.toLowerCase().includes(streetSearch.toLowerCase())
@@ -372,7 +376,13 @@ export const useAddressHierarchy = () => {
       
       query
         .order('nome')
-        .then(({ data }) => setStreets(data || []));
+        .then(({ data }) => {
+          setStreets(data || []);
+          // If no search term, this tells us if parish has any data
+          if (!streetSearch) {
+            setHasStreetData((data || []).length > 0);
+          }
+        });
     }
   }, [selectedParish, streetSearch, csvUrl]);
 
@@ -398,6 +408,7 @@ export const useAddressHierarchy = () => {
     municipalities: filteredMunicipalities,
     parishes: filteredParishes,
     streets,
+    hasStreetData,
     selectedDistrict,
     selectedMunicipality,
     selectedParish,
