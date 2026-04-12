@@ -27,15 +27,29 @@ const fetchLastServiceNumbers = async () => {
     .from('total_service_counter')
     .select('current_number')
     .limit(1)
-    .single();
+    .maybeSingle();
   
   const { data: serviceCounters } = await supabase
     .from('service_counters')
     .select('service_type, current_number')
     .order('service_type');
   
+  // Deduplicate by normalized type, summing counts
+  const typeMap = new Map<string, { type: string; count: number }>();
+  (serviceCounters || []).forEach(c => {
+    const normalized = c.service_type.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    // Merge VLS/VSL
+    const key = (normalized === 'vls' || normalized === 'vsl') ? 'vsl' : normalized;
+    const existing = typeMap.get(key);
+    if (existing) {
+      existing.count += c.current_number;
+    } else {
+      typeMap.set(key, { type: c.service_type, count: c.current_number });
+    }
+  });
+  
   return {
-    counters: (serviceCounters || []).filter(c => c.current_number > 0),
+    counters: Array.from(typeMap.values()).map(v => ({ service_type: v.type, current_number: v.count })),
     lastTotalNumber: totalCounter?.current_number || 0
   };
 };
