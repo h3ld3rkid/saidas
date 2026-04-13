@@ -87,7 +87,7 @@ export const useAddressHierarchy = () => {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           return response.text();
         })
-          Papa.parse(csvText, {
+        .then(csvText => {
             header: true,
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
