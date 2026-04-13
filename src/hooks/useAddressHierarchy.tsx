@@ -83,8 +83,10 @@ export const useAddressHierarchy = () => {
         : `${distritosCsvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
-        .then(response => response.text())
-        .then(csvText => {
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
           Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
@@ -125,8 +127,10 @@ export const useAddressHierarchy = () => {
         : `${concelhosCsvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
-        .then(response => response.text())
-        .then(csvText => {
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
           Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
@@ -177,8 +181,10 @@ export const useAddressHierarchy = () => {
         : `${freguesiasCsvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
-        .then(response => response.text())
-        .then(csvText => {
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
           Papa.parse(csvText, {
             header: true,
             skipEmptyLines: true,
@@ -318,7 +324,10 @@ export const useAddressHierarchy = () => {
       const downloadUrl = getGoogleDriveDownloadUrl(csvUrl);
       
       fetch(downloadUrl)
-        .then(response => response.text())
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
         .then(csvText => {
           Papa.parse(csvText, {
             header: true,
