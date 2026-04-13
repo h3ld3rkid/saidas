@@ -746,7 +746,8 @@ export default function RegisterExit() {
                   }} onFocus={() => setShowDistrictDropdown(true)} onBlur={() => setTimeout(() => setShowDistrictDropdown(false), 200)} placeholder="Procurar e selecionar distrito..." className="pl-10" />
                   </div>
                   {showDistrictDropdown && districts.length > 0 && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
-                      {districts.map(district => <div key={district.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onClick={() => {
+                      {districts.map(district => <div key={district.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
+                    e.preventDefault();
                     setSelectedDistrict(district.id);
                     setDistrictSearch(district.nome);
                     setShowDistrictDropdown(false);
@@ -769,7 +770,8 @@ export default function RegisterExit() {
                   }} onFocus={() => selectedDistrict && setShowMunicipalityDropdown(true)} onBlur={() => setTimeout(() => setShowMunicipalityDropdown(false), 200)} placeholder="Procurar e selecionar concelho..." className="pl-10" disabled={!selectedDistrict} />
                   </div>
                   {showMunicipalityDropdown && municipalities.length > 0 && selectedDistrict && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
-                      {municipalities.map(municipality => <div key={municipality.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onClick={() => {
+                      {municipalities.map(municipality => <div key={municipality.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
+                    e.preventDefault();
                     setSelectedMunicipality(municipality.id);
                     setMunicipalitySearch(municipality.nome);
                     setShowMunicipalityDropdown(false);
@@ -792,7 +794,8 @@ export default function RegisterExit() {
                   }} onFocus={() => selectedMunicipality && setShowParishDropdown(true)} onBlur={() => setTimeout(() => setShowParishDropdown(false), 200)} placeholder="Procurar e selecionar freguesia..." className="pl-10" disabled={!selectedMunicipality} />
                   </div>
                   {showParishDropdown && parishes.length > 0 && selectedMunicipality && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
-                      {parishes.map(parish => <div key={parish.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onClick={() => {
+                      {parishes.map(parish => <div key={parish.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
+                    e.preventDefault();
                     setSelectedParish(parish.id);
                     setParishSearch(parish.nome);
                     setShowParishDropdown(false);
@@ -815,8 +818,9 @@ export default function RegisterExit() {
                 }} onFocus={() => streets.length > 0 && setShowStreetDropdown(true)} onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)} placeholder={!selectedParish ? "Selecione primeiro uma freguesia..." : !hasStreetData ? "Sem ruas disponíveis para esta freguesia" : "Procurar rua..."} disabled={!selectedParish || !hasStreetData} />
                   <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                 </div>
-                {showStreetDropdown && streets.length > 0 && <div className="absolute z-10 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
-                    {streets.map(street => <div key={street.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onClick={() => {
+                {showStreetDropdown && streets.length > 0 && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
+                    {streets.map(street => <div key={street.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
+                  e.preventDefault();
                   setStreetSearch(street.nome);
                   set('patient_address', street.nome);
                   setShowStreetDropdown(false);
