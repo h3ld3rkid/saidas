@@ -88,7 +88,7 @@ export const useAddressHierarchy = () => {
           return response.text();
         })
         .then(csvText => {
-            header: true,
+          Papa.parse(csvText, {
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
             complete: (results) => {
@@ -131,8 +131,8 @@ export const useAddressHierarchy = () => {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           return response.text();
         })
+        .then(csvText => {
           Papa.parse(csvText, {
-            header: true,
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
             complete: (results) => {
@@ -185,8 +185,8 @@ export const useAddressHierarchy = () => {
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           return response.text();
         })
+        .then(csvText => {
           Papa.parse(csvText, {
-            header: true,
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
             complete: (results) => {
