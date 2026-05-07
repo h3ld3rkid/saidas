@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS notify_readiness_responses boolean NOT NULL DEFAULT false;

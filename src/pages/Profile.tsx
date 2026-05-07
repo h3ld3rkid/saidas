@@ -7,6 +7,8 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft } from 'lucide-react';
 
@@ -137,12 +139,15 @@ interface ProfileRow {
 
 const Profile = () => {
   const { user } = useAuth();
+  const { hasRole } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
+  const [notifyReadiness, setNotifyReadiness] = useState(false);
+  const [savingNotify, setSavingNotify] = useState(false);
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -150,6 +155,8 @@ const Profile = () => {
     email: '',
     telegram_chat_id: ''
   });
+
+  const isModOrAdmin = hasRole('mod');
 
   useEffect(() => {
     // SEO basics
@@ -170,7 +177,7 @@ const Profile = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, first_name, last_name, employee_number, telegram_chat_id')
+        .select('id, user_id, first_name, last_name, employee_number, telegram_chat_id, notify_readiness_responses')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -182,6 +189,7 @@ const Profile = () => {
         });
       } else if (data) {
         setProfileId(data.id);
+        setNotifyReadiness((data as any).notify_readiness_responses ?? false);
         setForm({
           first_name: data.first_name ?? '',
           last_name: data.last_name ?? '',
@@ -194,6 +202,23 @@ const Profile = () => {
     };
     loadProfile();
   }, [user, toast]);
+
+  const handleToggleNotify = async (value: boolean) => {
+    if (!user) return;
+    setSavingNotify(true);
+    setNotifyReadiness(value);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ notify_readiness_responses: value } as any)
+      .eq('user_id', user.id);
+    setSavingNotify(false);
+    if (error) {
+      setNotifyReadiness(!value);
+      toast({ title: 'Erro', description: 'Não foi possível guardar a preferência.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Preferência guardada', description: value ? 'Receberá nomes via Telegram.' : 'Notificações desativadas.' });
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -427,6 +452,35 @@ const Profile = () => {
             </CardContent>
           </Card>
         </section>
+
+        {isModOrAdmin && (
+          <section aria-labelledby="notifications-section" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notificações de Prontidão</CardTitle>
+                <CardDescription>
+                  Receba no Telegram os nomes dos utilizadores que respondem "Sim" aos pedidos de prontidão.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="notify-readiness">Receber respostas afirmativas</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Necessário ter o Telegram Chat ID configurado.
+                    </p>
+                  </div>
+                  <Switch
+                    id="notify-readiness"
+                    checked={notifyReadiness}
+                    onCheckedChange={handleToggleNotify}
+                    disabled={savingNotify}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
       </main>
     </div>
   );

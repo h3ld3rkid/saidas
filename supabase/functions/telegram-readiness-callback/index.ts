@@ -149,6 +149,30 @@ const handler = async (req: Request): Promise<Response> => {
           message: `${userName} está disponível para o alerta de ${alert.alert_type}`,
           created_at: new Date().toISOString()
         });
+
+      // Notify mods/admins who opted-in via Telegram
+      const { data: subscribers } = await supabase
+        .from('profiles')
+        .select('telegram_chat_id, role')
+        .eq('notify_readiness_responses', true)
+        .not('telegram_chat_id', 'is', null)
+        .in('role', ['admin', 'moderator']);
+
+      const text = `✅ <b>${userName}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
+
+      await Promise.all(
+        (subscribers ?? []).map((s: any) =>
+          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: s.telegram_chat_id,
+              text,
+              parse_mode: 'HTML',
+            }),
+          }).catch((e) => console.error('Telegram notify failed:', e))
+        )
+      );
     }
 
     return new Response(JSON.stringify({ ok: true }), {
