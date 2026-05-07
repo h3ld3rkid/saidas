@@ -139,12 +139,15 @@ interface ProfileRow {
 
 const Profile = () => {
   const { user } = useAuth();
+  const { hasRole } = useUserRole();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profileId, setProfileId] = useState<string | null>(null);
   const [currentPassword, setCurrentPassword] = useState('');
+  const [notifyReadiness, setNotifyReadiness] = useState(false);
+  const [savingNotify, setSavingNotify] = useState(false);
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -152,6 +155,8 @@ const Profile = () => {
     email: '',
     telegram_chat_id: ''
   });
+
+  const isModOrAdmin = hasRole('mod');
 
   useEffect(() => {
     // SEO basics
