@@ -452,6 +452,35 @@ const Profile = () => {
             </CardContent>
           </Card>
         </section>
+
+        {isModOrAdmin && (
+          <section aria-labelledby="notifications-section" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notificações de Prontidão</CardTitle>
+                <CardDescription>
+                  Receba no Telegram os nomes dos utilizadores que respondem "Sim" aos pedidos de prontidão.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="notify-readiness">Receber respostas afirmativas</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Necessário ter o Telegram Chat ID configurado.
+                    </p>
+                  </div>
+                  <Switch
+                    id="notify-readiness"
+                    checked={notifyReadiness}
+                    onCheckedChange={handleToggleNotify}
+                    disabled={savingNotify}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        )}
       </main>
     </div>
   );
