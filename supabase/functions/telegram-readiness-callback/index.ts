@@ -108,12 +108,15 @@ const handler = async (req: Request): Promise<Response> => {
       .select()
       .single();
 
-    if (insertError) {
+    if (insertError && insertError.code !== '23505') {
       console.error('Error inserting response:', insertError);
       return new Response(JSON.stringify({ error: insertError.message }), {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
+    }
+    if (insertError?.code === '23505') {
+      console.log('Duplicate response — continuing to notify subscribers anyway.');
     }
 
     console.log('Response inserted:', insertedResponse);
