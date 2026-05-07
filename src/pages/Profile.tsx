@@ -177,7 +177,7 @@ const Profile = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, first_name, last_name, employee_number, telegram_chat_id')
+        .select('id, user_id, first_name, last_name, employee_number, telegram_chat_id, notify_readiness_responses')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -189,6 +189,7 @@ const Profile = () => {
         });
       } else if (data) {
         setProfileId(data.id);
+        setNotifyReadiness((data as any).notify_readiness_responses ?? false);
         setForm({
           first_name: data.first_name ?? '',
           last_name: data.last_name ?? '',
@@ -201,6 +202,23 @@ const Profile = () => {
     };
     loadProfile();
   }, [user, toast]);
+
+  const handleToggleNotify = async (value: boolean) => {
+    if (!user) return;
+    setSavingNotify(true);
+    setNotifyReadiness(value);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ notify_readiness_responses: value } as any)
+      .eq('user_id', user.id);
+    setSavingNotify(false);
+    if (error) {
+      setNotifyReadiness(!value);
+      toast({ title: 'Erro', description: 'Não foi possível guardar a preferência.', variant: 'destructive' });
+    } else {
+      toast({ title: 'Preferência guardada', description: value ? 'Receberá nomes via Telegram.' : 'Notificações desativadas.' });
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
