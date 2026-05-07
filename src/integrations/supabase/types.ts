@@ -147,6 +147,7 @@ export type Database = {
           last_name: string
           locked_at: string | null
           manually_blocked: boolean
+          notify_readiness_responses: boolean
           role: Database["public"]["Enums"]["app_role"]
           telegram_chat_id: string | null
           updated_at: string
@@ -163,6 +164,7 @@ export type Database = {
           last_name: string
           locked_at?: string | null
           manually_blocked?: boolean
+          notify_readiness_responses?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           telegram_chat_id?: string | null
           updated_at?: string
@@ -179,6 +181,7 @@ export type Database = {
           last_name?: string
           locked_at?: string | null
           manually_blocked?: boolean
+          notify_readiness_responses?: boolean
           role?: Database["public"]["Enums"]["app_role"]
           telegram_chat_id?: string | null
           updated_at?: string
