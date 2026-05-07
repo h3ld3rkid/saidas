@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
         .select('telegram_chat_id, role')
         .eq('notify_readiness_responses', true)
         .not('telegram_chat_id', 'is', null)
-        .in('role', ['admin', 'moderator']);
+        .in('role', ['admin', 'mod']);
 
       const text = `✅ <b>${userName}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
 
