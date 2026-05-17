@@ -105,10 +105,11 @@ export const useAddressHierarchy = () => {
   // Load districts on mount (from CSV or database)
   useEffect(() => {
     if (distritosCsvUrl) {
+      const csvUrl = normalizeCsvUrl(distritosCsvUrl);
       const cacheBuster = `?t=${Date.now()}`;
       const urlWithCacheBuster = distritosCsvUrl.includes('?') 
-        ? `${distritosCsvUrl}&_cb=${Date.now()}` 
-        : `${distritosCsvUrl}${cacheBuster}`;
+        ? `${csvUrl}&_cb=${Date.now()}` 
+        : `${csvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
         .then(response => {
@@ -149,10 +150,11 @@ export const useAddressHierarchy = () => {
   // Load all municipalities (from CSV or database)
   useEffect(() => {
     if (concelhosCsvUrl) {
+      const csvUrl = normalizeCsvUrl(concelhosCsvUrl);
       const cacheBuster = `?t=${Date.now()}`;
       const urlWithCacheBuster = concelhosCsvUrl.includes('?') 
-        ? `${concelhosCsvUrl}&_cb=${Date.now()}` 
-        : `${concelhosCsvUrl}${cacheBuster}`;
+        ? `${csvUrl}&_cb=${Date.now()}` 
+        : `${csvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
         .then(response => {
@@ -203,10 +205,11 @@ export const useAddressHierarchy = () => {
     
     if (freguesiasCsvUrl) {
       // Add cache-buster to avoid browser/CDN caching
+      const csvUrl = normalizeCsvUrl(freguesiasCsvUrl);
       const cacheBuster = `?t=${Date.now()}`;
       const urlWithCacheBuster = freguesiasCsvUrl.includes('?') 
-        ? `${freguesiasCsvUrl}&_cb=${Date.now()}` 
-        : `${freguesiasCsvUrl}${cacheBuster}`;
+        ? `${csvUrl}&_cb=${Date.now()}` 
+        : `${csvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
         .then(response => {
@@ -349,7 +352,7 @@ export const useAddressHierarchy = () => {
 
     // If CSV URL is configured, fetch from CSV
     if (csvUrl) {
-      const downloadUrl = getGoogleDriveDownloadUrl(csvUrl);
+      const downloadUrl = normalizeCsvUrl(getGoogleDriveDownloadUrl(csvUrl));
       
       fetch(downloadUrl)
         .then(response => {
