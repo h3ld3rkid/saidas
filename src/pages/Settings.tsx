@@ -10,6 +10,33 @@ import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash, FileSpreadshe
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeExitType, displayExitType, DEFAULT_EXIT_TYPE_KEYS } from '@/lib/exitType';
 
+const normalizeCsvUrl = (url: string): string => {
+  const trimmed = url.trim();
+  const match = trimmed.match(/^([^?#]+)([?#].*)?$/);
+  const baseUrl = match?.[1] || trimmed;
+  const suffix = match?.[2] || '';
+
+  const githubRawMatch = baseUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/raw\/(?:refs\/heads\/)?([^/]+)\/(.+)$/);
+  if (githubRawMatch) {
+    const [, owner, repo, branch, path] = githubRawMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  const githubBlobMatch = baseUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(?:refs\/heads\/)?([^/]+)\/(.+)$/);
+  if (githubBlobMatch) {
+    const [, owner, repo, branch, path] = githubBlobMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  const rawRefsMatch = baseUrl.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/refs\/heads\/([^/]+)\/(.+)$/);
+  if (rawRefsMatch) {
+    const [, owner, repo, branch, path] = rawRefsMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  return trimmed;
+};
+
 export default function Settings() {
   const navigate = useNavigate();
   const { hasRole, loading: roleLoading } = useUserRole();
