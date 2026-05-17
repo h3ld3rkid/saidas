@@ -10,6 +10,33 @@ import { ArrowLeft, Upload, Image, Download, Calendar, Link, Hash, FileSpreadshe
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeExitType, displayExitType, DEFAULT_EXIT_TYPE_KEYS } from '@/lib/exitType';
 
+const normalizeCsvUrl = (url: string): string => {
+  const trimmed = url.trim();
+  const match = trimmed.match(/^([^?#]+)([?#].*)?$/);
+  const baseUrl = match?.[1] || trimmed;
+  const suffix = match?.[2] || '';
+
+  const githubRawMatch = baseUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/raw\/(?:refs\/heads\/)?([^/]+)\/(.+)$/);
+  if (githubRawMatch) {
+    const [, owner, repo, branch, path] = githubRawMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  const githubBlobMatch = baseUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(?:refs\/heads\/)?([^/]+)\/(.+)$/);
+  if (githubBlobMatch) {
+    const [, owner, repo, branch, path] = githubBlobMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  const rawRefsMatch = baseUrl.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/refs\/heads\/([^/]+)\/(.+)$/);
+  if (rawRefsMatch) {
+    const [, owner, repo, branch, path] = rawRefsMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  return trimmed;
+};
+
 export default function Settings() {
   const navigate = useNavigate();
   const { hasRole, loading: roleLoading } = useUserRole();
@@ -79,7 +106,7 @@ export default function Settings() {
         .single();
       
       if (data?.value) {
-        setRuasCsvUrl(data.value);
+        setRuasCsvUrl(normalizeCsvUrl(data.value));
       }
     } catch (error) {
       console.log('No ruas CSV URL found yet');
@@ -94,9 +121,10 @@ export default function Settings() {
         .in('key', ['distritos_csv_url', 'concelhos_csv_url', 'freguesias_csv_url']);
       
       data?.forEach(setting => {
-        if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(setting.value || '');
-        if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(setting.value || '');
-        if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(setting.value || '');
+        const value = normalizeCsvUrl(setting.value || '');
+        if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(value);
+        if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(value);
+        if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(value);
       });
     } catch (error) {
       console.log('No address CSV URLs found yet');
@@ -269,6 +297,7 @@ export default function Settings() {
   const handleSaveRuasCsvUrl = async () => {
     setRuasCsvLoading(true);
     try {
+      const normalizedUrl = normalizeCsvUrl(ruasCsvUrl);
       // Check if setting exists
       const { data: existing } = await supabase
         .from('settings')
@@ -279,14 +308,14 @@ export default function Settings() {
       if (existing) {
         const { error } = await supabase
           .from('settings')
-          .update({ value: ruasCsvUrl })
+          .update({ value: normalizedUrl })
           .eq('key', 'ruas_csv_url');
 
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('settings')
-          .insert({ key: 'ruas_csv_url', value: ruasCsvUrl });
+          .insert({ key: 'ruas_csv_url', value: normalizedUrl });
 
         if (error) throw error;
       }
@@ -295,6 +324,7 @@ export default function Settings() {
         title: 'URL guardado',
         description: 'O link do CSV das ruas foi atualizado com sucesso.'
       });
+      setRuasCsvUrl(normalizedUrl);
 
     } catch (error: any) {
       toast({
@@ -310,6 +340,7 @@ export default function Settings() {
   const handleSaveAddressCsvUrl = async (key: string, value: string, setLoading: (v: boolean) => void, label: string) => {
     setLoading(true);
     try {
+      const normalizedValue = normalizeCsvUrl(value);
       const { data: existing } = await supabase
         .from('settings')
         .select('id')
@@ -319,14 +350,14 @@ export default function Settings() {
       if (existing) {
         const { error } = await supabase
           .from('settings')
-          .update({ value })
+          .update({ value: normalizedValue })
           .eq('key', key);
 
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('settings')
-          .insert({ key, value });
+          .insert({ key, value: normalizedValue });
 
         if (error) throw error;
       }
@@ -335,6 +366,10 @@ export default function Settings() {
         title: 'URL guardado',
         description: `O link do CSV de ${label} foi atualizado com sucesso.`
       });
+
+      if (key === 'distritos_csv_url') setDistritosCsvUrl(normalizedValue);
+      if (key === 'concelhos_csv_url') setConcelhosCsvUrl(normalizedValue);
+      if (key === 'freguesias_csv_url') setFreguesiasCsvUrl(normalizedValue);
 
     } catch (error: any) {
       toast({

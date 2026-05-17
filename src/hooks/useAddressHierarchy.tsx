@@ -25,6 +25,33 @@ interface Street {
   freguesia_id: string;
 }
 
+const normalizeCsvUrl = (url: string): string => {
+  const trimmed = url.trim();
+  const match = trimmed.match(/^([^?#]+)([?#].*)?$/);
+  const baseUrl = match?.[1] || trimmed;
+  const suffix = match?.[2] || '';
+
+  const githubRawMatch = baseUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/raw\/(?:refs\/heads\/)?([^/]+)\/(.+)$/);
+  if (githubRawMatch) {
+    const [, owner, repo, branch, path] = githubRawMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  const githubBlobMatch = baseUrl.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/(?:refs\/heads\/)?([^/]+)\/(.+)$/);
+  if (githubBlobMatch) {
+    const [, owner, repo, branch, path] = githubBlobMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  const rawRefsMatch = baseUrl.match(/^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/refs\/heads\/([^/]+)\/(.+)$/);
+  if (rawRefsMatch) {
+    const [, owner, repo, branch, path] = rawRefsMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}${suffix}`;
+  }
+
+  return trimmed;
+};
+
 export const useAddressHierarchy = () => {
   const [districts, setDistricts] = useState<District[]>([]);
   const [allMunicipalities, setAllMunicipalities] = useState<Municipality[]>([]);
@@ -66,10 +93,11 @@ export const useAddressHierarchy = () => {
       .in('key', ['ruas_csv_url', 'distritos_csv_url', 'concelhos_csv_url', 'freguesias_csv_url'])
       .then(({ data }) => {
         data?.forEach(setting => {
-          if (setting.key === 'ruas_csv_url') setCsvUrl(setting.value || '');
-          if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(setting.value || '');
-          if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(setting.value || '');
-          if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(setting.value || '');
+          const value = normalizeCsvUrl(setting.value || '');
+          if (setting.key === 'ruas_csv_url') setCsvUrl(value);
+          if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(value);
+          if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(value);
+          if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(value);
         });
       });
   }, [refreshCounter]);
@@ -77,10 +105,11 @@ export const useAddressHierarchy = () => {
   // Load districts on mount (from CSV or database)
   useEffect(() => {
     if (distritosCsvUrl) {
+      const csvUrl = normalizeCsvUrl(distritosCsvUrl);
       const cacheBuster = `?t=${Date.now()}`;
       const urlWithCacheBuster = distritosCsvUrl.includes('?') 
-        ? `${distritosCsvUrl}&_cb=${Date.now()}` 
-        : `${distritosCsvUrl}${cacheBuster}`;
+        ? `${csvUrl}&_cb=${Date.now()}` 
+        : `${csvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
         .then(response => {
@@ -121,10 +150,11 @@ export const useAddressHierarchy = () => {
   // Load all municipalities (from CSV or database)
   useEffect(() => {
     if (concelhosCsvUrl) {
+      const csvUrl = normalizeCsvUrl(concelhosCsvUrl);
       const cacheBuster = `?t=${Date.now()}`;
       const urlWithCacheBuster = concelhosCsvUrl.includes('?') 
-        ? `${concelhosCsvUrl}&_cb=${Date.now()}` 
-        : `${concelhosCsvUrl}${cacheBuster}`;
+        ? `${csvUrl}&_cb=${Date.now()}` 
+        : `${csvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
         .then(response => {
@@ -175,10 +205,11 @@ export const useAddressHierarchy = () => {
     
     if (freguesiasCsvUrl) {
       // Add cache-buster to avoid browser/CDN caching
+      const csvUrl = normalizeCsvUrl(freguesiasCsvUrl);
       const cacheBuster = `?t=${Date.now()}`;
       const urlWithCacheBuster = freguesiasCsvUrl.includes('?') 
-        ? `${freguesiasCsvUrl}&_cb=${Date.now()}` 
-        : `${freguesiasCsvUrl}${cacheBuster}`;
+        ? `${csvUrl}&_cb=${Date.now()}` 
+        : `${csvUrl}${cacheBuster}`;
       
       fetch(urlWithCacheBuster)
         .then(response => {
@@ -321,7 +352,7 @@ export const useAddressHierarchy = () => {
 
     // If CSV URL is configured, fetch from CSV
     if (csvUrl) {
-      const downloadUrl = getGoogleDriveDownloadUrl(csvUrl);
+      const downloadUrl = normalizeCsvUrl(getGoogleDriveDownloadUrl(csvUrl));
       
       fetch(downloadUrl)
         .then(response => {
