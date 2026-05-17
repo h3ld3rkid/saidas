@@ -106,7 +106,7 @@ export default function Settings() {
         .single();
       
       if (data?.value) {
-        setRuasCsvUrl(data.value);
+        setRuasCsvUrl(normalizeCsvUrl(data.value));
       }
     } catch (error) {
       console.log('No ruas CSV URL found yet');
@@ -121,9 +121,10 @@ export default function Settings() {
         .in('key', ['distritos_csv_url', 'concelhos_csv_url', 'freguesias_csv_url']);
       
       data?.forEach(setting => {
-        if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(setting.value || '');
-        if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(setting.value || '');
-        if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(setting.value || '');
+        const value = normalizeCsvUrl(setting.value || '');
+        if (setting.key === 'distritos_csv_url') setDistritosCsvUrl(value);
+        if (setting.key === 'concelhos_csv_url') setConcelhosCsvUrl(value);
+        if (setting.key === 'freguesias_csv_url') setFreguesiasCsvUrl(value);
       });
     } catch (error) {
       console.log('No address CSV URLs found yet');
@@ -296,6 +297,7 @@ export default function Settings() {
   const handleSaveRuasCsvUrl = async () => {
     setRuasCsvLoading(true);
     try {
+      const normalizedUrl = normalizeCsvUrl(ruasCsvUrl);
       // Check if setting exists
       const { data: existing } = await supabase
         .from('settings')
@@ -306,14 +308,14 @@ export default function Settings() {
       if (existing) {
         const { error } = await supabase
           .from('settings')
-          .update({ value: ruasCsvUrl })
+          .update({ value: normalizedUrl })
           .eq('key', 'ruas_csv_url');
 
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('settings')
-          .insert({ key: 'ruas_csv_url', value: ruasCsvUrl });
+          .insert({ key: 'ruas_csv_url', value: normalizedUrl });
 
         if (error) throw error;
       }
@@ -322,6 +324,7 @@ export default function Settings() {
         title: 'URL guardado',
         description: 'O link do CSV das ruas foi atualizado com sucesso.'
       });
+      setRuasCsvUrl(normalizedUrl);
 
     } catch (error: any) {
       toast({
