@@ -340,6 +340,7 @@ export default function Settings() {
   const handleSaveAddressCsvUrl = async (key: string, value: string, setLoading: (v: boolean) => void, label: string) => {
     setLoading(true);
     try {
+      const normalizedValue = normalizeCsvUrl(value);
       const { data: existing } = await supabase
         .from('settings')
         .select('id')
@@ -349,14 +350,14 @@ export default function Settings() {
       if (existing) {
         const { error } = await supabase
           .from('settings')
-          .update({ value })
+          .update({ value: normalizedValue })
           .eq('key', key);
 
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('settings')
-          .insert({ key, value });
+          .insert({ key, value: normalizedValue });
 
         if (error) throw error;
       }
@@ -365,6 +366,10 @@ export default function Settings() {
         title: 'URL guardado',
         description: `O link do CSV de ${label} foi atualizado com sucesso.`
       });
+
+      if (key === 'distritos_csv_url') setDistritosCsvUrl(normalizedValue);
+      if (key === 'concelhos_csv_url') setConcelhosCsvUrl(normalizedValue);
+      if (key === 'freguesias_csv_url') setFreguesiasCsvUrl(normalizedValue);
 
     } catch (error: any) {
       toast({
