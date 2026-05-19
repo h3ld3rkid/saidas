@@ -64,6 +64,9 @@ export function AppSidebar() {
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
   const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
   const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('');
+  const [editingVersion, setEditingVersion] = useState(false);
+  const [versionDraft, setVersionDraft] = useState('');
   const [escalasUrl, setEscalasUrl] = useState<string>('');
   const [confirmAlertType, setConfirmAlertType] = useState<'condutores' | 'socorristas' | null>(null);
 
