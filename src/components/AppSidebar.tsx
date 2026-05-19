@@ -18,6 +18,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,6 +65,9 @@ export function AppSidebar() {
   const [userProfile, setUserProfile] = useState<{ first_name: string; last_name: string } | null>(null);
   const [hasActiveCondutoresAlert, setHasActiveCondutoresAlert] = useState(false);
   const [hasActiveSocorristasAlert, setHasActiveSocorristasAlert] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('');
+  const [editingVersion, setEditingVersion] = useState(false);
+  const [versionDraft, setVersionDraft] = useState('');
   const [escalasUrl, setEscalasUrl] = useState<string>('');
   const [confirmAlertType, setConfirmAlertType] = useState<'condutores' | 'socorristas' | null>(null);
 
@@ -126,6 +130,53 @@ export function AppSidebar() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Load app version (codificação) from settings + realtime
+  useEffect(() => {
+    const loadVersion = async () => {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'app_version')
+        .maybeSingle();
+      if (data?.value) setAppVersion(data.value);
+    };
+    loadVersion();
+
+    const channel = supabase
+      .channel('settings-app-version')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'settings', filter: 'key=eq.app_version' },
+        (payload: any) => {
+          if (payload.new?.value !== undefined) setAppVersion(payload.new.value);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const saveAppVersion = async () => {
+    const value = versionDraft.trim();
+    const { data: existing } = await supabase
+      .from('settings')
+      .select('id')
+      .eq('key', 'app_version')
+      .maybeSingle();
+
+    const { error } = existing
+      ? await supabase.from('settings').update({ value }).eq('key', 'app_version')
+      : await supabase.from('settings').insert({ key: 'app_version', value });
+
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      setAppVersion(value);
+      setEditingVersion(false);
+      toast({ title: 'Codificação atualizada' });
+    }
+  };
+
 
   // Check for active readiness alerts
   useEffect(() => {
@@ -506,6 +557,35 @@ export function AppSidebar() {
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             {isExpanded && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
           </Button>
+          {isExpanded && (
+            <div className="px-2 py-1">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Codificação</p>
+              {hasRole('admin') ? (
+                editingVersion ? (
+                  <div className="flex gap-1">
+                    <Input
+                      value={versionDraft}
+                      onChange={(e) => setVersionDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveAppVersion(); if (e.key === 'Escape') setEditingVersion(false); }}
+                      autoFocus
+                      className="h-7 text-xs"
+                    />
+                    <Button size="sm" className="h-7 px-2 text-xs" onClick={saveAppVersion}>OK</Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setVersionDraft(appVersion); setEditingVersion(true); }}
+                    className="text-xs text-foreground hover:underline text-left w-full"
+                  >
+                    {appVersion || '—'}
+                  </button>
+                )
+              ) : (
+                <p className="text-xs text-foreground">{appVersion || '—'}</p>
+              )}
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
