@@ -557,6 +557,35 @@ export function AppSidebar() {
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             {isExpanded && <span className="ml-2">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>}
           </Button>
+          {isExpanded && (
+            <div className="px-2 py-1">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1">Codificação</p>
+              {hasRole('admin') ? (
+                editingVersion ? (
+                  <div className="flex gap-1">
+                    <Input
+                      value={versionDraft}
+                      onChange={(e) => setVersionDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') saveAppVersion(); if (e.key === 'Escape') setEditingVersion(false); }}
+                      autoFocus
+                      className="h-7 text-xs"
+                    />
+                    <Button size="sm" className="h-7 px-2 text-xs" onClick={saveAppVersion}>OK</Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => { setVersionDraft(appVersion); setEditingVersion(true); }}
+                    className="text-xs text-foreground hover:underline text-left w-full"
+                  >
+                    {appVersion || '—'}
+                  </button>
+                )
+              ) : (
+                <p className="text-xs text-foreground">{appVersion || '—'}</p>
+              )}
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
