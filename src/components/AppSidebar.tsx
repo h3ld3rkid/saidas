@@ -130,6 +130,53 @@ export function AppSidebar() {
     };
   }, []);
 
+  // Load app version (codificação) from settings + realtime
+  useEffect(() => {
+    const loadVersion = async () => {
+      const { data } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'app_version')
+        .maybeSingle();
+      if (data?.value) setAppVersion(data.value);
+    };
+    loadVersion();
+
+    const channel = supabase
+      .channel('settings-app-version')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'settings', filter: 'key=eq.app_version' },
+        (payload: any) => {
+          if (payload.new?.value !== undefined) setAppVersion(payload.new.value);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
+  const saveAppVersion = async () => {
+    const value = versionDraft.trim();
+    const { data: existing } = await supabase
+      .from('settings')
+      .select('id')
+      .eq('key', 'app_version')
+      .maybeSingle();
+
+    const { error } = existing
+      ? await supabase.from('settings').update({ value }).eq('key', 'app_version')
+      : await supabase.from('settings').insert({ key: 'app_version', value });
+
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      setAppVersion(value);
+      setEditingVersion(false);
+      toast({ title: 'Codificação atualizada' });
+    }
+  };
+
+
   // Check for active readiness alerts
   useEffect(() => {
     const checkActiveAlerts = async () => {
