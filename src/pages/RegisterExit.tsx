@@ -743,7 +743,12 @@ export default function RegisterExit() {
                     <Input value={districtSearch} onChange={e => {
                     setDistrictSearch(e.target.value);
                     setShowDistrictDropdown(true);
-                  }} onFocus={() => setShowDistrictDropdown(true)} onBlur={() => setTimeout(() => setShowDistrictDropdown(false), 200)} placeholder="Procurar e selecionar distrito..." className="pl-10" />
+                  }} onFocus={() => setShowDistrictDropdown(true)} onBlur={() => setTimeout(() => setShowDistrictDropdown(false), 200)} placeholder="Procurar e selecionar distrito..." className="pl-10 pr-10" />
+                    {(selectedDistrict || districtSearch) && (
+                      <button type="button" onMouseDown={e => { e.preventDefault(); setSelectedDistrict(''); setDistrictSearch(''); }} className="absolute right-2 top-2 p-1 rounded hover:bg-accent text-muted-foreground" aria-label="Limpar distrito">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   {showDistrictDropdown && districts.length > 0 && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                       {districts.map(district => <div key={district.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
@@ -755,9 +760,6 @@ export default function RegisterExit() {
                           {district.nome}
                         </div>)}
                     </div>}
-                  {selectedDistrict && <div className="text-sm text-muted-foreground">
-                      Selecionado: {districts.find(d => d.id === selectedDistrict)?.nome}
-                    </div>}
                 </div>
 
                 <div className="space-y-2 relative">
@@ -767,7 +769,12 @@ export default function RegisterExit() {
                     <Input value={municipalitySearch} onChange={e => {
                     setMunicipalitySearch(e.target.value);
                     setShowMunicipalityDropdown(true);
-                  }} onFocus={() => selectedDistrict && setShowMunicipalityDropdown(true)} onBlur={() => setTimeout(() => setShowMunicipalityDropdown(false), 200)} placeholder="Procurar e selecionar concelho..." className="pl-10" disabled={!selectedDistrict} />
+                  }} onFocus={() => selectedDistrict && setShowMunicipalityDropdown(true)} onBlur={() => setTimeout(() => setShowMunicipalityDropdown(false), 200)} placeholder="Procurar e selecionar concelho..." className="pl-10 pr-10" disabled={!selectedDistrict} />
+                    {(selectedMunicipality || municipalitySearch) && (
+                      <button type="button" onMouseDown={e => { e.preventDefault(); setSelectedMunicipality(''); setMunicipalitySearch(''); }} className="absolute right-2 top-2 p-1 rounded hover:bg-accent text-muted-foreground" aria-label="Limpar concelho">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   {showMunicipalityDropdown && municipalities.length > 0 && selectedDistrict && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                       {municipalities.map(municipality => <div key={municipality.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
@@ -779,9 +786,6 @@ export default function RegisterExit() {
                           {municipality.nome}
                         </div>)}
                     </div>}
-                  {selectedMunicipality && <div className="text-sm text-muted-foreground">
-                      Selecionado: {municipalities.find(m => m.id === selectedMunicipality)?.nome}
-                    </div>}
                 </div>
 
                 <div className="space-y-2 relative">
@@ -791,7 +795,12 @@ export default function RegisterExit() {
                     <Input value={parishSearch} onChange={e => {
                     setParishSearch(e.target.value);
                     setShowParishDropdown(true);
-                  }} onFocus={() => selectedMunicipality && setShowParishDropdown(true)} onBlur={() => setTimeout(() => setShowParishDropdown(false), 200)} placeholder="Procurar e selecionar freguesia..." className="pl-10" disabled={!selectedMunicipality} />
+                  }} onFocus={() => selectedMunicipality && setShowParishDropdown(true)} onBlur={() => setTimeout(() => setShowParishDropdown(false), 200)} placeholder="Procurar e selecionar freguesia..." className="pl-10 pr-10" disabled={!selectedMunicipality} />
+                    {(selectedParish || parishSearch) && (
+                      <button type="button" onMouseDown={e => { e.preventDefault(); setSelectedParish(''); setParishSearch(''); }} className="absolute right-2 top-2 p-1 rounded hover:bg-accent text-muted-foreground" aria-label="Limpar freguesia">
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
                   </div>
                   {showParishDropdown && parishes.length > 0 && selectedMunicipality && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                       {parishes.map(parish => <div key={parish.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
@@ -803,10 +812,8 @@ export default function RegisterExit() {
                           {parish.nome}
                         </div>)}
                     </div>}
-                  {selectedParish && <div className="text-sm text-muted-foreground">
-                      Selecionado: {parishes.find(p => p.id === selectedParish)?.nome}
-                    </div>}
                 </div>
+
               </div>
 
               <div className="space-y-2 relative">
