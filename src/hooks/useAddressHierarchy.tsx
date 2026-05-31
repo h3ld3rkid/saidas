@@ -381,12 +381,21 @@ export const useAddressHierarchy = () => {
                 );
               }
               
-              // Generate IDs if not present and trim values
-              const streetsWithIds = filtered.map((s, idx) => ({
-                id: s.id?.trim() || `csv-${idx}`,
-                nome: s.nome?.trim() || '',
-                freguesia_id: s.freguesia_id?.trim()
-              }));
+              // Generate IDs if not present, trim values, and dedupe by normalized name
+              const seen = new Set<string>();
+              const streetsWithIds = filtered.reduce<Street[]>((acc, s, idx) => {
+                const nome = s.nome?.trim() || '';
+                const key = nome.toLowerCase();
+                if (!nome || seen.has(key)) return acc;
+                seen.add(key);
+                acc.push({
+                  id: s.id?.trim() || `csv-${idx}`,
+                  nome,
+                  freguesia_id: s.freguesia_id?.trim() || ''
+                });
+                return acc;
+              }, []);
+
               
               setStreets(streetsWithIds);
             },
