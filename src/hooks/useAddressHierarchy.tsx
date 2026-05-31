@@ -118,6 +118,7 @@ export const useAddressHierarchy = () => {
         })
         .then(csvText => {
           Papa.parse(csvText, {
+            header: true,
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
             complete: (results) => {
@@ -163,6 +164,7 @@ export const useAddressHierarchy = () => {
         })
         .then(csvText => {
           Papa.parse(csvText, {
+            header: true,
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
             complete: (results) => {
@@ -218,6 +220,7 @@ export const useAddressHierarchy = () => {
         })
         .then(csvText => {
           Papa.parse(csvText, {
+            header: true,
             skipEmptyLines: true,
             transformHeader: (header) => header.trim(),
             complete: (results) => {
