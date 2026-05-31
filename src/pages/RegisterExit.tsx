@@ -827,9 +827,15 @@ export default function RegisterExit() {
                   }
                   setStreetSearch(newValue);
                   setShowStreetDropdown(true);
-                }} onFocus={() => streets.length > 0 && setShowStreetDropdown(true)} onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)} placeholder={!selectedParish ? "Selecione primeiro uma freguesia..." : !hasStreetData ? "Sem ruas disponíveis para esta freguesia" : "Procurar rua livre ou da lista..."} disabled={!selectedParish} />
+                }} onFocus={() => streets.length > 0 && setShowStreetDropdown(true)} onBlur={() => setTimeout(() => setShowStreetDropdown(false), 200)} placeholder={!selectedParish ? "Selecione primeiro uma freguesia..." : !hasStreetData ? "Sem ruas disponíveis para esta freguesia" : "Procurar rua livre ou da lista..."} disabled={!selectedParish} className="pr-16" />
+                  {streetSearch && (
+                    <button type="button" onMouseDown={e => { e.preventDefault(); setStreetSearch(''); if (form.patient_address === streetSearch) set('patient_address', ''); }} className="absolute right-9 top-2 p-1 rounded hover:bg-accent text-muted-foreground" aria-label="Limpar rua">
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
                   <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                 </div>
+
                 {showStreetDropdown && streets.length > 0 && <div className="absolute z-20 w-full bg-background border rounded-md shadow-md max-h-40 overflow-y-auto">
                     {streets.map(street => <div key={street.id} className="px-3 py-2 hover:bg-accent cursor-pointer" onMouseDown={e => {
                   e.preventDefault();
