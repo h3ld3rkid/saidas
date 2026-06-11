@@ -106,10 +106,31 @@ const Exits = () => {
     const fetchExits = async () => {
       if (!user) return;
 
-      // Use RPC function to get exits with sensitive data privacy after 24h
-      const { data: exitsData, error } = await supabase
-        .rpc('get_vehicle_exits_with_privacy')
-        .limit(100000);
+      // Use RPC function to get exits with sensitive data privacy after 24h.
+      // Fetch in ordered pages because Supabase caps each response at 1000 rows.
+      const pageSize = 1000;
+      let from = 0;
+      let exitsData: any[] = [];
+      let error: any = null;
+
+      while (true) {
+        const { data: pageData, error: pageError } = await supabase
+          .rpc('get_vehicle_exits_with_privacy')
+          .order('departure_date', { ascending: false })
+          .order('departure_time', { ascending: false })
+          .order('created_at', { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (pageError) {
+          error = pageError;
+          break;
+        }
+
+        exitsData = exitsData.concat(pageData || []);
+
+        if (!pageData || pageData.length < pageSize) break;
+        from += pageSize;
+      }
 
       if (error) {
         console.error('Error fetching exits:', error);
@@ -124,7 +145,7 @@ const Exits = () => {
       }
 
       // Fetch vehicle data for the exits
-      const vehicleIds = exitsData.map((exit: any) => exit.vehicle_id);
+      const vehicleIds = [...new Set(exitsData.map((exit: any) => exit.vehicle_id).filter(Boolean))];
       const { data: vehiclesData } = await supabase
         .from('vehicles')
         .select('id, license_plate, make, model')
@@ -136,7 +157,7 @@ const Exits = () => {
       }));
 
       // Fetch user profiles
-      const userIds = data.map((exit: any) => exit.user_id);
+      const userIds = [...new Set(data.map((exit: any) => exit.user_id).filter(Boolean))];
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('user_id, first_name, last_name')

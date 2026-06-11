@@ -81,9 +81,9 @@ export default function EditExit() {
     // Load exit data with privacy protection
     supabase
       .rpc('get_vehicle_exits_with_privacy')
-      .limit(100000)
-      .then(({ data: exitsData, error }) => {
-        const data = exitsData?.find((exit: any) => exit.id === id);
+      .eq('id', id)
+      .maybeSingle()
+      .then(({ data, error }) => {
         if (error || !data) {
           toast({ title: 'Erro ao carregar saída', variant: 'destructive' });
           navigate('/exits');
