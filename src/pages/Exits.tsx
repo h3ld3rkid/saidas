@@ -108,7 +108,8 @@ const Exits = () => {
 
       // Use RPC function to get exits with sensitive data privacy after 24h
       const { data: exitsData, error } = await supabase
-        .rpc('get_vehicle_exits_with_privacy');
+        .rpc('get_vehicle_exits_with_privacy')
+        .limit(100000);
 
       if (error) {
         console.error('Error fetching exits:', error);
