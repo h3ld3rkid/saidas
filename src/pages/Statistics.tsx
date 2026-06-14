@@ -120,7 +120,7 @@ export default function Statistics() {
     let completed = 0;
 
     rows.forEach((r) => {
-      const t = normalizeExitType(r.exit_type || 'Outros');
+      const t = displayExitType(r.exit_type || 'Outro');
       byType.set(t, (byType.get(t) || 0) + 1);
 
       if (r.patient_district) byDistrict.set(r.patient_district, (byDistrict.get(r.patient_district) || 0) + 1);
