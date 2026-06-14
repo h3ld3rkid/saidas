@@ -34,10 +34,10 @@ const MONTHS_PT = [
 ];
 
 const TYPE_COLORS: Record<string, string> = {
-  CODU: 'hsl(0 84% 55%)',
-  Particular: 'hsl(142 70% 40%)',
-  VSL: 'hsl(217 91% 55%)',
-  Outros: 'hsl(220 9% 45%)',
+  'Emergência/CODU': 'hsl(0 84% 55%)',
+  'Emergência Particular': 'hsl(142 70% 40%)',
+  'VSL': 'hsl(217 91% 55%)',
+  'Outro': 'hsl(220 9% 45%)',
 };
 
 const typeColor = (t: string) => TYPE_COLORS[t] || 'hsl(220 9% 45%)';
