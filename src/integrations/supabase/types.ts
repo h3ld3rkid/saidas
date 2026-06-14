@@ -614,6 +614,24 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_exits_for_stats: {
+        Args: { p_month: number; p_year: number }
+        Returns: {
+          ambulance_number: string
+          crew: string
+          departure_date: string
+          exit_type: string
+          id: string
+          is_pem: boolean
+          is_reserve: boolean
+          patient_district: string
+          patient_municipality: string
+          patient_parish: string
+          status: string
+          user_id: string
+          vehicle_id: string
+        }[]
+      }
       get_limited_exit_data: {
         Args: { exit_id: string }
         Returns: {
