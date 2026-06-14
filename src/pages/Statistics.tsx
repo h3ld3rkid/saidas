@@ -9,7 +9,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
-import { normalizeExitType } from '@/lib/exitType';
+import { normalizeExitType, displayExitType } from '@/lib/exitType';
 import { BarChart3, MapPin, Users, Ambulance, Activity } from 'lucide-react';
 
 type StatRow = {
