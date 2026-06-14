@@ -50,6 +50,7 @@ import {
   Moon,
   Sun,
   Ambulance,
+  BarChart3,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -530,6 +531,29 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {hasRole('mod') && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Análise</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => handleNavigation('/statistics')}
+                    className={
+                      isActive('/statistics')
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-accent/50'
+                    }
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    {showLabels && <span>Estatísticas</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
