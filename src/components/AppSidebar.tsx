@@ -50,6 +50,7 @@ import {
   Moon,
   Sun,
   Ambulance,
+  BarChart3,
 } from 'lucide-react';
 
 export function AppSidebar() {
