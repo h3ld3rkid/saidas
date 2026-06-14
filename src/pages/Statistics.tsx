@@ -9,8 +9,8 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
-import { normalizeExitType, displayExitType } from '@/lib/exitType';
-import { BarChart3, MapPin, Users, Ambulance, Activity } from 'lucide-react';
+import { displayExitType } from '@/lib/exitType';
+import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound } from 'lucide-react';
 
 type StatRow = {
   id: string;
@@ -32,6 +32,7 @@ const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
+const MONTHS_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
 const TYPE_COLORS: Record<string, string> = {
   'Emergência/CODU': 'hsl(0 84% 55%)',
@@ -40,6 +41,7 @@ const TYPE_COLORS: Record<string, string> = {
   'Outro': 'hsl(220 9% 45%)',
 };
 
+const TYPE_KEYS = ['Emergência/CODU', 'Emergência Particular', 'VSL', 'Outro'];
 const typeColor = (t: string) => TYPE_COLORS[t] || 'hsl(220 9% 45%)';
 
 export default function Statistics() {
@@ -48,6 +50,7 @@ export default function Statistics() {
   const [year, setYear] = useState<number>(now.getFullYear());
   const [month, setMonth] = useState<number | 'all'>(now.getMonth() + 1);
   const [rows, setRows] = useState<StatRow[]>([]);
+  const [yearRows, setYearRows] = useState<StatRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [vehicleNames, setVehicleNames] = useState<Record<string, string>>({});
@@ -57,6 +60,7 @@ export default function Statistics() {
     return [y, y - 1, y - 2, y - 3];
   }, [now]);
 
+  // Load period data
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -64,22 +68,27 @@ export default function Statistics() {
         p_year: year,
         p_month: month === 'all' ? null : month,
       });
-      if (error) {
-        console.error(error);
-        setRows([]);
-      } else {
-        setRows((data || []) as StatRow[]);
-      }
+      if (error) console.error(error);
+      setRows(((data || []) as StatRow[]));
       setLoading(false);
     };
     load();
   }, [year, month]);
 
-  // Collect user IDs (registrar + crew) and vehicle IDs
+  // Load full year for monthly comparison
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.rpc('get_exits_for_stats', { p_year: year, p_month: null });
+      setYearRows((data || []) as StatRow[]);
+    };
+    load();
+  }, [year]);
+
+  // Resolve user + vehicle labels from both datasets
   useEffect(() => {
     const userIds = new Set<string>();
     const vehicleIds = new Set<string>();
-    rows.forEach((r) => {
+    [...rows, ...yearRows].forEach((r) => {
       if (r.user_id) userIds.add(r.user_id);
       if (r.crew) r.crew.split(',').map((s) => s.trim()).filter(Boolean).forEach((id) => userIds.add(id));
       if (r.vehicle_id) vehicleIds.add(r.vehicle_id);
@@ -103,7 +112,25 @@ export default function Statistics() {
         setVehicleNames(map);
       });
     }
-  }, [rows]);
+  }, [rows, yearRows]);
+
+  // Monthly comparison data (stacked by type) for the selected year
+  const monthlyComparison = useMemo(() => {
+    const buckets = MONTHS_SHORT.map((m) => {
+      const base: any = { name: m, total: 0 };
+      TYPE_KEYS.forEach((k) => (base[k] = 0));
+      return base;
+    });
+    yearRows.forEach((r) => {
+      const d = new Date(r.departure_date);
+      const idx = d.getMonth();
+      const t = displayExitType(r.exit_type || 'Outro');
+      const key = TYPE_KEYS.includes(t) ? t : 'Outro';
+      buckets[idx][key] += 1;
+      buckets[idx].total += 1;
+    });
+    return buckets;
+  }, [yearRows]);
 
   const stats = useMemo(() => {
     const total = rows.length;
@@ -115,6 +142,8 @@ export default function Statistics() {
     const byRegistrar = new Map<string, number>();
     const byCrewMember = new Map<string, number>();
     const byDay = new Map<string, number>();
+    const byCrewSize = new Map<number, number>();
+    const partnerships = new Map<string, { ids: [string, string]; count: number }>();
     let pem = 0;
     let reserve = 0;
     let completed = 0;
@@ -132,14 +161,31 @@ export default function Statistics() {
 
       if (r.user_id) byRegistrar.set(r.user_id, (byRegistrar.get(r.user_id) || 0) + 1);
 
-      if (r.crew) {
-        r.crew.split(',').map((s) => s.trim()).filter(Boolean).forEach((id) => {
-          byCrewMember.set(id, (byCrewMember.get(id) || 0) + 1);
-        });
+      const crewIds = (r.crew || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      crewIds.forEach((id) => byCrewMember.set(id, (byCrewMember.get(id) || 0) + 1));
+
+      if (crewIds.length > 0) {
+        byCrewSize.set(crewIds.length, (byCrewSize.get(crewIds.length) || 0) + 1);
       }
 
-      const day = r.departure_date;
-      byDay.set(day, (byDay.get(day) || 0) + 1);
+      // Pair combinations within the crew
+      for (let i = 0; i < crewIds.length; i++) {
+        for (let j = i + 1; j < crewIds.length; j++) {
+          const a = crewIds[i];
+          const b = crewIds[j];
+          if (a === b) continue;
+          const pair = [a, b].sort();
+          const key = pair.join('|');
+          const existing = partnerships.get(key);
+          if (existing) existing.count++;
+          else partnerships.set(key, { ids: [pair[0], pair[1]], count: 1 });
+        }
+      }
+
+      byDay.set(r.departure_date, (byDay.get(r.departure_date) || 0) + 1);
 
       if (r.is_pem) pem++;
       if (r.is_reserve) reserve++;
@@ -152,16 +198,11 @@ export default function Statistics() {
       return top ? arr.slice(0, top) : arr;
     };
 
-    // Daily series for the month
     const daily = Array.from(byDay.entries())
       .map(([d, v]) => ({ name: d.slice(8, 10), value: v, date: d }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    // Averages
-    const uniqueDays = byDay.size || 1;
-    const avgPerDay = total / uniqueDays;
-
-    let avgPerDayInPeriod = avgPerDay;
+    let avgPerDayInPeriod = total / Math.max(1, byDay.size);
     if (month !== 'all') {
       const daysInMonth = new Date(year, month, 0).getDate();
       avgPerDayInPeriod = total / daysInMonth;
@@ -173,28 +214,36 @@ export default function Statistics() {
       avgPerDayInPeriod = total / days;
     }
 
+    const crewSize = Array.from(byCrewSize.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([size, value]) => ({ name: `${size} elementos`, value }));
+
+    const topPartnerships = Array.from(partnerships.values())
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15)
+      .map((p) => ({
+        name: `${userNames[p.ids[0]] || 'Utilizador'} + ${userNames[p.ids[1]] || 'Utilizador'}`,
+        value: p.count,
+      }));
+
     return {
-      total,
-      pem,
-      reserve,
-      completed,
+      total, pem, reserve, completed,
       avgPerDay: avgPerDayInPeriod,
       typeData: toSortedArr(byType),
       districts: toSortedArr(byDistrict, 10),
       municipalities: toSortedArr(byMunicipality, 10),
       parishes: toSortedArr(byParish, 15),
       vehicles: toSortedArr(byVehicle, 10).map((v) => ({
-        name: vehicleNames[v.name] || v.name,
-        value: v.value,
+        name: vehicleNames[v.name] || v.name, value: v.value,
       })),
       registrars: toSortedArr(byRegistrar, 15).map((v) => ({
-        name: userNames[v.name] || 'Utilizador',
-        value: v.value,
+        name: userNames[v.name] || 'Utilizador', value: v.value,
       })),
       crewMembers: toSortedArr(byCrewMember, 15).map((v) => ({
-        name: userNames[v.name] || 'Utilizador',
-        value: v.value,
+        name: userNames[v.name] || 'Utilizador', value: v.value,
       })),
+      crewSize,
+      topPartnerships,
       daily,
     };
   }, [rows, year, month, userNames, vehicleNames, now]);
@@ -254,6 +303,27 @@ export default function Statistics() {
             <StatCard icon={<Ambulance className="h-4 w-4" />} label="Reserva" value={stats.reserve} />
           </div>
 
+          {/* Monthly comparison – always visible */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Comparação mensal — {year}</CardTitle>
+            </CardHeader>
+            <CardContent className="h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyComparison}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="name" />
+                  <YAxis allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  {TYPE_KEYS.map((k) => (
+                    <Bar key={k} dataKey={k} stackId="a" fill={typeColor(k)} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
           <div className="grid lg:grid-cols-2 gap-4">
             <Card>
               <CardHeader><CardTitle className="text-base">Serviços por tipo</CardTitle></CardHeader>
@@ -289,10 +359,19 @@ export default function Statistics() {
           </div>
 
           <Tabs defaultValue="locations">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="locations"><MapPin className="h-4 w-4 mr-1" />Localidades</TabsTrigger>
-              <TabsTrigger value="people"><Users className="h-4 w-4 mr-1" />Pessoas</TabsTrigger>
-              <TabsTrigger value="vehicles"><Ambulance className="h-4 w-4 mr-1" />Viaturas</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+              <TabsTrigger value="locations" className="text-xs md:text-sm">
+                <MapPin className="h-4 w-4 mr-1" />Localidades
+              </TabsTrigger>
+              <TabsTrigger value="people" className="text-xs md:text-sm">
+                <Users className="h-4 w-4 mr-1" />Pessoas
+              </TabsTrigger>
+              <TabsTrigger value="crews" className="text-xs md:text-sm">
+                <UsersRound className="h-4 w-4 mr-1" />Tripulações
+              </TabsTrigger>
+              <TabsTrigger value="vehicles" className="text-xs md:text-sm">
+                <Ambulance className="h-4 w-4 mr-1" />Viaturas
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="locations" className="space-y-4 mt-4">
@@ -304,6 +383,11 @@ export default function Statistics() {
             <TabsContent value="people" className="space-y-4 mt-4">
               <RankingCard title="Ranking — Registou serviço" data={stats.registrars} />
               <RankingCard title="Ranking — Tripulação (membros)" data={stats.crewMembers} />
+            </TabsContent>
+
+            <TabsContent value="crews" className="space-y-4 mt-4">
+              <RankingCard title="Distribuição por dimensão da tripulação" data={stats.crewSize} />
+              <RankingCard title="Parcerias mais frequentes (dupla)" data={stats.topPartnerships} />
             </TabsContent>
 
             <TabsContent value="vehicles" className="space-y-4 mt-4">
@@ -338,7 +422,7 @@ function RankingCard({ title, data }: { title: string; data: { name: string; val
       </Card>
     );
   }
-  const height = Math.max(220, data.length * 28 + 40);
+  const height = Math.max(220, data.length * 30 + 40);
   return (
     <Card>
       <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
@@ -347,7 +431,7 @@ function RankingCard({ title, data }: { title: string; data: { name: string; val
           <BarChart data={data} layout="vertical" margin={{ left: 10 }}>
             <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
             <XAxis type="number" allowDecimals={false} />
-            <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 12 }} />
+            <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 11 }} />
             <Tooltip />
             <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
           </BarChart>
