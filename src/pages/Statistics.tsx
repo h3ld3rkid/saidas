@@ -12,6 +12,8 @@ import {
 import { displayExitType } from '@/lib/exitType';
 import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound } from 'lucide-react';
 
+type PeopleMode = 'with-opcom' | 'without-opcom';
+
 type StatRow = {
   id: string;
   user_id: string;
