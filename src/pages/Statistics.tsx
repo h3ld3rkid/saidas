@@ -12,8 +12,6 @@ import {
 import { displayExitType } from '@/lib/exitType';
 import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound } from 'lucide-react';
 
-type PeopleMode = 'with-opcom' | 'without-opcom';
-
 type StatRow = {
   id: string;
   user_id: string;
@@ -29,6 +27,8 @@ type StatRow = {
   is_reserve: boolean | null;
   status: string;
 };
+
+type PeopleMode = 'with-opcom' | 'without-opcom';
 
 const MONTHS_PT = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -229,6 +229,14 @@ export default function Statistics() {
         value: p.count,
       }));
 
+    // Combined people ranking: registrars + crew members
+    const combinedPeopleMap = new Map<string, number>();
+    byRegistrar.forEach((v, k) => combinedPeopleMap.set(k, (combinedPeopleMap.get(k) || 0) + v));
+    byCrewMember.forEach((v, k) => combinedPeopleMap.set(k, (combinedPeopleMap.get(k) || 0) + v));
+    const combinedPeople = toSortedArr(combinedPeopleMap, 15).map((v) => ({
+      name: userNames[v.name] || 'Utilizador', value: v.value,
+    }));
+
     return {
       total, pem, reserve, completed,
       avgPerDay: avgPerDayInPeriod,
@@ -245,6 +253,7 @@ export default function Statistics() {
       crewMembers: toSortedArr(byCrewMember, 15).map((v) => ({
         name: userNames[v.name] || 'Utilizador', value: v.value,
       })),
+      combinedPeople,
       crewSize,
       topPartnerships,
       daily,
@@ -384,8 +393,34 @@ export default function Statistics() {
             </TabsContent>
 
             <TabsContent value="people" className="space-y-4 mt-4">
-              <RankingCard title="Ranking — Registou serviço" data={stats.registrars} />
-              <RankingCard title="Ranking — Tripulação (membros)" data={stats.crewMembers} />
+              <div className="flex items-center gap-2 mb-2">
+                <Select value={peopleMode} onValueChange={(v) => setPeopleMode(v as PeopleMode)}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="with-opcom">Com OPCOM (registou serviço)</SelectItem>
+                    <SelectItem value="without-opcom">Sem OPCOM (só tripulação)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground">
+                  {peopleMode === 'with-opcom'
+                    ? 'Inclui quem registou e quem fez parte da tripulação.'
+                    : 'Apenas quem fez parte da tripulação, excluindo o registador.'}
+                </span>
+              </div>
+
+              {peopleMode === 'with-opcom' ? (
+                <RankingCard
+                  title="Ranking — Total de participações (OPCOM + tripulação)"
+                  data={stats.combinedPeople}
+                />
+              ) : (
+                <RankingCard
+                  title="Ranking — Tripulação (membros, sem OPCOM)"
+                  data={stats.crewMembers}
+                />
+              )}
             </TabsContent>
 
             <TabsContent value="crews" className="space-y-4 mt-4">
