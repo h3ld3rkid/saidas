@@ -72,6 +72,7 @@ interface VehicleExit {
     license_plate: string;
     make: string;
     model: string;
+    ambulance_number?: string;
   };
   profile?: {
     first_name: string;
@@ -148,7 +149,7 @@ const Exits = () => {
       const vehicleIds = [...new Set(exitsData.map((exit: any) => exit.vehicle_id).filter(Boolean))];
       const { data: vehiclesData } = await supabase
         .from('vehicles')
-        .select('id, license_plate, make, model')
+        .select('id, license_plate, make, model, ambulance_number')
         .in('id', vehicleIds);
 
       const data = exitsData.map((exit: any) => ({
@@ -260,7 +261,7 @@ const Exits = () => {
                 </Badge>
               </div>
               <p className="break-words"><strong>Motivo:</strong> {exit?.purpose || 'N/A'}</p>
-              <p className="break-words"><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
+              <p className="break-words"><strong>Viatura:</strong> {exit?.vehicles ? `${exit.vehicles.ambulance_number ? exit.vehicles.ambulance_number + ' • ' : ''}${exit.vehicles.license_plate} - ${exit.vehicles.make} ${exit.vehicles.model}` : 'N/A'}</p>
               <p className="break-words"><strong>Tripulação:</strong> <CrewDisplay crewString={exit?.crew || ''} /></p>
             </div>
           </div>
