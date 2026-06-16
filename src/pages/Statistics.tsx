@@ -138,8 +138,39 @@ export default function Statistics() {
     return buckets;
   }, [yearRows]);
 
+  // Location filter options (derived from the full year, so they don't disappear)
+  const locationOptions = useMemo(() => {
+    const districts = new Set<string>();
+    const municipalities = new Set<string>();
+    const parishes = new Set<string>();
+    yearRows.forEach((r) => {
+      if (r.patient_district) districts.add(r.patient_district);
+      if (r.patient_municipality && (filterDistrict === 'all' || r.patient_district === filterDistrict)) {
+        municipalities.add(r.patient_municipality);
+      }
+      if (
+        r.patient_parish &&
+        (filterDistrict === 'all' || r.patient_district === filterDistrict) &&
+        (filterMunicipality === 'all' || r.patient_municipality === filterMunicipality)
+      ) {
+        parishes.add(r.patient_parish);
+      }
+    });
+    const sort = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b, 'pt'));
+    return { districts: sort(districts), municipalities: sort(municipalities), parishes: sort(parishes) };
+  }, [yearRows, filterDistrict, filterMunicipality]);
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (filterDistrict !== 'all' && r.patient_district !== filterDistrict) return false;
+      if (filterMunicipality !== 'all' && r.patient_municipality !== filterMunicipality) return false;
+      if (filterParish !== 'all' && r.patient_parish !== filterParish) return false;
+      return true;
+    });
+  }, [rows, filterDistrict, filterMunicipality, filterParish]);
+
   const stats = useMemo(() => {
-    const total = rows.length;
+    const total = filteredRows.length;
     const byType = new Map<string, number>();
     const byDistrict = new Map<string, number>();
     const byMunicipality = new Map<string, number>();
