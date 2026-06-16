@@ -185,7 +185,7 @@ export default function Statistics() {
     let reserve = 0;
     let completed = 0;
 
-    rows.forEach((r) => {
+    filteredRows.forEach((r) => {
       const t = displayExitType(r.exit_type || 'Outro');
       byType.set(t, (byType.get(t) || 0) + 1);
 
