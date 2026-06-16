@@ -110,10 +110,10 @@ export default function Statistics() {
       });
     }
     if (vehicleIds.size) {
-      supabase.from('vehicles').select('id, license_plate, name').in('id', Array.from(vehicleIds)).then(({ data }) => {
+      supabase.from('vehicles').select('id, license_plate, ambulance_number').in('id', Array.from(vehicleIds)).then(({ data }) => {
         const map: Record<string, string> = {};
         (data || []).forEach((v: any) => {
-          map[v.id] = v.license_plate || v.name || '—';
+          map[v.id] = v.ambulance_number || v.license_plate || '—';
         });
         setVehicleNames(map);
       });
