@@ -149,7 +149,7 @@ const Exits = () => {
       const vehicleIds = [...new Set(exitsData.map((exit: any) => exit.vehicle_id).filter(Boolean))];
       const { data: vehiclesData } = await supabase
         .from('vehicles')
-        .select('id, license_plate, make, model')
+        .select('id, license_plate, make, model, ambulance_number')
         .in('id', vehicleIds);
 
       const data = exitsData.map((exit: any) => ({
