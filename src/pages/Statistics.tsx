@@ -57,6 +57,9 @@ export default function Statistics() {
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [vehicleNames, setVehicleNames] = useState<Record<string, string>>({});
   const [peopleMode, setPeopleMode] = useState<PeopleMode>('with-opcom');
+  const [filterDistrict, setFilterDistrict] = useState<string>('all');
+  const [filterMunicipality, setFilterMunicipality] = useState<string>('all');
+  const [filterParish, setFilterParish] = useState<string>('all');
 
   const years = useMemo(() => {
     const y = now.getFullYear();
@@ -135,8 +138,39 @@ export default function Statistics() {
     return buckets;
   }, [yearRows]);
 
+  // Location filter options (derived from the full year, so they don't disappear)
+  const locationOptions = useMemo(() => {
+    const districts = new Set<string>();
+    const municipalities = new Set<string>();
+    const parishes = new Set<string>();
+    yearRows.forEach((r) => {
+      if (r.patient_district) districts.add(r.patient_district);
+      if (r.patient_municipality && (filterDistrict === 'all' || r.patient_district === filterDistrict)) {
+        municipalities.add(r.patient_municipality);
+      }
+      if (
+        r.patient_parish &&
+        (filterDistrict === 'all' || r.patient_district === filterDistrict) &&
+        (filterMunicipality === 'all' || r.patient_municipality === filterMunicipality)
+      ) {
+        parishes.add(r.patient_parish);
+      }
+    });
+    const sort = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b, 'pt'));
+    return { districts: sort(districts), municipalities: sort(municipalities), parishes: sort(parishes) };
+  }, [yearRows, filterDistrict, filterMunicipality]);
+
+  const filteredRows = useMemo(() => {
+    return rows.filter((r) => {
+      if (filterDistrict !== 'all' && r.patient_district !== filterDistrict) return false;
+      if (filterMunicipality !== 'all' && r.patient_municipality !== filterMunicipality) return false;
+      if (filterParish !== 'all' && r.patient_parish !== filterParish) return false;
+      return true;
+    });
+  }, [rows, filterDistrict, filterMunicipality, filterParish]);
+
   const stats = useMemo(() => {
-    const total = rows.length;
+    const total = filteredRows.length;
     const byType = new Map<string, number>();
     const byDistrict = new Map<string, number>();
     const byMunicipality = new Map<string, number>();
@@ -151,7 +185,7 @@ export default function Statistics() {
     let reserve = 0;
     let completed = 0;
 
-    rows.forEach((r) => {
+    filteredRows.forEach((r) => {
       const t = displayExitType(r.exit_type || 'Outro');
       byType.set(t, (byType.get(t) || 0) + 1);
 
@@ -258,7 +292,7 @@ export default function Statistics() {
       topPartnerships,
       daily,
     };
-  }, [rows, year, month, userNames, vehicleNames, now]);
+  }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
   if (!roleLoading && !hasRole('mod')) {
     return (
@@ -300,6 +334,51 @@ export default function Statistics() {
           </Select>
         </div>
       </div>
+
+      {/* Location filters */}
+      <div className="flex flex-wrap gap-2">
+        <Select
+          value={filterDistrict}
+          onValueChange={(v) => {
+            setFilterDistrict(v);
+            setFilterMunicipality('all');
+            setFilterParish('all');
+          }}
+        >
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Distrito" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os distritos</SelectItem>
+            {locationOptions.districts.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filterMunicipality}
+          onValueChange={(v) => { setFilterMunicipality(v); setFilterParish('all'); }}
+        >
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Concelho" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os concelhos</SelectItem>
+            {locationOptions.municipalities.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterParish} onValueChange={setFilterParish}>
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Freguesia" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as freguesias</SelectItem>
+            {locationOptions.parishes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {(filterDistrict !== 'all' || filterMunicipality !== 'all' || filterParish !== 'all') && (
+          <button
+            className="text-xs text-muted-foreground underline self-center"
+            onClick={() => { setFilterDistrict('all'); setFilterMunicipality('all'); setFilterParish('all'); }}
+          >
+            Limpar filtros
+          </button>
+        )}
+      </div>
+
+
 
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
