@@ -72,6 +72,7 @@ interface VehicleExit {
     license_plate: string;
     make: string;
     model: string;
+    ambulance_number?: string;
   };
   profile?: {
     first_name: string;
