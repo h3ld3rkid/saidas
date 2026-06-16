@@ -292,7 +292,7 @@ export default function Statistics() {
       topPartnerships,
       daily,
     };
-  }, [rows, year, month, userNames, vehicleNames, now]);
+  }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
   if (!roleLoading && !hasRole('mod')) {
     return (
