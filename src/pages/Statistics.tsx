@@ -335,6 +335,48 @@ export default function Statistics() {
         </div>
       </div>
 
+      {/* Location filters */}
+      <div className="flex flex-wrap gap-2">
+        <Select
+          value={filterDistrict}
+          onValueChange={(v) => {
+            setFilterDistrict(v);
+            setFilterMunicipality('all');
+            setFilterParish('all');
+          }}
+        >
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Distrito" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os distritos</SelectItem>
+            {locationOptions.districts.map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filterMunicipality}
+          onValueChange={(v) => { setFilterMunicipality(v); setFilterParish('all'); }}
+        >
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Concelho" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os concelhos</SelectItem>
+            {locationOptions.municipalities.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={filterParish} onValueChange={setFilterParish}>
+          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Freguesia" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as freguesias</SelectItem>
+            {locationOptions.parishes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {(filterDistrict !== 'all' || filterMunicipality !== 'all' || filterParish !== 'all') && (
+          <button
+            className="text-xs text-muted-foreground underline self-center"
+            onClick={() => { setFilterDistrict('all'); setFilterMunicipality('all'); setFilterParish('all'); }}
+          >
+            Limpar filtros
+          </button>
+        )}
+
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />)}
