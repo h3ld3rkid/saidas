@@ -57,6 +57,9 @@ export default function Statistics() {
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [vehicleNames, setVehicleNames] = useState<Record<string, string>>({});
   const [peopleMode, setPeopleMode] = useState<PeopleMode>('with-opcom');
+  const [filterDistrict, setFilterDistrict] = useState<string>('all');
+  const [filterMunicipality, setFilterMunicipality] = useState<string>('all');
+  const [filterParish, setFilterParish] = useState<string>('all');
 
   const years = useMemo(() => {
     const y = now.getFullYear();
