@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import { displayExitType } from '@/lib/exitType';
-import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound } from 'lucide-react';
+import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer } from 'lucide-react';
 
 type StatRow = {
   id: string;
@@ -316,7 +316,7 @@ export default function Statistics() {
           </h1>
           <p className="text-sm text-muted-foreground">Análise detalhada dos serviços</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={String(month)} onValueChange={(v) => setMonth(v === 'all' ? 'all' : Number(v))}>
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -332,6 +332,16 @@ export default function Statistics() {
               {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
+          <button
+            onClick={() => printReport({
+              year, month, stats,
+              filters: { district: filterDistrict, municipality: filterMunicipality, parish: filterParish },
+              monthlyComparison,
+            })}
+            className="inline-flex items-center gap-1 px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90"
+          >
+            <Printer className="h-4 w-4" /> Imprimir relatório
+          </button>
         </div>
       </div>
 
@@ -556,4 +566,110 @@ function RankingCard({ title, data }: { title: string; data: { name: string; val
       </CardContent>
     </Card>
   );
+}
+
+function printReport(opts: {
+  year: number;
+  month: number | 'all';
+  stats: any;
+  filters: { district: string; municipality: string; parish: string };
+  monthlyComparison: any[];
+}) {
+  const { year, month, stats, filters, monthlyComparison } = opts;
+  const periodo = month === 'all' ? `Ano ${year}` : `${MONTHS_PT[(month as number) - 1]} ${year}`;
+  const filtroTxt = [
+    filters.district !== 'all' ? `Distrito: ${filters.district}` : null,
+    filters.municipality !== 'all' ? `Concelho: ${filters.municipality}` : null,
+    filters.parish !== 'all' ? `Freguesia: ${filters.parish}` : null,
+  ].filter(Boolean).join(' · ') || 'Sem filtros de localidade';
+
+  const esc = (s: any) => String(s ?? '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
+  const rankingTable = (title: string, data: { name: string; value: number }[]) => `
+    <h3>${esc(title)}</h3>
+    ${data.length === 0 ? '<p class="muted">Sem dados.</p>' : `
+    <table><thead><tr><th>#</th><th>Nome</th><th class="num">Total</th></tr></thead><tbody>
+    ${data.map((d, i) => `<tr><td>${i + 1}</td><td>${esc(d.name)}</td><td class="num">${d.value}</td></tr>`).join('')}
+    </tbody></table>`}
+  `;
+
+  const monthlyTable = `
+    <h3>Comparação mensal — ${year}</h3>
+    <table><thead><tr><th>Mês</th>${TYPE_KEYS.map((k) => `<th class="num">${esc(k)}</th>`).join('')}<th class="num">Total</th></tr></thead><tbody>
+    ${monthlyComparison.map((r) => `<tr><td>${esc(r.name)}</td>${TYPE_KEYS.map((k) => `<td class="num">${r[k] || 0}</td>`).join('')}<td class="num"><strong>${r.total}</strong></td></tr>`).join('')}
+    </tbody></table>
+  `;
+
+  const html = `<!doctype html><html lang="pt"><head><meta charset="utf-8"/>
+<title>Relatório de Estatísticas — ${esc(periodo)}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif; color: #111; padding: 24px; }
+  h1 { margin: 0 0 4px; font-size: 22px; }
+  h2 { margin: 24px 0 8px; font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  h3 { margin: 16px 0 6px; font-size: 13px; }
+  .meta { color: #555; font-size: 12px; margin-bottom: 16px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 12px 0; }
+  .kpi { border: 1px solid #ddd; border-radius: 6px; padding: 8px; }
+  .kpi .l { font-size: 10px; color: #666; text-transform: uppercase; }
+  .kpi .v { font-size: 18px; font-weight: 700; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 8px; }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; text-align: left; }
+  th { background: #f4f4f4; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .muted { color: #888; font-size: 11px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media print { body { padding: 12mm; } .noprint { display:none; } h2 { page-break-after: avoid; } table { page-break-inside: avoid; } }
+  .btn { padding: 8px 14px; border: 0; background: #111; color: #fff; border-radius: 6px; cursor: pointer; }
+</style></head><body>
+  <div class="noprint" style="text-align:right;margin-bottom:12px;">
+    <button class="btn" onclick="window.print()">Imprimir</button>
+  </div>
+  <h1>Relatório de Estatísticas</h1>
+  <div class="meta">Período: <strong>${esc(periodo)}</strong> · ${esc(filtroTxt)} · Gerado em ${new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' })}</div>
+
+  <h2>Indicadores</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="l">Total serviços</div><div class="v">${stats.total}</div></div>
+    <div class="kpi"><div class="l">Média/dia</div><div class="v">${stats.avgPerDay.toFixed(1)}</div></div>
+    <div class="kpi"><div class="l">Concluídos</div><div class="v">${stats.completed}</div></div>
+    <div class="kpi"><div class="l">PEM</div><div class="v">${stats.pem}</div></div>
+    <div class="kpi"><div class="l">Reserva</div><div class="v">${stats.reserve}</div></div>
+  </div>
+
+  <h2>Serviços por tipo</h2>
+  ${rankingTable('Distribuição por tipo', stats.typeData)}
+
+  <h2>Evolução</h2>
+  ${monthlyTable}
+
+  <h2>Localidades</h2>
+  <div class="grid2">
+    <div>${rankingTable('Top distritos', stats.districts)}</div>
+    <div>${rankingTable('Top concelhos', stats.municipalities)}</div>
+  </div>
+  ${rankingTable('Top freguesias', stats.parishes)}
+
+  <h2>Pessoas</h2>
+  <div class="grid2">
+    <div>${rankingTable('Ranking total (OPCOM + tripulação)', stats.combinedPeople)}</div>
+    <div>${rankingTable('Ranking tripulação (sem OPCOM)', stats.crewMembers)}</div>
+  </div>
+
+  <h2>Tripulações</h2>
+  <div class="grid2">
+    <div>${rankingTable('Dimensão da tripulação', stats.crewSize)}</div>
+    <div>${rankingTable('Parcerias mais frequentes', stats.topPartnerships)}</div>
+  </div>
+
+  <h2>Viaturas</h2>
+  ${rankingTable('Top viaturas', stats.vehicles)}
+
+  <script>setTimeout(() => window.print(), 400);</script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) return;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
 }
