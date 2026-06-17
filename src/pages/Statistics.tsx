@@ -316,7 +316,7 @@ export default function Statistics() {
           </h1>
           <p className="text-sm text-muted-foreground">Análise detalhada dos serviços</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Select value={String(month)} onValueChange={(v) => setMonth(v === 'all' ? 'all' : Number(v))}>
             <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -332,6 +332,16 @@ export default function Statistics() {
               {years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
             </SelectContent>
           </Select>
+          <button
+            onClick={() => printReport({
+              year, month, stats,
+              filters: { district: filterDistrict, municipality: filterMunicipality, parish: filterParish },
+              monthlyComparison,
+            })}
+            className="inline-flex items-center gap-1 px-3 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90"
+          >
+            <Printer className="h-4 w-4" /> Imprimir relatório
+          </button>
         </div>
       </div>
 
