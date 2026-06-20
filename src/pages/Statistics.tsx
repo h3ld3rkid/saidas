@@ -23,6 +23,11 @@ type StatRow = {
   patient_district: string | null;
   patient_municipality: string | null;
   patient_parish: string | null;
+  patient_address: string | null;
+  patient_name: string | null;
+  patient_age: number | null;
+  patient_gender: string | null;
+  purpose: string | null;
   is_pem: boolean | null;
   is_reserve: boolean | null;
   status: string;
