@@ -329,6 +329,8 @@ export default function Statistics() {
       crewSize,
       topPartnerships,
       daily,
+      incompleteList: incompleteList.sort((a, b) => b.date.localeCompare(a.date)),
+      missingCounts,
     };
   }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
