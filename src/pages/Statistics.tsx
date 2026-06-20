@@ -200,6 +200,9 @@ export default function Statistics() {
     let pem = 0;
     let reserve = 0;
     let completed = 0;
+    const incompleteList: { id: string; date: string; type: string; missing: string[] }[] = [];
+    const missingCounts = { vehicle: 0, crew: 0, location: 0 };
+
 
     filteredRows.forEach((r) => {
       const t = displayExitType(r.exit_type || 'Outro');
