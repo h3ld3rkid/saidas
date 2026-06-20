@@ -205,8 +205,9 @@ export default function Statistics() {
     let pem = 0;
     let reserve = 0;
     let completed = 0;
-    const incompleteList: { id: string; date: string; type: string; missing: string[] }[] = [];
-    const missingCounts = { vehicle: 0, crew: 0, location: 0 };
+    const incompleteList: { id: string; date: string; type: string; registrar: string; missing: string[] }[] = [];
+    const missingCounts = { purpose: 0, name: 0, age: 0, gender: 0, address: 0, vehicle: 0, crew: 0, location: 0 };
+    const incompleteByRegistrar = new Map<string, number>();
 
 
     filteredRows.forEach((r) => {
@@ -252,21 +253,36 @@ export default function Statistics() {
       if (r.is_reserve) reserve++;
       if (r.status === 'completed') completed++;
 
-      // Incomplete detection
+      // Incomplete detection — patient/clinical fields only required for non-PEM/Reserve
       const missing: string[] = [];
+      const skipPatient = r.is_pem || r.is_reserve;
       if (!r.vehicle_id && !r.ambulance_number) missing.push('Viatura');
       if (!r.crew || !r.crew.trim()) missing.push('Tripulação');
-      if (!r.is_pem && !r.is_reserve && !r.patient_district && !r.patient_municipality && !r.patient_parish) {
-        missing.push('Localidade');
+      if (!skipPatient) {
+        if (!r.purpose || !r.purpose.trim()) missing.push('Motivo');
+        if (!r.patient_name || !r.patient_name.trim()) missing.push('Nome');
+        if (r.patient_age == null) missing.push('Idade');
+        if (!r.patient_gender || !r.patient_gender.trim()) missing.push('Sexo');
+        if (!r.patient_address || !r.patient_address.trim()) missing.push('Morada');
+        if (!r.patient_district && !r.patient_municipality && !r.patient_parish) {
+          missing.push('Localidade');
+        }
       }
       if (missing.length) {
         if (missing.includes('Viatura')) missingCounts.vehicle++;
         if (missing.includes('Tripulação')) missingCounts.crew++;
         if (missing.includes('Localidade')) missingCounts.location++;
+        if (missing.includes('Motivo')) missingCounts.purpose++;
+        if (missing.includes('Nome')) missingCounts.name++;
+        if (missing.includes('Idade')) missingCounts.age++;
+        if (missing.includes('Sexo')) missingCounts.gender++;
+        if (missing.includes('Morada')) missingCounts.address++;
+        if (r.user_id) incompleteByRegistrar.set(r.user_id, (incompleteByRegistrar.get(r.user_id) || 0) + 1);
         incompleteList.push({
           id: r.id,
           date: r.departure_date,
           type: displayExitType(r.exit_type || 'Outro'),
+          registrar: r.user_id,
           missing,
         });
       }
