@@ -23,6 +23,11 @@ type StatRow = {
   patient_district: string | null;
   patient_municipality: string | null;
   patient_parish: string | null;
+  patient_address: string | null;
+  patient_name: string | null;
+  patient_age: number | null;
+  patient_gender: string | null;
+  purpose: string | null;
   is_pem: boolean | null;
   is_reserve: boolean | null;
   status: string;
@@ -200,8 +205,9 @@ export default function Statistics() {
     let pem = 0;
     let reserve = 0;
     let completed = 0;
-    const incompleteList: { id: string; date: string; type: string; missing: string[] }[] = [];
-    const missingCounts = { vehicle: 0, crew: 0, location: 0 };
+    const incompleteList: { id: string; date: string; type: string; registrar: string; missing: string[] }[] = [];
+    const missingCounts = { purpose: 0, name: 0, age: 0, gender: 0, address: 0, vehicle: 0, crew: 0, location: 0 };
+    const incompleteByRegistrar = new Map<string, number>();
 
 
     filteredRows.forEach((r) => {
@@ -247,21 +253,36 @@ export default function Statistics() {
       if (r.is_reserve) reserve++;
       if (r.status === 'completed') completed++;
 
-      // Incomplete detection
+      // Incomplete detection — patient/clinical fields only required for non-PEM/Reserve
       const missing: string[] = [];
+      const skipPatient = r.is_pem || r.is_reserve;
       if (!r.vehicle_id && !r.ambulance_number) missing.push('Viatura');
       if (!r.crew || !r.crew.trim()) missing.push('Tripulação');
-      if (!r.is_pem && !r.is_reserve && !r.patient_district && !r.patient_municipality && !r.patient_parish) {
-        missing.push('Localidade');
+      if (!skipPatient) {
+        if (!r.purpose || !r.purpose.trim()) missing.push('Motivo');
+        if (!r.patient_name || !r.patient_name.trim()) missing.push('Nome');
+        if (r.patient_age == null) missing.push('Idade');
+        if (!r.patient_gender || !r.patient_gender.trim()) missing.push('Sexo');
+        if (!r.patient_address || !r.patient_address.trim()) missing.push('Morada');
+        if (!r.patient_district && !r.patient_municipality && !r.patient_parish) {
+          missing.push('Localidade');
+        }
       }
       if (missing.length) {
         if (missing.includes('Viatura')) missingCounts.vehicle++;
         if (missing.includes('Tripulação')) missingCounts.crew++;
         if (missing.includes('Localidade')) missingCounts.location++;
+        if (missing.includes('Motivo')) missingCounts.purpose++;
+        if (missing.includes('Nome')) missingCounts.name++;
+        if (missing.includes('Idade')) missingCounts.age++;
+        if (missing.includes('Sexo')) missingCounts.gender++;
+        if (missing.includes('Morada')) missingCounts.address++;
+        if (r.user_id) incompleteByRegistrar.set(r.user_id, (incompleteByRegistrar.get(r.user_id) || 0) + 1);
         incompleteList.push({
           id: r.id,
           date: r.departure_date,
           type: displayExitType(r.exit_type || 'Outro'),
+          registrar: r.user_id,
           missing,
         });
       }
@@ -331,6 +352,9 @@ export default function Statistics() {
       daily,
       incompleteList: incompleteList.sort((a, b) => b.date.localeCompare(a.date)),
       missingCounts,
+      incompleteByRegistrar: toSortedArr(incompleteByRegistrar, 20).map((v) => ({
+        name: userNames[v.name] || 'Utilizador', value: v.value,
+      })),
     };
   }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
@@ -572,37 +596,50 @@ export default function Statistics() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-sm">
-                <div className="rounded-md border p-2">
-                  <div className="text-xs text-muted-foreground">Sem viatura</div>
-                  <div className="text-lg font-semibold">{stats.missingCounts.vehicle}</div>
-                </div>
-                <div className="rounded-md border p-2">
-                  <div className="text-xs text-muted-foreground">Sem tripulação</div>
-                  <div className="text-lg font-semibold">{stats.missingCounts.crew}</div>
-                </div>
-                <div className="rounded-md border p-2">
-                  <div className="text-xs text-muted-foreground">Sem localidade</div>
-                  <div className="text-lg font-semibold">{stats.missingCounts.location}</div>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                {[
+                  ['Sem motivo', stats.missingCounts.purpose],
+                  ['Sem nome', stats.missingCounts.name],
+                  ['Sem idade', stats.missingCounts.age],
+                  ['Sem sexo', stats.missingCounts.gender],
+                  ['Sem morada', stats.missingCounts.address],
+                  ['Sem localidade', stats.missingCounts.location],
+                  ['Sem viatura', stats.missingCounts.vehicle],
+                  ['Sem tripulação', stats.missingCounts.crew],
+                ].map(([label, val]) => (
+                  <div key={label as string} className="rounded-md border p-2">
+                    <div className="text-xs text-muted-foreground">{label}</div>
+                    <div className="text-lg font-semibold">{val as number}</div>
+                  </div>
+                ))}
               </div>
+
+              {stats.incompleteByRegistrar.length > 0 && (
+                <RankingCard
+                  title="Intervenientes com fichas incompletas (quem registou)"
+                  data={stats.incompleteByRegistrar}
+                />
+              )}
+
               {stats.incompleteList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem fichas incompletas no período.</p>
               ) : (
-                <div className="max-h-80 overflow-auto border rounded-md">
+                <div className="max-h-96 overflow-auto border rounded-md">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 sticky top-0">
                       <tr>
                         <th className="text-left p-2">Data</th>
                         <th className="text-left p-2">Tipo</th>
+                        <th className="text-left p-2">Registado por</th>
                         <th className="text-left p-2">Em falta</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.incompleteList.slice(0, 200).map((row) => (
+                      {stats.incompleteList.slice(0, 300).map((row) => (
                         <tr key={row.id} className="border-t">
                           <td className="p-2 whitespace-nowrap">{row.date}</td>
                           <td className="p-2">{row.type}</td>
+                          <td className="p-2 whitespace-nowrap">{userNames[row.registrar] || 'Utilizador'}</td>
                           <td className="p-2">
                             <div className="flex flex-wrap gap-1">
                               {row.missing.map((m) => (
@@ -616,9 +653,9 @@ export default function Statistics() {
                       ))}
                     </tbody>
                   </table>
-                  {stats.incompleteList.length > 200 && (
+                  {stats.incompleteList.length > 300 && (
                     <div className="p-2 text-xs text-muted-foreground text-center">
-                      A mostrar 200 de {stats.incompleteList.length} registos.
+                      A mostrar 300 de {stats.incompleteList.length} registos.
                     </div>
                   )}
                 </div>
