@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import { displayExitType } from '@/lib/exitType';
-import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer } from 'lucide-react';
+import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer, AlertTriangle } from 'lucide-react';
 
 type StatRow = {
   id: string;
@@ -66,16 +66,31 @@ export default function Statistics() {
     return [y, y - 1, y - 2, y - 3];
   }, [now]);
 
+  // Paginated RPC fetch (avoids PostgREST 1000-row cap)
+  const fetchAllExits = async (p_year: number, p_month: number | null): Promise<StatRow[]> => {
+    const pageSize = 1000;
+    let start = 0;
+    let all: StatRow[] = [];
+    // hard safety cap: 50k rows
+    for (let i = 0; i < 50; i++) {
+      const { data, error } = await supabase
+        .rpc('get_exits_for_stats', { p_year, p_month })
+        .range(start, start + pageSize - 1);
+      if (error) { console.error(error); break; }
+      const chunk = (data || []) as StatRow[];
+      all = all.concat(chunk);
+      if (chunk.length < pageSize) break;
+      start += pageSize;
+    }
+    return all;
+  };
+
   // Load period data
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_exits_for_stats', {
-        p_year: year,
-        p_month: month === 'all' ? null : month,
-      });
-      if (error) console.error(error);
-      setRows(((data || []) as StatRow[]));
+      const data = await fetchAllExits(year, month === 'all' ? null : (month as number));
+      setRows(data);
       setLoading(false);
     };
     load();
@@ -84,11 +99,12 @@ export default function Statistics() {
   // Load full year for monthly comparison
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.rpc('get_exits_for_stats', { p_year: year, p_month: null });
-      setYearRows((data || []) as StatRow[]);
+      const data = await fetchAllExits(year, null);
+      setYearRows(data);
     };
     load();
   }, [year]);
+
 
   // Resolve user + vehicle labels from both datasets
   useEffect(() => {
@@ -184,6 +200,9 @@ export default function Statistics() {
     let pem = 0;
     let reserve = 0;
     let completed = 0;
+    const incompleteList: { id: string; date: string; type: string; missing: string[] }[] = [];
+    const missingCounts = { vehicle: 0, crew: 0, location: 0 };
+
 
     filteredRows.forEach((r) => {
       const t = displayExitType(r.exit_type || 'Outro');
@@ -227,6 +246,25 @@ export default function Statistics() {
       if (r.is_pem) pem++;
       if (r.is_reserve) reserve++;
       if (r.status === 'completed') completed++;
+
+      // Incomplete detection
+      const missing: string[] = [];
+      if (!r.vehicle_id && !r.ambulance_number) missing.push('Viatura');
+      if (!r.crew || !r.crew.trim()) missing.push('Tripulação');
+      if (!r.is_pem && !r.is_reserve && !r.patient_district && !r.patient_municipality && !r.patient_parish) {
+        missing.push('Localidade');
+      }
+      if (missing.length) {
+        if (missing.includes('Viatura')) missingCounts.vehicle++;
+        if (missing.includes('Tripulação')) missingCounts.crew++;
+        if (missing.includes('Localidade')) missingCounts.location++;
+        incompleteList.push({
+          id: r.id,
+          date: r.departure_date,
+          type: displayExitType(r.exit_type || 'Outro'),
+          missing,
+        });
+      }
     });
 
     const toSortedArr = (m: Map<string, number>, top?: number) => {
@@ -291,6 +329,8 @@ export default function Statistics() {
       crewSize,
       topPartnerships,
       daily,
+      incompleteList: incompleteList.sort((a, b) => b.date.localeCompare(a.date)),
+      missingCounts,
     };
   }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
@@ -396,12 +436,13 @@ export default function Statistics() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <StatCard icon={<Activity className="h-4 w-4" />} label="Total serviços" value={stats.total} />
             <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Média/dia" value={stats.avgPerDay.toFixed(1)} />
             <StatCard icon={<Ambulance className="h-4 w-4" />} label="Concluídos" value={stats.completed} />
             <StatCard icon={<Activity className="h-4 w-4" />} label="PEM" value={stats.pem} />
             <StatCard icon={<Ambulance className="h-4 w-4" />} label="Reserva" value={stats.reserve} />
+            <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Fichas incompletas" value={stats.incompleteList.length} />
           </div>
 
           {/* Monthly comparison – always visible */}
@@ -521,6 +562,69 @@ export default function Statistics() {
               <RankingCard title="Top viaturas" data={stats.vehicles} />
             </TabsContent>
           </Tabs>
+
+          {/* Fichas incompletas */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Fichas incompletas ({stats.incompleteList.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="rounded-md border p-2">
+                  <div className="text-xs text-muted-foreground">Sem viatura</div>
+                  <div className="text-lg font-semibold">{stats.missingCounts.vehicle}</div>
+                </div>
+                <div className="rounded-md border p-2">
+                  <div className="text-xs text-muted-foreground">Sem tripulação</div>
+                  <div className="text-lg font-semibold">{stats.missingCounts.crew}</div>
+                </div>
+                <div className="rounded-md border p-2">
+                  <div className="text-xs text-muted-foreground">Sem localidade</div>
+                  <div className="text-lg font-semibold">{stats.missingCounts.location}</div>
+                </div>
+              </div>
+              {stats.incompleteList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem fichas incompletas no período.</p>
+              ) : (
+                <div className="max-h-80 overflow-auto border rounded-md">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        <th className="text-left p-2">Data</th>
+                        <th className="text-left p-2">Tipo</th>
+                        <th className="text-left p-2">Em falta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.incompleteList.slice(0, 200).map((row) => (
+                        <tr key={row.id} className="border-t">
+                          <td className="p-2 whitespace-nowrap">{row.date}</td>
+                          <td className="p-2">{row.type}</td>
+                          <td className="p-2">
+                            <div className="flex flex-wrap gap-1">
+                              {row.missing.map((m) => (
+                                <span key={m} className="text-xs px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">
+                                  {m}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {stats.incompleteList.length > 200 && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">
+                      A mostrar 200 de {stats.incompleteList.length} registos.
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
