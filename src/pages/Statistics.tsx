@@ -562,6 +562,69 @@ export default function Statistics() {
               <RankingCard title="Top viaturas" data={stats.vehicles} />
             </TabsContent>
           </Tabs>
+
+          {/* Fichas incompletas */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                Fichas incompletas ({stats.incompleteList.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-sm">
+                <div className="rounded-md border p-2">
+                  <div className="text-xs text-muted-foreground">Sem viatura</div>
+                  <div className="text-lg font-semibold">{stats.missingCounts.vehicle}</div>
+                </div>
+                <div className="rounded-md border p-2">
+                  <div className="text-xs text-muted-foreground">Sem tripulação</div>
+                  <div className="text-lg font-semibold">{stats.missingCounts.crew}</div>
+                </div>
+                <div className="rounded-md border p-2">
+                  <div className="text-xs text-muted-foreground">Sem localidade</div>
+                  <div className="text-lg font-semibold">{stats.missingCounts.location}</div>
+                </div>
+              </div>
+              {stats.incompleteList.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem fichas incompletas no período.</p>
+              ) : (
+                <div className="max-h-80 overflow-auto border rounded-md">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50 sticky top-0">
+                      <tr>
+                        <th className="text-left p-2">Data</th>
+                        <th className="text-left p-2">Tipo</th>
+                        <th className="text-left p-2">Em falta</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {stats.incompleteList.slice(0, 200).map((row) => (
+                        <tr key={row.id} className="border-t">
+                          <td className="p-2 whitespace-nowrap">{row.date}</td>
+                          <td className="p-2">{row.type}</td>
+                          <td className="p-2">
+                            <div className="flex flex-wrap gap-1">
+                              {row.missing.map((m) => (
+                                <span key={m} className="text-xs px-1.5 py-0.5 rounded bg-destructive/10 text-destructive">
+                                  {m}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {stats.incompleteList.length > 200 && (
+                    <div className="p-2 text-xs text-muted-foreground text-center">
+                      A mostrar 200 de {stats.incompleteList.length} registos.
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
