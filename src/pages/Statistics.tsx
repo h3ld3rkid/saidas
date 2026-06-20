@@ -246,6 +246,25 @@ export default function Statistics() {
       if (r.is_pem) pem++;
       if (r.is_reserve) reserve++;
       if (r.status === 'completed') completed++;
+
+      // Incomplete detection
+      const missing: string[] = [];
+      if (!r.vehicle_id && !r.ambulance_number) missing.push('Viatura');
+      if (!r.crew || !r.crew.trim()) missing.push('Tripulação');
+      if (!r.is_pem && !r.is_reserve && !r.patient_district && !r.patient_municipality && !r.patient_parish) {
+        missing.push('Localidade');
+      }
+      if (missing.length) {
+        if (missing.includes('Viatura')) missingCounts.vehicle++;
+        if (missing.includes('Tripulação')) missingCounts.crew++;
+        if (missing.includes('Localidade')) missingCounts.location++;
+        incompleteList.push({
+          id: r.id,
+          date: r.departure_date,
+          type: displayExitType(r.exit_type || 'Outro'),
+          missing,
+        });
+      }
     });
 
     const toSortedArr = (m: Map<string, number>, top?: number) => {
