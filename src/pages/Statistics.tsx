@@ -352,6 +352,9 @@ export default function Statistics() {
       daily,
       incompleteList: incompleteList.sort((a, b) => b.date.localeCompare(a.date)),
       missingCounts,
+      incompleteByRegistrar: toSortedArr(incompleteByRegistrar, 20).map((v) => ({
+        name: userNames[v.name] || 'Utilizador', value: v.value,
+      })),
     };
   }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
