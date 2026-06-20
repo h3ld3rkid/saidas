@@ -436,12 +436,13 @@ export default function Statistics() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <StatCard icon={<Activity className="h-4 w-4" />} label="Total serviços" value={stats.total} />
             <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Média/dia" value={stats.avgPerDay.toFixed(1)} />
             <StatCard icon={<Ambulance className="h-4 w-4" />} label="Concluídos" value={stats.completed} />
             <StatCard icon={<Activity className="h-4 w-4" />} label="PEM" value={stats.pem} />
             <StatCard icon={<Ambulance className="h-4 w-4" />} label="Reserva" value={stats.reserve} />
+            <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Fichas incompletas" value={stats.incompleteList.length} />
           </div>
 
           {/* Monthly comparison – always visible */}
