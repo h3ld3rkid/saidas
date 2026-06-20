@@ -66,16 +66,31 @@ export default function Statistics() {
     return [y, y - 1, y - 2, y - 3];
   }, [now]);
 
+  // Paginated RPC fetch (avoids PostgREST 1000-row cap)
+  const fetchAllExits = async (p_year: number, p_month: number | null): Promise<StatRow[]> => {
+    const pageSize = 1000;
+    let start = 0;
+    let all: StatRow[] = [];
+    // hard safety cap: 50k rows
+    for (let i = 0; i < 50; i++) {
+      const { data, error } = await supabase
+        .rpc('get_exits_for_stats', { p_year, p_month })
+        .range(start, start + pageSize - 1);
+      if (error) { console.error(error); break; }
+      const chunk = (data || []) as StatRow[];
+      all = all.concat(chunk);
+      if (chunk.length < pageSize) break;
+      start += pageSize;
+    }
+    return all;
+  };
+
   // Load period data
   useEffect(() => {
     const load = async () => {
       setLoading(true);
-      const { data, error } = await supabase.rpc('get_exits_for_stats', {
-        p_year: year,
-        p_month: month === 'all' ? null : month,
-      });
-      if (error) console.error(error);
-      setRows(((data || []) as StatRow[]));
+      const data = await fetchAllExits(year, month === 'all' ? null : (month as number));
+      setRows(data);
       setLoading(false);
     };
     load();
@@ -84,11 +99,12 @@ export default function Statistics() {
   // Load full year for monthly comparison
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.rpc('get_exits_for_stats', { p_year: year, p_month: null });
-      setYearRows((data || []) as StatRow[]);
+      const data = await fetchAllExits(year, null);
+      setYearRows(data);
     };
     load();
   }, [year]);
+
 
   // Resolve user + vehicle labels from both datasets
   useEffect(() => {
