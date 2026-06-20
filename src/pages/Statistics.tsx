@@ -596,37 +596,50 @@ export default function Statistics() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-2 text-sm">
-                <div className="rounded-md border p-2">
-                  <div className="text-xs text-muted-foreground">Sem viatura</div>
-                  <div className="text-lg font-semibold">{stats.missingCounts.vehicle}</div>
-                </div>
-                <div className="rounded-md border p-2">
-                  <div className="text-xs text-muted-foreground">Sem tripulação</div>
-                  <div className="text-lg font-semibold">{stats.missingCounts.crew}</div>
-                </div>
-                <div className="rounded-md border p-2">
-                  <div className="text-xs text-muted-foreground">Sem localidade</div>
-                  <div className="text-lg font-semibold">{stats.missingCounts.location}</div>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                {[
+                  ['Sem motivo', stats.missingCounts.purpose],
+                  ['Sem nome', stats.missingCounts.name],
+                  ['Sem idade', stats.missingCounts.age],
+                  ['Sem sexo', stats.missingCounts.gender],
+                  ['Sem morada', stats.missingCounts.address],
+                  ['Sem localidade', stats.missingCounts.location],
+                  ['Sem viatura', stats.missingCounts.vehicle],
+                  ['Sem tripulação', stats.missingCounts.crew],
+                ].map(([label, val]) => (
+                  <div key={label as string} className="rounded-md border p-2">
+                    <div className="text-xs text-muted-foreground">{label}</div>
+                    <div className="text-lg font-semibold">{val as number}</div>
+                  </div>
+                ))}
               </div>
+
+              {stats.incompleteByRegistrar.length > 0 && (
+                <RankingCard
+                  title="Intervenientes com fichas incompletas (quem registou)"
+                  data={stats.incompleteByRegistrar}
+                />
+              )}
+
               {stats.incompleteList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem fichas incompletas no período.</p>
               ) : (
-                <div className="max-h-80 overflow-auto border rounded-md">
+                <div className="max-h-96 overflow-auto border rounded-md">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 sticky top-0">
                       <tr>
                         <th className="text-left p-2">Data</th>
                         <th className="text-left p-2">Tipo</th>
+                        <th className="text-left p-2">Registado por</th>
                         <th className="text-left p-2">Em falta</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.incompleteList.slice(0, 200).map((row) => (
+                      {stats.incompleteList.slice(0, 300).map((row) => (
                         <tr key={row.id} className="border-t">
                           <td className="p-2 whitespace-nowrap">{row.date}</td>
                           <td className="p-2">{row.type}</td>
+                          <td className="p-2 whitespace-nowrap">{userNames[row.registrar] || 'Utilizador'}</td>
                           <td className="p-2">
                             <div className="flex flex-wrap gap-1">
                               {row.missing.map((m) => (
@@ -640,9 +653,9 @@ export default function Statistics() {
                       ))}
                     </tbody>
                   </table>
-                  {stats.incompleteList.length > 200 && (
+                  {stats.incompleteList.length > 300 && (
                     <div className="p-2 text-xs text-muted-foreground text-center">
-                      A mostrar 200 de {stats.incompleteList.length} registos.
+                      A mostrar 300 de {stats.incompleteList.length} registos.
                     </div>
                   )}
                 </div>
