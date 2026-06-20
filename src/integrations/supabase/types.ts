@@ -624,9 +624,14 @@ export type Database = {
           id: string
           is_pem: boolean
           is_reserve: boolean
+          patient_address: string
+          patient_age: number
           patient_district: string
+          patient_gender: string
           patient_municipality: string
+          patient_name: string
           patient_parish: string
+          purpose: string
           status: string
           user_id: string
           vehicle_id: string
