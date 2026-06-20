@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import { displayExitType } from '@/lib/exitType';
-import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer } from 'lucide-react';
+import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer, AlertTriangle } from 'lucide-react';
 
 type StatRow = {
   id: string;
