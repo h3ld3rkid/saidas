@@ -206,7 +206,7 @@ export default function Statistics() {
     let pem = 0;
     let reserve = 0;
     let completed = 0;
-    const incompleteList: { id: string; date: string; type: string; registrar: string; missing: string[] }[] = [];
+    const incompleteList: { id: string; serviceNumber: number | null; missing: string[] }[] = [];
     const missingCounts = { purpose: 0, name: 0, age: 0, gender: 0, address: 0, vehicle: 0, crew: 0, location: 0 };
     const incompleteByRegistrar = new Map<string, number>();
 
