@@ -281,9 +281,7 @@ export default function Statistics() {
         if (r.user_id) incompleteByRegistrar.set(r.user_id, (incompleteByRegistrar.get(r.user_id) || 0) + 1);
         incompleteList.push({
           id: r.id,
-          date: r.departure_date,
-          type: displayExitType(r.exit_type || 'Outro'),
-          registrar: r.user_id,
+          serviceNumber: r.service_number,
           missing,
         });
       }
