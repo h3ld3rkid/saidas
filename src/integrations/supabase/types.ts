@@ -632,6 +632,7 @@ export type Database = {
           patient_name: string
           patient_parish: string
           purpose: string
+          service_number: number
           status: string
           user_id: string
           vehicle_id: string

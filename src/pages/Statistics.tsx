@@ -31,6 +31,7 @@ type StatRow = {
   is_pem: boolean | null;
   is_reserve: boolean | null;
   status: string;
+  service_number: number | null;
 };
 
 type PeopleMode = 'with-opcom' | 'without-opcom';
