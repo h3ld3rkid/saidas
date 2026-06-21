@@ -610,13 +610,6 @@ export default function Statistics() {
                 ))}
               </div>
 
-              {stats.incompleteByRegistrar.length > 0 && (
-                <RankingCard
-                  title="Intervenientes com fichas incompletas (quem registou)"
-                  data={stats.incompleteByRegistrar}
-                />
-              )}
-
               {stats.incompleteList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem fichas incompletas no período.</p>
               ) : (
@@ -624,18 +617,14 @@ export default function Statistics() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 sticky top-0">
                       <tr>
-                        <th className="text-left p-2">Data</th>
-                        <th className="text-left p-2">Tipo</th>
-                        <th className="text-left p-2">Registado por</th>
+                        <th className="text-left p-2">Nº Ficha</th>
                         <th className="text-left p-2">Em falta</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stats.incompleteList.slice(0, 300).map((row) => (
                         <tr key={row.id} className="border-t">
-                          <td className="p-2 whitespace-nowrap">{row.date}</td>
-                          <td className="p-2">{row.type}</td>
-                          <td className="p-2 whitespace-nowrap">{userNames[row.registrar] || 'Utilizador'}</td>
+                          <td className="p-2 whitespace-nowrap font-medium">{row.serviceNumber ?? '—'}</td>
                           <td className="p-2">
                             <div className="flex flex-wrap gap-1">
                               {row.missing.map((m) => (
