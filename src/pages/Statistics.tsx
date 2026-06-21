@@ -31,6 +31,7 @@ type StatRow = {
   is_pem: boolean | null;
   is_reserve: boolean | null;
   status: string;
+  service_number: number | null;
 };
 
 type PeopleMode = 'with-opcom' | 'without-opcom';
@@ -205,7 +206,7 @@ export default function Statistics() {
     let pem = 0;
     let reserve = 0;
     let completed = 0;
-    const incompleteList: { id: string; date: string; type: string; registrar: string; missing: string[] }[] = [];
+    const incompleteList: { id: string; serviceNumber: number | null; missing: string[] }[] = [];
     const missingCounts = { purpose: 0, name: 0, age: 0, gender: 0, address: 0, vehicle: 0, crew: 0, location: 0 };
     const incompleteByRegistrar = new Map<string, number>();
 
@@ -280,9 +281,7 @@ export default function Statistics() {
         if (r.user_id) incompleteByRegistrar.set(r.user_id, (incompleteByRegistrar.get(r.user_id) || 0) + 1);
         incompleteList.push({
           id: r.id,
-          date: r.departure_date,
-          type: displayExitType(r.exit_type || 'Outro'),
-          registrar: r.user_id,
+          serviceNumber: r.service_number,
           missing,
         });
       }
@@ -350,11 +349,8 @@ export default function Statistics() {
       crewSize,
       topPartnerships,
       daily,
-      incompleteList: incompleteList.sort((a, b) => b.date.localeCompare(a.date)),
+      incompleteList: incompleteList.sort((a, b) => (b.serviceNumber || 0) - (a.serviceNumber || 0)),
       missingCounts,
-      incompleteByRegistrar: toSortedArr(incompleteByRegistrar, 20).map((v) => ({
-        name: userNames[v.name] || 'Utilizador', value: v.value,
-      })),
     };
   }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
@@ -614,13 +610,6 @@ export default function Statistics() {
                 ))}
               </div>
 
-              {stats.incompleteByRegistrar.length > 0 && (
-                <RankingCard
-                  title="Intervenientes com fichas incompletas (quem registou)"
-                  data={stats.incompleteByRegistrar}
-                />
-              )}
-
               {stats.incompleteList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Sem fichas incompletas no período.</p>
               ) : (
@@ -628,18 +617,14 @@ export default function Statistics() {
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50 sticky top-0">
                       <tr>
-                        <th className="text-left p-2">Data</th>
-                        <th className="text-left p-2">Tipo</th>
-                        <th className="text-left p-2">Registado por</th>
+                        <th className="text-left p-2">Nº Ficha</th>
                         <th className="text-left p-2">Em falta</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stats.incompleteList.slice(0, 300).map((row) => (
                         <tr key={row.id} className="border-t">
-                          <td className="p-2 whitespace-nowrap">{row.date}</td>
-                          <td className="p-2">{row.type}</td>
-                          <td className="p-2 whitespace-nowrap">{userNames[row.registrar] || 'Utilizador'}</td>
+                          <td className="p-2 whitespace-nowrap font-medium">{row.serviceNumber ?? '—'}</td>
                           <td className="p-2">
                             <div className="flex flex-wrap gap-1">
                               {row.missing.map((m) => (
