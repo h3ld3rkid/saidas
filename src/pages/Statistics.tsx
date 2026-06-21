@@ -349,11 +349,8 @@ export default function Statistics() {
       crewSize,
       topPartnerships,
       daily,
-      incompleteList: incompleteList.sort((a, b) => b.date.localeCompare(a.date)),
+      incompleteList: incompleteList.sort((a, b) => (b.serviceNumber || 0) - (a.serviceNumber || 0)),
       missingCounts,
-      incompleteByRegistrar: toSortedArr(incompleteByRegistrar, 20).map((v) => ({
-        name: userNames[v.name] || 'Utilizador', value: v.value,
-      })),
     };
   }, [filteredRows, year, month, userNames, vehicleNames, now]);
 
