@@ -91,6 +91,7 @@ const Exits = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [searchFicha, setSearchFicha] = useState('');
 
   // Component to display crew names
   const CrewDisplay = ({ crewString }: { crewString: string }) => {
@@ -350,8 +351,16 @@ const Exits = () => {
     );
   }
 
-  // Filtrar por ano
+  // Filtrar por ano e por número de ficha
+  const searchTerm = searchFicha.trim();
   const filteredExits = exits.filter(exit => {
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      return (
+        String(exit.total_service_number ?? '').includes(q) ||
+        String(exit.service_number ?? '').includes(q)
+      );
+    }
     const exitYear = new Date(exit.departure_date).getFullYear();
     return exitYear === selectedYear;
   });
@@ -373,7 +382,15 @@ const Exits = () => {
             {filteredExits.length} {filteredExits.length === 1 ? 'registo' : 'registos'} em {selectedYear}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <input
+            type="search"
+            inputMode="numeric"
+            placeholder="Nº Ficha"
+            value={searchFicha}
+            onChange={(e) => { setSearchFicha(e.target.value); setCurrentPage(1); }}
+            className="h-9 w-28 rounded-md border border-input bg-background px-3 text-sm"
+          />
           <Select value={selectedYear.toString()} onValueChange={(v) => {
             setSelectedYear(Number(v));
             setCurrentPage(1);

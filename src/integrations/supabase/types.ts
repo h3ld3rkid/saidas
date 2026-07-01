@@ -634,6 +634,7 @@ export type Database = {
           purpose: string
           service_number: number
           status: string
+          total_service_number: number
           user_id: string
           vehicle_id: string
         }[]
