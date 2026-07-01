@@ -32,6 +32,7 @@ type StatRow = {
   is_reserve: boolean | null;
   status: string;
   service_number: number | null;
+  total_service_number: number | null;
 };
 
 type PeopleMode = 'with-opcom' | 'without-opcom';
@@ -281,7 +282,7 @@ export default function Statistics() {
         if (r.user_id) incompleteByRegistrar.set(r.user_id, (incompleteByRegistrar.get(r.user_id) || 0) + 1);
         incompleteList.push({
           id: r.id,
-          serviceNumber: r.service_number,
+          serviceNumber: r.total_service_number ?? r.service_number,
           missing,
         });
       }
