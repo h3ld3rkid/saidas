@@ -255,9 +255,17 @@ export default function Statistics() {
       if (r.is_reserve) reserve++;
       if (r.status === 'completed') completed++;
 
-      // Incomplete detection — patient/clinical fields only required for non-PEM/Reserve
+      // Incomplete detection — patient/clinical fields required for real services (skip only PEM
+      // and Reserve services that don't have any patient data filled)
       const missing: string[] = [];
-      const skipPatient = r.is_pem || r.is_reserve;
+      const hasAnyPatientData = !!(
+        (r.patient_name && r.patient_name.trim()) ||
+        r.patient_age != null ||
+        (r.patient_gender && r.patient_gender.trim()) ||
+        (r.patient_address && r.patient_address.trim()) ||
+        (r.purpose && r.purpose.trim())
+      );
+      const skipPatient = (r.is_pem || r.is_reserve) && !hasAnyPatientData;
       if (!r.vehicle_id && !r.ambulance_number) missing.push('Viatura');
       if (!r.crew || !r.crew.trim()) missing.push('Tripulação');
       if (!skipPatient) {
