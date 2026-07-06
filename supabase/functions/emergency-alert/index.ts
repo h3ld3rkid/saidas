@@ -33,7 +33,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { alertType, requesterName }: EmergencyAlertRequest = await req.json();
+    const { alertType, requesterName, requesterUserId }: EmergencyAlertRequest = await req.json();
 
     if (!alertType || !requesterName) {
       return new Response(
