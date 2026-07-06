@@ -9,6 +9,7 @@ const corsHeaders = {
 interface EmergencyAlertRequest {
   alertType: 'condutores' | 'socorristas';
   requesterName: string;
+  requesterUserId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
