@@ -165,7 +165,8 @@ const Dashboard = () => {
       const { error } = await supabase.functions.invoke('emergency-alert', {
         body: {
           alertType,
-          requesterName
+          requesterName,
+          requesterUserId: user.id
         }
       });
 

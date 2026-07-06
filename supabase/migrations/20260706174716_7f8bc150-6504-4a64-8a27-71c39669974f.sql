@@ -1,0 +1,1 @@
+ALTER TABLE public.readiness_alerts ADD COLUMN IF NOT EXISTS requester_user_id uuid;
