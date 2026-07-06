@@ -266,7 +266,8 @@ export function AppSidebar() {
       const { data, error } = await supabase.functions.invoke('emergency-alert', {
         body: {
           alertType,
-          requesterName
+          requesterName,
+          requesterUserId: user?.id
         }
       });
 
