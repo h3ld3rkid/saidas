@@ -124,7 +124,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get the original alert details
     const { data: alert } = await supabase
       .from('readiness_alerts')
-      .select('requester_name, alert_type')
+      .select('requester_name, alert_type, requester_user_id')
       .eq('alert_id', alertId)
       .single();
 
@@ -163,13 +163,31 @@ const handler = async (req: Request): Promise<Response> => {
 
       const text = `✅ <b>${userName}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
 
+      const recipientChatIds = new Set<string>(
+        (subscribers ?? [])
+          .map((s: any) => s.telegram_chat_id)
+          .filter((id: string | null) => !!id)
+      );
+
+      // Also notify the original requester (regardless of role / opt-in)
+      if (alert.requester_user_id) {
+        const { data: requesterProfile } = await supabase
+          .from('profiles')
+          .select('telegram_chat_id')
+          .eq('user_id', alert.requester_user_id)
+          .single();
+        if (requesterProfile?.telegram_chat_id) {
+          recipientChatIds.add(requesterProfile.telegram_chat_id);
+        }
+      }
+
       await Promise.all(
-        (subscribers ?? []).map((s: any) =>
+        Array.from(recipientChatIds).map((chatId) =>
           fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              chat_id: s.telegram_chat_id,
+              chat_id: chatId,
               text,
               parse_mode: 'HTML',
             }),
