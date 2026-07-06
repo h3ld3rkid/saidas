@@ -57,7 +57,7 @@ const fetchLastServiceNumbers = async () => {
 const fetchActiveServices = async () => {
   const { data, error } = await supabase
     .from('vehicle_exits')
-    .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number')
+    .select('id, user_id, vehicle_id, departure_date, departure_time, purpose, ambulance_number, exit_type, driver_name, crew, status, service_number, total_service_number, observations, patient_contact, patient_district, patient_municipality, patient_parish, patient_address')
     .eq('status', 'active')
     .order('departure_date', { ascending: false });
   if (error) throw error;
