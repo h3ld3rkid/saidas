@@ -196,6 +196,7 @@ export type Database = {
           created_at: string
           id: string
           requester_name: string
+          requester_user_id: string | null
         }
         Insert: {
           alert_id: string
@@ -203,6 +204,7 @@ export type Database = {
           created_at?: string
           id?: string
           requester_name: string
+          requester_user_id?: string | null
         }
         Update: {
           alert_id?: string
@@ -210,6 +212,7 @@ export type Database = {
           created_at?: string
           id?: string
           requester_name?: string
+          requester_user_id?: string | null
         }
         Relationships: []
       }
