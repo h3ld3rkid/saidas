@@ -118,6 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
         alert_id: alertId,
         alert_type: alertType,
         requester_name: requesterName,
+        requester_user_id: requesterUserId ?? null,
         created_at: new Date().toISOString()
       });
 
