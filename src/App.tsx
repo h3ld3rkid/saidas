@@ -27,6 +27,7 @@ import ManageVehicles from "./pages/ManageVehicles";
 import TelegramSettings from "./pages/TelegramSettings";
 import Settings from "./pages/Settings";
 import Statistics from "./pages/Statistics";
+import TestReadiness from "./pages/TestReadiness";
 
 const queryClient = new QueryClient();
 
