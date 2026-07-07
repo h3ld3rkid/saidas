@@ -10,6 +10,8 @@ interface EmergencyAlertRequest {
   alertType: 'condutores' | 'socorristas';
   requesterName: string;
   requesterUserId?: string;
+  isTest?: boolean;
+  testUserIds?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
