@@ -150,8 +150,8 @@ const handler = async (req: Request): Promise<Response> => {
         .from('realtime_notifications')
         .insert({
           alert_id: alertId,
-          responder_name: userName,
-          message: `${userName} está disponível para o alerta de ${alert.alert_type}`,
+          responder_name: userNameWithRole,
+          message: `${userNameWithRole} está disponível para o alerta de ${alert.alert_type}`,
           created_at: new Date().toISOString()
         });
 
@@ -163,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
         .not('telegram_chat_id', 'is', null)
         .in('role', ['admin', 'mod']);
 
-      const text = `✅ <b>${userName}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
+      const text = `✅ <b>${userNameWithRole}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
 
       const recipientChatIds = new Set<string>(
         (subscribers ?? [])
