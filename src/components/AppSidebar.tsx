@@ -354,6 +354,12 @@ export function AppSidebar() {
       path: '/settings',
       roles: ['admin'],
     },
+    {
+      title: 'Teste de Prontidão',
+      icon: FlaskConical,
+      path: '/test-readiness',
+      roles: ['admin'],
+    },
   ];
 
   const handleNavigation = (path: string, external?: boolean) => {
