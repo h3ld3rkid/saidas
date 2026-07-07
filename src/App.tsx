@@ -190,6 +190,13 @@ const AppContent = () => {
           </AppLayout>
         </ProtectedRoute>
       } />
+      <Route path="/test-readiness" element={
+        <ProtectedRoute>
+          <AppLayout>
+            <TestReadiness />
+          </AppLayout>
+        </ProtectedRoute>
+      } />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
