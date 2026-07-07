@@ -10,6 +10,8 @@ interface EmergencyAlertRequest {
   alertType: 'condutores' | 'socorristas';
   requesterName: string;
   requesterUserId?: string;
+  isTest?: boolean;
+  testUserIds?: string[];
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -33,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { alertType, requesterName, requesterUserId }: EmergencyAlertRequest = await req.json();
+    const { alertType, requesterName, requesterUserId, isTest, testUserIds }: EmergencyAlertRequest = await req.json();
 
     if (!alertType || !requesterName) {
       return new Response(
@@ -53,7 +55,10 @@ const handler = async (req: Request): Promise<Response> => {
       .select('first_name, last_name, telegram_chat_id')
       .eq('is_active', true);
 
-    if (alertType === 'condutores') {
+    if (isTest && testUserIds && testUserIds.length > 0) {
+      // Modo teste: enviar apenas para os user_ids selecionados
+      query = query.in('user_id', testUserIds);
+    } else if (alertType === 'condutores') {
       query = query.eq('function_role', 'Condutor');
     }
     // Para socorristas, enviar para todos os users ativos
@@ -106,18 +111,21 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
-    const message = `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`;
+    const message = isTest
+      ? `🧪 <b>TESTE DE PRONTIDÃO</b> 🧪\n\n<i>Esta é apenas uma mensagem de teste - não é necessário deslocamento.</i>\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`
+      : `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`;
 
     // Generate unique alert ID for tracking responses
     const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Store alert in database - save in UTC, display will handle timezone
+    // Em modo teste, prefixar alert_type para não aparecer como alerta ativo nos painéis
     await supabase
       .from('readiness_alerts')
       .insert({
         alert_id: alertId,
-        alert_type: alertType,
-        requester_name: requesterName,
+        alert_type: isTest ? `test_${alertType}` : alertType,
+        requester_name: isTest ? `[TESTE] ${requesterName}` : requesterName,
         requester_user_id: requesterUserId ?? null,
         created_at: new Date().toISOString()
       });

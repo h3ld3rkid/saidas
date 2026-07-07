@@ -51,6 +51,7 @@ import {
   Sun,
   Ambulance,
   BarChart3,
+  FlaskConical,
 } from 'lucide-react';
 
 export function AppSidebar() {
@@ -351,6 +352,12 @@ export function AppSidebar() {
       title: 'Configurações',
       icon: Settings,
       path: '/settings',
+      roles: ['admin'],
+    },
+    {
+      title: 'Teste de Prontidão',
+      icon: FlaskConical,
+      path: '/test-readiness',
       roles: ['admin'],
     },
   ];

@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get user profile from chat_id
     const { data: profile } = await supabase
       .from('profiles')
-      .select('user_id, first_name, last_name')
+      .select('user_id, first_name, last_name, function_role')
       .eq('telegram_chat_id', chatId)
       .single();
 
@@ -92,9 +92,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const userName = `${profile.first_name} ${profile.last_name || ''}`.trim();
+    const roleLabel = profile.function_role ? ` (${profile.function_role})` : '';
+    const userNameWithRole = `${userName}${roleLabel}`;
     const isAvailable = response === 'yes';
 
-    console.log(`User ${userName} responded: ${isAvailable ? 'Available' : 'Not Available'}`);
+    console.log(`User ${userNameWithRole} responded: ${isAvailable ? 'Available' : 'Not Available'}`);
 
     // Store the response
     const { data: insertedResponse, error: insertError } = await supabase
@@ -148,8 +150,8 @@ const handler = async (req: Request): Promise<Response> => {
         .from('realtime_notifications')
         .insert({
           alert_id: alertId,
-          responder_name: userName,
-          message: `${userName} está disponível para o alerta de ${alert.alert_type}`,
+          responder_name: userNameWithRole,
+          message: `${userNameWithRole} está disponível para o alerta de ${alert.alert_type}`,
           created_at: new Date().toISOString()
         });
 
@@ -161,7 +163,7 @@ const handler = async (req: Request): Promise<Response> => {
         .not('telegram_chat_id', 'is', null)
         .in('role', ['admin', 'mod']);
 
-      const text = `✅ <b>${userName}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
+      const text = `✅ <b>${userNameWithRole}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
 
       const recipientChatIds = new Set<string>(
         (subscribers ?? [])
