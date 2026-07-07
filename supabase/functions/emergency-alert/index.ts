@@ -35,7 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { alertType, requesterName, requesterUserId }: EmergencyAlertRequest = await req.json();
+    const { alertType, requesterName, requesterUserId, isTest, testUserIds }: EmergencyAlertRequest = await req.json();
 
     if (!alertType || !requesterName) {
       return new Response(
@@ -55,7 +55,10 @@ const handler = async (req: Request): Promise<Response> => {
       .select('first_name, last_name, telegram_chat_id')
       .eq('is_active', true);
 
-    if (alertType === 'condutores') {
+    if (isTest && testUserIds && testUserIds.length > 0) {
+      // Modo teste: enviar apenas para os user_ids selecionados
+      query = query.in('user_id', testUserIds);
+    } else if (alertType === 'condutores') {
       query = query.eq('function_role', 'Condutor');
     }
     // Para socorristas, enviar para todos os users ativos
