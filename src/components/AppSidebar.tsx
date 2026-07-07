@@ -51,6 +51,7 @@ import {
   Sun,
   Ambulance,
   BarChart3,
+  FlaskConical,
 } from 'lucide-react';
 
 export function AppSidebar() {
