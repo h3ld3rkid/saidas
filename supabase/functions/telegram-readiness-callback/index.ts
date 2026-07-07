@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Get user profile from chat_id
     const { data: profile } = await supabase
       .from('profiles')
-      .select('user_id, first_name, last_name')
+      .select('user_id, first_name, last_name, function_role')
       .eq('telegram_chat_id', chatId)
       .single();
 
@@ -92,9 +92,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const userName = `${profile.first_name} ${profile.last_name || ''}`.trim();
+    const roleLabel = profile.function_role ? ` (${profile.function_role})` : '';
+    const userNameWithRole = `${userName}${roleLabel}`;
     const isAvailable = response === 'yes';
 
-    console.log(`User ${userName} responded: ${isAvailable ? 'Available' : 'Not Available'}`);
+    console.log(`User ${userNameWithRole} responded: ${isAvailable ? 'Available' : 'Not Available'}`);
 
     // Store the response
     const { data: insertedResponse, error: insertError } = await supabase
