@@ -111,9 +111,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+    const categoryLabel = alertType === 'condutores' ? 'CONDUTORES' : 'SOCORRISTAS';
     const message = isTest
-      ? `🧪 <b>TESTE DE PRONTIDÃO</b> 🧪\n\n<i>Esta é apenas uma mensagem de teste - não é necessário deslocamento.</i>\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`
-      : `🚨 <b>ALERTA DE PRONTIDÃO</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`;
+      ? `🧪 <b>TESTE DE PRONTIDÃO ${categoryLabel}</b> 🧪\n\n<i>Esta é apenas uma mensagem de teste - não é necessário deslocamento.</i>\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`
+      : `🚨 <b>ALERTA DE PRONTIDÃO ${categoryLabel}</b> 🚨\n\nÉ necessário reforço da equipa, informe se disponível URGENTE\n\n📝 Solicitado por: ${requesterName}\n⏰ ${lisbonTime}`;
 
     // Generate unique alert ID for tracking responses
     const alertId = `alert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
