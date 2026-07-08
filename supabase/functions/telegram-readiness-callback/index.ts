@@ -155,13 +155,16 @@ const handler = async (req: Request): Promise<Response> => {
           created_at: new Date().toISOString()
         });
 
-      // Notify mods/admins who opted-in via Telegram
-      const { data: subscribers } = await supabase
-        .from('profiles')
-        .select('telegram_chat_id, role')
-        .eq('notify_readiness_responses', true)
-        .not('telegram_chat_id', 'is', null)
-        .in('role', ['admin', 'mod']);
+      // Notify mods/admins who opted-in via Telegram (skip in test mode)
+      const isTestAlert = alert.alert_type?.startsWith('test_');
+      const { data: subscribers } = isTestAlert
+        ? { data: [] as any[] }
+        : await supabase
+            .from('profiles')
+            .select('telegram_chat_id, role')
+            .eq('notify_readiness_responses', true)
+            .not('telegram_chat_id', 'is', null)
+            .in('role', ['admin', 'mod']);
 
       const text = `✅ <b>${userNameWithRole}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
 
