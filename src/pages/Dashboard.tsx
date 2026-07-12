@@ -98,7 +98,9 @@ const Dashboard = () => {
   }, []);
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
-    if (!user) return;
+    if (!user || clearingAlertId === alertId) return;
+
+    setClearingAlertId(alertId);
 
     try {
       // Get user name
