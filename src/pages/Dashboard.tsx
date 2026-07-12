@@ -286,10 +286,20 @@ const Dashboard = () => {
                       variant="destructive" 
                       size="sm"
                       onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
+                      disabled={clearingAlertId === alert.alert_id}
                       className="ml-4"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Desativar
+                      {clearingAlertId === alert.alert_id ? (
+                        <>
+                          <div className="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          A desativar...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Desativar
+                        </>
+                      )}
                     </Button>
                   </div>
                 );
