@@ -75,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('is_active', true)
       .not('telegram_chat_id', 'is', null);
 
-    if (alertType === 'condutores') {
+    if (baseType === 'condutores') {
       profilesQuery = profilesQuery.eq('function_role', 'Condutor');
     }
     // For socorristas, send to all active users (no additional filter)
