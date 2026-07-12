@@ -35,6 +35,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { alertId, alertType, closedByName }: ClearAlertRequest = await req.json();
     const safeClosedByName = (closedByName && String(closedByName).trim()) ? String(closedByName).trim() : 'Utilizador';
+    const isTest = typeof alertType === 'string' && alertType.startsWith('test_');
+    const baseType = isTest ? alertType.replace(/^test_/, '') : alertType;
+    const categoryLabel = baseType === 'condutores' ? 'CONDUTORES' : baseType === 'socorristas' ? 'SOCORRISTAS' : String(baseType || '').toUpperCase();
+    const alertLabel = isTest ? `TESTE ${categoryLabel}` : categoryLabel;
     console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType: ${alertType}, closedBy: ${safeClosedByName}`);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -71,7 +75,7 @@ const handler = async (req: Request): Promise<Response> => {
       .eq('is_active', true)
       .not('telegram_chat_id', 'is', null);
 
-    if (alertType === 'condutores') {
+    if (baseType === 'condutores') {
       profilesQuery = profilesQuery.eq('function_role', 'Condutor');
     }
     // For socorristas, send to all active users (no additional filter)
@@ -103,7 +107,9 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .filter((r: any) => r && r.chatId);
 
-    const cancelledNotifications = (allProfiles || [])
+    // For test alerts, do NOT broadcast cancellations to non-responders/negative responders.
+    // Only send positive-response acknowledgements to those who actually replied.
+    const cancelledNotifications = isTest ? [] : (allProfiles || [])
       .filter((p: any) => !allResponders.includes(p.user_id) || negativeResponders.includes(p.user_id))
       .map((p: any) => ({
         chatId: p.telegram_chat_id,
@@ -113,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
       .filter((r: any) => r && r.chatId);
 
     console.log(`Sending ${positiveNotifications.length} positive notifications`);
-    console.log(`Sending ${cancelledNotifications.length} cancellation notifications`);
+    console.log(`Sending ${cancelledNotifications.length} cancellation notifications (isTest=${isTest})`);
 
     // SECOND: Send notifications
     let notificationsSent = 0;
@@ -122,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const responder of positiveNotifications) {
       if (!responder) continue;
       const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
-      const message = `✅ O alerta de ${alertType} foi resolvido por ${safeClosedByName}. Obrigado pela sua disponibilidade!\n⏰ ${lisbonTime}`;
+      const message = `✅ O alerta de ${alertLabel} foi resolvido por ${safeClosedByName}. Obrigado pela sua disponibilidade!\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending positive notification to ${responder.name} (${responder.chatId})`);
@@ -150,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
               .insert({
                 alert_id: alertId,
                 responder_name: responder.name,
-                message: `Alerta de ${alertType} resolvido por ${safeClosedByName}`
+                message: `Alerta de ${alertLabel} resolvido por ${safeClosedByName}`
               });
             
             if (notifError) {
@@ -170,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Send to non-responders and negative responders
     for (const responder of cancelledNotifications) {
       const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
-      const message = `❌ Pedido de prontidão (${alertType}) anulado por ${safeClosedByName}. Obrigado\n⏰ ${lisbonTime}`;
+      const message = `❌ Pedido de prontidão (${alertLabel}) anulado por ${safeClosedByName}. Obrigado\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending cancellation notification to ${responder.name} (${responder.chatId})`);
