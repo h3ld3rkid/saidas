@@ -137,6 +137,8 @@ const Dashboard = () => {
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setClearingAlertId(null);
     }
   };
 
