@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [readinessResponses, setReadinessResponses] = useState<any[]>([]);
   const [activeExits, setActiveExits] = useState<any[]>([]);
   const [isAlertSending, setIsAlertSending] = useState(false);
+  const [clearingAlertId, setClearingAlertId] = useState<string | null>(null);
 
   // exit type styles come from @/lib/exitType
 
@@ -97,7 +98,9 @@ const Dashboard = () => {
   }, []);
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
-    if (!user) return;
+    if (!user || clearingAlertId === alertId) return;
+
+    setClearingAlertId(alertId);
 
     try {
       // Get user name
@@ -134,6 +137,8 @@ const Dashboard = () => {
         description: error.message,
         variant: "destructive"
       });
+    } finally {
+      setClearingAlertId(null);
     }
   };
 
@@ -281,10 +286,20 @@ const Dashboard = () => {
                       variant="destructive" 
                       size="sm"
                       onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
+                      disabled={clearingAlertId === alert.alert_id}
                       className="ml-4"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Desativar
+                      {clearingAlertId === alert.alert_id ? (
+                        <>
+                          <div className="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          A desativar...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Desativar
+                        </>
+                      )}
                     </Button>
                   </div>
                 );
