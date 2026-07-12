@@ -35,6 +35,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { alertId, alertType, closedByName }: ClearAlertRequest = await req.json();
     const safeClosedByName = (closedByName && String(closedByName).trim()) ? String(closedByName).trim() : 'Utilizador';
+    const isTest = typeof alertType === 'string' && alertType.startsWith('test_');
+    const baseType = isTest ? alertType.replace(/^test_/, '') : alertType;
+    const categoryLabel = baseType === 'condutores' ? 'CONDUTORES' : baseType === 'socorristas' ? 'SOCORRISTAS' : String(baseType || '').toUpperCase();
+    const alertLabel = isTest ? `TESTE ${categoryLabel}` : categoryLabel;
     console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType: ${alertType}, closedBy: ${safeClosedByName}`);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
