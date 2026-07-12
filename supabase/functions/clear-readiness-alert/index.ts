@@ -156,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
               .insert({
                 alert_id: alertId,
                 responder_name: responder.name,
-                message: `Alerta de ${alertType} resolvido por ${safeClosedByName}`
+                message: `Alerta de ${alertLabel} resolvido por ${safeClosedByName}`
               });
             
             if (notifError) {
