@@ -20,6 +20,7 @@ const Dashboard = () => {
   const [activeExits, setActiveExits] = useState<any[]>([]);
   const [isAlertSending, setIsAlertSending] = useState(false);
   const [clearingAlertId, setClearingAlertId] = useState<string | null>(null);
+  const [clearedAlertIds, setClearedAlertIds] = useState<Set<string>>(new Set());
 
   // exit type styles come from @/lib/exitType
 
@@ -98,9 +99,20 @@ const Dashboard = () => {
   }, []);
 
   const handleClearReadiness = async (alertId: string, alertType: string) => {
-    if (!user || clearingAlertId === alertId) return;
+    if (!user) return;
+    // Block if already processing OR if this alert has already been cleared in this session
+    if (clearingAlertId === alertId || clearedAlertIds.has(alertId)) {
+      console.log('Clear already in progress/completed for this alert, ignoring click');
+      return;
+    }
 
+    // Mark as clearing AND as already handled to prevent any further clicks
     setClearingAlertId(alertId);
+    setClearedAlertIds(prev => {
+      const next = new Set(prev);
+      next.add(alertId);
+      return next;
+    });
 
     try {
       // Get user name
@@ -125,6 +137,9 @@ const Dashboard = () => {
 
       if (error) throw error;
 
+      // Optimistically remove from local list so the button disappears immediately
+      setReadinessAlerts(prev => prev.filter(a => a.alert_id !== alertId));
+
       toast({
         title: "Alerta desativado com sucesso",
         description: `Alerta de ${alertType} foi desativado e notificações enviadas.`,
@@ -132,6 +147,12 @@ const Dashboard = () => {
 
     } catch (error: any) {
       console.error('Error clearing readiness alert:', error);
+      // On error, allow retrying this alert
+      setClearedAlertIds(prev => {
+        const next = new Set(prev);
+        next.delete(alertId);
+        return next;
+      });
       toast({
         title: "Erro ao desativar alerta",
         description: error.message,
@@ -286,10 +307,10 @@ const Dashboard = () => {
                       variant="destructive" 
                       size="sm"
                       onClick={() => handleClearReadiness(alert.alert_id, alert.alert_type)}
-                      disabled={clearingAlertId === alert.alert_id}
+                      disabled={clearingAlertId === alert.alert_id || clearedAlertIds.has(alert.alert_id)}
                       className="ml-4"
                     >
-                      {clearingAlertId === alert.alert_id ? (
+                      {(clearingAlertId === alert.alert_id || clearedAlertIds.has(alert.alert_id)) ? (
                         <>
                           <div className="h-4 w-4 mr-1 animate-spin rounded-full border-2 border-current border-t-transparent" />
                           A desativar...
