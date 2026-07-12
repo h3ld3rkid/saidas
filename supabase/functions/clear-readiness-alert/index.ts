@@ -107,7 +107,9 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .filter((r: any) => r && r.chatId);
 
-    const cancelledNotifications = (allProfiles || [])
+    // For test alerts, do NOT broadcast cancellations to non-responders/negative responders.
+    // Only send positive-response acknowledgements to those who actually replied.
+    const cancelledNotifications = isTest ? [] : (allProfiles || [])
       .filter((p: any) => !allResponders.includes(p.user_id) || negativeResponders.includes(p.user_id))
       .map((p: any) => ({
         chatId: p.telegram_chat_id,
@@ -117,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
       .filter((r: any) => r && r.chatId);
 
     console.log(`Sending ${positiveNotifications.length} positive notifications`);
-    console.log(`Sending ${cancelledNotifications.length} cancellation notifications`);
+    console.log(`Sending ${cancelledNotifications.length} cancellation notifications (isTest=${isTest})`);
 
     // SECOND: Send notifications
     let notificationsSent = 0;
