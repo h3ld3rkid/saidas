@@ -128,7 +128,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const responder of positiveNotifications) {
       if (!responder) continue;
       const lisbonTime = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
-      const message = `✅ O alerta de ${alertType} foi resolvido por ${safeClosedByName}. Obrigado pela sua disponibilidade!\n⏰ ${lisbonTime}`;
+      const message = `✅ O alerta de ${alertLabel} foi resolvido por ${safeClosedByName}. Obrigado pela sua disponibilidade!\n⏰ ${lisbonTime}`;
 
       try {
         console.log(`Sending positive notification to ${responder.name} (${responder.chatId})`);
