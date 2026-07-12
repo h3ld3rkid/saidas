@@ -19,6 +19,7 @@ const Dashboard = () => {
   const [readinessResponses, setReadinessResponses] = useState<any[]>([]);
   const [activeExits, setActiveExits] = useState<any[]>([]);
   const [isAlertSending, setIsAlertSending] = useState(false);
+  const [clearingAlertId, setClearingAlertId] = useState<string | null>(null);
 
   // exit type styles come from @/lib/exitType
 
