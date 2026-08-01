@@ -182,17 +182,31 @@ export default function EditExit() {
         : existingObs ? `${coduObs}\n${existingObs}` : coduObs;
     }
     
-    const { error } = await supabase
+    const { data: updatedRows, error } = await supabase
       .from('vehicle_exits')
       .update(updateData)
-      .eq('id', id);
+      .eq('id', id)
+      .select('id');
     
     setLoading(false);
 
     if (error) {
       toast({ title: 'Erro ao atualizar saída', description: error.message, variant: 'destructive' });
-    } else {
+      return;
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      toast({
+        title: 'Não foi possível gravar',
+        description: 'Já não tem permissão para editar este serviço (prazo de edição expirado). Contacte um administrador.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    {
       toast({ title: 'Saída atualizada com sucesso' });
+
       
       // Se o tipo de saída mudou, mostrar modal com números atualizados
       if (exitTypeChanged) {
