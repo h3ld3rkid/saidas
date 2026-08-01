@@ -465,7 +465,7 @@ const Exits = () => {
                         <ExitDetailsModal exit={exit} />
                       </Dialog>
                       
-                      {(exit.user_id === user?.id || hasRole('mod') || (user && exit.crew?.includes(user.id))) && (
+                      {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || (hasRole('mod') && isWithin24h(exit.created_at))) && (
                         <Button 
                           variant="default" 
                           size="icon"
