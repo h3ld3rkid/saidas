@@ -1,0 +1,1 @@
+CREATE POLICY "Mods can update exits within 24h" ON public.vehicle_exits FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'mod'::app_role) AND created_at >= (now() - interval '24 hours')) WITH CHECK (has_role(auth.uid(), 'mod'::app_role) AND created_at >= (now() - interval '24 hours'));
