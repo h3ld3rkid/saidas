@@ -255,14 +255,13 @@ export default function EditExit() {
 
   // Check if service is older than 3 hours
   const isOlderThan3Hours = new Date(exit.created_at).getTime() < Date.now() - 3 * 60 * 60 * 1000;
-  const isOlderThan24Hours = new Date(exit.created_at).getTime() < Date.now() - 24 * 60 * 60 * 1000;
   const isModOnly = hasRole('mod') && !hasRole('admin');
 
   // Normal users can only edit active services OR completed/cancelled services within 3h of creation
-  // Moderators can edit any service within 24h of creation
+  // Moderators can edit any service within 3h of creation
   // Admins can always edit
   const canEdit = hasRole('admin')
-    || (isModOnly ? !isOlderThan24Hours : (exit.status === 'active' || !isOlderThan3Hours));
+    || (isModOnly ? !isOlderThan3Hours : (exit.status === 'active' || !isOlderThan3Hours));
   const canChangeStatus = !isOlderThan3Hours || hasRole('admin');
 
   return (
