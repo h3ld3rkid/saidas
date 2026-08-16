@@ -425,7 +425,15 @@ export default function Home() {
             <CardContent className="space-y-3">
               {services && services.length > 0 ? (
                 services.map((s: any) => (
-                  <div key={s.id} className="bg-muted/30 rounded-xl p-3 border transition-all hover:shadow-md">
+                  <div
+                    key={s.id}
+                    className={`rounded-xl p-3 border transition-all hover:shadow-md ${
+                      String(s.observations || '').includes('REGISTO RÁPIDO')
+                        ? 'bg-amber-500/15 border-amber-500/50'
+                        : 'bg-muted/30'
+                    }`}
+                  >
+
                     <div className="flex items-start gap-3">
                       <div className="flex-1 min-w-0 space-y-2">
                         <div className="flex items-center gap-2 flex-wrap">
