@@ -32,6 +32,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
+import { QuickExitDialog } from '@/components/QuickExitDialog';
 import {
   Car,
   PlusCircle,
@@ -72,6 +73,7 @@ export function AppSidebar() {
   const [versionDraft, setVersionDraft] = useState('');
   const [escalasUrl, setEscalasUrl] = useState<string>('');
   const [confirmAlertType, setConfirmAlertType] = useState<'condutores' | 'socorristas' | null>(null);
+  const [quickExitOpen, setQuickExitOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -410,9 +412,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setQuickExitOpen(true)}
+                  className="!bg-amber-500 !text-white hover:!bg-amber-600"
+                >
+                  <Zap className="h-4 w-4" />
+                  {showLabels && <span>Saída Rápida</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <QuickExitDialog open={quickExitOpen} onOpenChange={setQuickExitOpen} />
 
         <SidebarGroup>
           <SidebarGroupLabel>Prontidão</SidebarGroupLabel>
