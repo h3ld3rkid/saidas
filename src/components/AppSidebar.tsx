@@ -72,6 +72,7 @@ export function AppSidebar() {
   const [versionDraft, setVersionDraft] = useState('');
   const [escalasUrl, setEscalasUrl] = useState<string>('');
   const [confirmAlertType, setConfirmAlertType] = useState<'condutores' | 'socorristas' | null>(null);
+  const [quickExitOpen, setQuickExitOpen] = useState(false);
 
   const isActive = (path: string) => location.pathname === path;
 
