@@ -32,6 +32,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from '@/hooks/use-toast';
+import { QuickExitDialog } from '@/components/QuickExitDialog';
 import {
   Car,
   PlusCircle,
