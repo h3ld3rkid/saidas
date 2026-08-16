@@ -410,9 +410,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setQuickExitOpen(true)}
+                  className="!bg-amber-500 !text-white hover:!bg-amber-600"
+                >
+                  <Zap className="h-4 w-4" />
+                  {showLabels && <span>Saída Rápida</span>}
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        <QuickExitDialog open={quickExitOpen} onOpenChange={setQuickExitOpen} />
 
         <SidebarGroup>
           <SidebarGroupLabel>Prontidão</SidebarGroupLabel>
