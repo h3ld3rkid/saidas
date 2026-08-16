@@ -106,10 +106,41 @@ export function QuickExitDialog({ open, onOpenChange }: QuickExitDialogProps) {
         .single();
       if (error) throw error;
 
+      // Notificar via Telegram quem registou
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('telegram_chat_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profile?.telegram_chat_id) {
+          const createdAt = new Date().toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' });
+          const viatura = vehicle?.ambulance_number
+            ? `Ambulância ${vehicle.ambulance_number}`
+            : `${vehicle?.license_plate || 'N/A'}`;
+          const message =
+            `⚡ <b>SAÍDA RÁPIDA REGISTADA</b> ⚡\n\n` +
+            `⚠️ Este serviço foi registado como <b>SAÍDA RÁPIDA</b> (sem dados obrigatórios). ` +
+            `Complete os dados logo que possível.\n\n` +
+            `🚑 <b>Viatura:</b> ${viatura}\n` +
+            `🔢 <b>Nº Serviço:</b> ${serviceNumber}\n` +
+            `📋 <b>Ficha nº:</b> ${totalServiceNumber}\n` +
+            `🕒 <b>Data de criação:</b> ${createdAt}`;
+
+          await supabase.functions.invoke('telegram-notify', {
+            body: { chatIds: [profile.telegram_chat_id], message },
+          });
+        }
+      } catch (notifyError) {
+        console.error('Erro ao notificar via Telegram:', notifyError);
+      }
+
       toast({
         title: 'Saída rápida registada',
         description: `Nº ${serviceNumber} · Ficha nº ${totalServiceNumber}. Complete os dados assim que possível.`,
       });
+
       onOpenChange(false);
       setVehicleId('');
       if (inserted?.id) navigate(`/exits/${inserted.id}/edit`);
