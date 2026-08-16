@@ -112,7 +112,7 @@ export function QuickExitDialog({ open, onOpenChange }: QuickExitDialogProps) {
       });
       onOpenChange(false);
       setVehicleId('');
-      if (inserted?.id) navigate(`/edit-exit/${inserted.id}`);
+      if (inserted?.id) navigate(`/exits/${inserted.id}/edit`);
       else navigate('/exits');
     } catch (error: any) {
       toast({
