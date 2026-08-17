@@ -181,6 +181,22 @@ export default function EditExit() {
         ? existingObs.replace(/CODU:\s*\S+/, coduObs)
         : existingObs ? `${coduObs}\n${existingObs}` : coduObs;
     }
+
+    // Remover marca de "REGISTO RÁPIDO" quando os dados obrigatórios já estiverem preenchidos
+    const obsNow = String(updateData.observations || '');
+    if (obsNow.includes('REGISTO RÁPIDO')) {
+      const purposeOk = !!exit.purpose && !exit.purpose.includes('dados por preencher');
+      const crewOk = !!updateData.crew && updateData.crew.trim().length > 0;
+      const nameOk = !!exit.patient_name || exit.is_pem || exit.is_reserve;
+      if (purposeOk && crewOk && nameOk) {
+        updateData.observations = obsNow
+          .split('\n')
+          .filter((line) => !line.includes('REGISTO RÁPIDO'))
+          .join('\n')
+          .trim();
+      }
+    }
+
     
     const { data: updatedRows, error } = await supabase
       .from('vehicle_exits')
