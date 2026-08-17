@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2, Send } from "lucide-react";
+import { Car, Megaphone, Users, Edit3, CheckCircle, XCircle, Trash2, Send, Zap } from "lucide-react";
 import { getExitTypeBadgeStyle, displayExitType } from "@/lib/exitType";
 import { SplashAnnouncementModal } from "@/components/SplashAnnouncementModal";
 import { formatInTimeZone } from "date-fns-tz";
