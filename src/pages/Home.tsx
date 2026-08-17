@@ -312,7 +312,25 @@ export default function Home() {
                 </div>
               </div>
             )}
+
+            {services && services.filter((s: any) => String(s.observations || '').includes('REGISTO RÁPIDO')).length > 0 && (
+              <div className="rounded-lg border border-amber-500/50 bg-amber-500/15 px-4 py-3 space-y-2">
+                {services
+                  .filter((s: any) => String(s.observations || '').includes('REGISTO RÁPIDO'))
+                  .map((s: any) => (
+                    <div key={s.id} className="flex items-start gap-2 text-sm">
+                      <Zap className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
+                      <p className="text-foreground">
+                        <strong>Saída Rápida</strong> Nº{s.service_number ?? '—'} (Ficha nº{s.total_service_number ?? '—'})
+                        {s.opcomName ? <> — registada por <strong>{s.opcomName}</strong></> : null}
+                        <span className="block text-xs text-muted-foreground">Dados por completar.</span>
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
+
 
           {readinessData && readinessData.length > 0 && (
             <Card className="border-0 shadow-card bg-card">
