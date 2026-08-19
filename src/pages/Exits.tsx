@@ -472,7 +472,7 @@ const Exits = () => {
                         <ExitDetailsModal exit={exit} />
                       </Dialog>
                       
-                      {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || (hasRole('mod') && isWithin24h(exit.created_at))) && (
+                      {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
                         <Button 
                           variant="default" 
                           size="icon"
@@ -564,7 +564,7 @@ const Exits = () => {
                             <ExitDetailsModal exit={exit} />
                           </Dialog>
                           
-{(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || (hasRole('mod') && isWithin24h(exit.created_at))) && (
+{(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
   <Button 
     variant="ghost" 
     size="icon"
