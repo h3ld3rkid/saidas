@@ -80,12 +80,6 @@ interface VehicleExit {
   };
 }
 
-// Moderadores só podem editar serviços criados nas últimas 3 horas
-const isWithin24h = (createdAt?: string) => {
-  if (!createdAt) return false;
-  return Date.now() - new Date(createdAt).getTime() < 3 * 60 * 60 * 1000;
-};
-
 
 const Exits = () => {
   const { user } = useAuth();
@@ -472,7 +466,7 @@ const Exits = () => {
                         <ExitDetailsModal exit={exit} />
                       </Dialog>
                       
-                      {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || (hasRole('mod') && isWithin24h(exit.created_at))) && (
+                      {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
                         <Button 
                           variant="default" 
                           size="icon"
@@ -564,7 +558,7 @@ const Exits = () => {
                             <ExitDetailsModal exit={exit} />
                           </Dialog>
                           
-{(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || (hasRole('mod') && isWithin24h(exit.created_at))) && (
+{(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
   <Button 
     variant="ghost" 
     size="icon"
