@@ -748,7 +748,103 @@ export default function Statistics() {
             <TabsContent value="vehicles" className="space-y-4 mt-4">
               <RankingCard title="Top viaturas" data={stats.vehicles} />
             </TabsContent>
+
+            <TabsContent value="readiness" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <StatCard icon={<Siren className="h-4 w-4" />} label="Pedidos" value={readinessStats.total} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Com resposta" value={readinessStats.answered} />
+                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem resposta" value={readinessStats.unanswered} />
+                <StatCard icon={<Users className="h-4 w-4" />} label="Com disponíveis" value={readinessStats.withPositive} />
+                <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Taxa resposta" value={`${readinessStats.responseRate.toFixed(0)}%`} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="1ª resposta (méd.)" value={readinessStats.avgDelay ? `${readinessStats.avgDelay.toFixed(0)} min` : '—'} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                <RankingCard title="Pedidos por tipo" data={readinessStats.byType} />
+                <RankingCard title="Quem mais pede prontidão" data={readinessStats.requesters} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                <RankingCard title="Quem mais dá disponibilidade (Sim)" data={readinessStats.yesRanking} />
+                <RankingCard title="Quem mais responde Não disponível" data={readinessStats.noRanking} />
+              </div>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Taxa de disponibilidade por elemento</CardTitle></CardHeader>
+                <CardContent>
+                  {readinessStats.rateRows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem respostas no período.</p>
+                  ) : (
+                    <div className="max-h-96 overflow-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr>
+                            <th className="text-left p-2">Elemento</th>
+                            <th className="text-right p-2">Sim</th>
+                            <th className="text-right p-2">Não</th>
+                            <th className="text-right p-2">Total</th>
+                            <th className="text-right p-2">% Disponível</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {readinessStats.rateRows.map((r) => (
+                            <tr key={r.name} className="border-t">
+                              <td className="p-2">{r.name}</td>
+                              <td className="p-2 text-right text-green-600">{r.yes}</td>
+                              <td className="p-2 text-right text-destructive">{r.no}</td>
+                              <td className="p-2 text-right">{r.total}</td>
+                              <td className="p-2 text-right font-medium">{r.rate.toFixed(0)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Histórico de pedidos ({readinessStats.list.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {readinessStats.list.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem pedidos de prontidão no período.</p>
+                  ) : (
+                    <div className="max-h-96 overflow-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr>
+                            <th className="text-left p-2">Data</th>
+                            <th className="text-left p-2">Tipo</th>
+                            <th className="text-left p-2">Pedido por</th>
+                            <th className="text-left p-2">Disponíveis</th>
+                            <th className="text-left p-2">Não disponíveis</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {readinessStats.list.map((a) => (
+                            <tr key={a.id} className="border-t align-top">
+                              <td className="p-2 whitespace-nowrap">
+                                {new Date(a.createdAt).toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' })}
+                              </td>
+                              <td className="p-2 capitalize whitespace-nowrap">{a.type}</td>
+                              <td className="p-2 whitespace-nowrap">{a.requester}</td>
+                              <td className="p-2 text-green-600">
+                                {a.yes ? `${a.yes} — ${a.yesNames.join(', ')}` : '—'}
+                              </td>
+                              <td className="p-2 text-destructive">
+                                {a.no ? `${a.no} — ${a.noNames.join(', ')}` : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
+
 
           {/* Fichas incompletas */}
           <Card>
