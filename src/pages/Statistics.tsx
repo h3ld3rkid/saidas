@@ -113,6 +113,164 @@ export default function Statistics() {
   }, [year]);
 
 
+  // ---------- Prontidão (readiness) ----------
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [responses, setResponses] = useState<any[]>([]);
+  const [readinessNames, setReadinessNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const load = async () => {
+      const m0 = month === 'all' ? 0 : (month as number) - 1;
+      const start = month === 'all' ? new Date(year, 0, 1) : new Date(year, m0, 1);
+      const end = month === 'all' ? new Date(year + 1, 0, 1) : new Date(year, m0 + 1, 1);
+
+      const { data: alertsData } = await supabase
+        .from('readiness_alerts')
+        .select('*')
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5000);
+
+      const clean = (alertsData || []).filter((a: any) => !String(a.alert_id).startsWith('test_'));
+      setAlerts(clean);
+
+      const ids = clean.map((a: any) => a.alert_id);
+      if (ids.length) {
+        const { data: respData } = await supabase
+          .from('readiness_responses')
+          .select('alert_id, user_id, response, responded_at')
+          .in('alert_id', ids)
+          .limit(10000);
+        setResponses(respData || []);
+      } else {
+        setResponses([]);
+      }
+    };
+    load();
+  }, [year, month]);
+
+  useEffect(() => {
+    const ids = Array.from(new Set([
+      ...responses.map((r) => r.user_id),
+      ...alerts.map((a) => a.requester_user_id).filter(Boolean),
+    ])).filter(Boolean) as string[];
+    if (!ids.length) return;
+    supabase.rpc('get_user_names_by_ids', { _user_ids: ids }).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data || []).forEach((u: any) => {
+        map[u.user_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Utilizador';
+      });
+      setReadinessNames(map);
+    });
+  }, [responses, alerts]);
+
+  const readinessStats = useMemo(() => {
+    const byAlert = new Map<string, any[]>();
+    responses.forEach((r) => {
+      const list = byAlert.get(r.alert_id) || [];
+      list.push(r);
+      byAlert.set(r.alert_id, list);
+    });
+
+    const nameOf = (id: string) => readinessNames[id] || 'Utilizador';
+
+    let answered = 0;
+    let withPositive = 0;
+    let totalPositive = 0;
+    let totalNegative = 0;
+    const delays: number[] = [];
+    const byType = new Map<string, number>();
+    const requesters = new Map<string, number>();
+    const yesCount = new Map<string, number>();
+    const noCount = new Map<string, number>();
+
+    const list = alerts.map((a) => {
+      const rs = byAlert.get(a.alert_id) || [];
+      // keep last response per user
+      const perUser = new Map<string, any>();
+      rs.forEach((r) => {
+        const prev = perUser.get(r.user_id);
+        if (!prev || new Date(r.responded_at) > new Date(prev.responded_at)) perUser.set(r.user_id, r);
+      });
+      const uniq = Array.from(perUser.values());
+      const yes = uniq.filter((r) => r.response === true);
+      const no = uniq.filter((r) => r.response === false);
+
+      if (uniq.length) answered += 1;
+      if (yes.length) withPositive += 1;
+      totalPositive += yes.length;
+      totalNegative += no.length;
+
+      yes.forEach((r) => yesCount.set(r.user_id, (yesCount.get(r.user_id) || 0) + 1));
+      no.forEach((r) => noCount.set(r.user_id, (noCount.get(r.user_id) || 0) + 1));
+
+      const type = (a.alert_type || 'desconhecido').toLowerCase();
+      byType.set(type, (byType.get(type) || 0) + 1);
+      requesters.set(a.requester_name || 'Utilizador', (requesters.get(a.requester_name || 'Utilizador') || 0) + 1);
+
+      const first = uniq
+        .map((r) => new Date(r.responded_at).getTime())
+        .sort((x, y2) => x - y2)[0];
+      if (first) {
+        const mins = (first - new Date(a.created_at).getTime()) / 60000;
+        if (mins >= 0 && mins < 24 * 60) delays.push(mins);
+      }
+
+      return {
+        id: a.id,
+        alertId: a.alert_id,
+        createdAt: a.created_at,
+        type: a.alert_type,
+        requester: a.requester_name || 'Utilizador',
+        yes: yes.length,
+        no: no.length,
+        yesNames: yes.map((r) => nameOf(r.user_id)),
+        noNames: no.map((r) => nameOf(r.user_id)),
+      };
+    });
+
+    const rank = (m: Map<string, number>, top = 15) =>
+      Array.from(m.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, top);
+
+    const rankUsers = (m: Map<string, number>, top = 15) =>
+      Array.from(m.entries())
+        .map(([id, value]) => ({ name: nameOf(id), value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, top);
+
+    // taxa de disponibilidade individual
+    const rateRows = Array.from(new Set([...yesCount.keys(), ...noCount.keys()])).map((id) => {
+      const y = yesCount.get(id) || 0;
+      const n = noCount.get(id) || 0;
+      return { name: nameOf(id), yes: y, no: n, total: y + n, rate: y + n ? (y / (y + n)) * 100 : 0 };
+    }).sort((a, b) => b.total - a.total);
+
+    const total = alerts.length;
+    return {
+      total,
+      answered,
+      unanswered: total - answered,
+      withPositive,
+      withoutPositive: total - withPositive,
+      totalPositive,
+      totalNegative,
+      responseRate: total ? (answered / total) * 100 : 0,
+      avgPositive: total ? totalPositive / total : 0,
+      avgDelay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : 0,
+      byType: rank(byType),
+      requesters: rank(requesters),
+      yesRanking: rankUsers(yesCount),
+      noRanking: rankUsers(noCount),
+      rateRows,
+      list,
+    };
+  }, [alerts, responses, readinessNames]);
+
+
   // Resolve user + vehicle labels from both datasets
   useEffect(() => {
     const userIds = new Set<string>();
