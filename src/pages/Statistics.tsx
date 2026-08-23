@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import { displayExitType } from '@/lib/exitType';
-import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer, AlertTriangle } from 'lucide-react';
+import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer, AlertTriangle, Siren } from 'lucide-react';
 
 type StatRow = {
   id: string;
@@ -111,6 +111,164 @@ export default function Statistics() {
     };
     load();
   }, [year]);
+
+
+  // ---------- Prontidão (readiness) ----------
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [responses, setResponses] = useState<any[]>([]);
+  const [readinessNames, setReadinessNames] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const load = async () => {
+      const m0 = month === 'all' ? 0 : (month as number) - 1;
+      const start = month === 'all' ? new Date(year, 0, 1) : new Date(year, m0, 1);
+      const end = month === 'all' ? new Date(year + 1, 0, 1) : new Date(year, m0 + 1, 1);
+
+      const { data: alertsData } = await supabase
+        .from('readiness_alerts')
+        .select('*')
+        .gte('created_at', start.toISOString())
+        .lt('created_at', end.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(5000);
+
+      const clean = (alertsData || []).filter((a: any) => !String(a.alert_id).startsWith('test_'));
+      setAlerts(clean);
+
+      const ids = clean.map((a: any) => a.alert_id);
+      if (ids.length) {
+        const { data: respData } = await supabase
+          .from('readiness_responses')
+          .select('alert_id, user_id, response, responded_at')
+          .in('alert_id', ids)
+          .limit(10000);
+        setResponses(respData || []);
+      } else {
+        setResponses([]);
+      }
+    };
+    load();
+  }, [year, month]);
+
+  useEffect(() => {
+    const ids = Array.from(new Set([
+      ...responses.map((r) => r.user_id),
+      ...alerts.map((a) => a.requester_user_id).filter(Boolean),
+    ])).filter(Boolean) as string[];
+    if (!ids.length) return;
+    supabase.rpc('get_user_names_by_ids', { _user_ids: ids }).then(({ data }) => {
+      const map: Record<string, string> = {};
+      (data || []).forEach((u: any) => {
+        map[u.user_id] = `${u.first_name || ''} ${u.last_name || ''}`.trim() || 'Utilizador';
+      });
+      setReadinessNames(map);
+    });
+  }, [responses, alerts]);
+
+  const readinessStats = useMemo(() => {
+    const byAlert = new Map<string, any[]>();
+    responses.forEach((r) => {
+      const list = byAlert.get(r.alert_id) || [];
+      list.push(r);
+      byAlert.set(r.alert_id, list);
+    });
+
+    const nameOf = (id: string) => readinessNames[id] || 'Utilizador';
+
+    let answered = 0;
+    let withPositive = 0;
+    let totalPositive = 0;
+    let totalNegative = 0;
+    const delays: number[] = [];
+    const byType = new Map<string, number>();
+    const requesters = new Map<string, number>();
+    const yesCount = new Map<string, number>();
+    const noCount = new Map<string, number>();
+
+    const list = alerts.map((a) => {
+      const rs = byAlert.get(a.alert_id) || [];
+      // keep last response per user
+      const perUser = new Map<string, any>();
+      rs.forEach((r) => {
+        const prev = perUser.get(r.user_id);
+        if (!prev || new Date(r.responded_at) > new Date(prev.responded_at)) perUser.set(r.user_id, r);
+      });
+      const uniq = Array.from(perUser.values());
+      const yes = uniq.filter((r) => r.response === true);
+      const no = uniq.filter((r) => r.response === false);
+
+      if (uniq.length) answered += 1;
+      if (yes.length) withPositive += 1;
+      totalPositive += yes.length;
+      totalNegative += no.length;
+
+      yes.forEach((r) => yesCount.set(r.user_id, (yesCount.get(r.user_id) || 0) + 1));
+      no.forEach((r) => noCount.set(r.user_id, (noCount.get(r.user_id) || 0) + 1));
+
+      const type = (a.alert_type || 'desconhecido').toLowerCase();
+      byType.set(type, (byType.get(type) || 0) + 1);
+      requesters.set(a.requester_name || 'Utilizador', (requesters.get(a.requester_name || 'Utilizador') || 0) + 1);
+
+      const first = uniq
+        .map((r) => new Date(r.responded_at).getTime())
+        .sort((x, y2) => x - y2)[0];
+      if (first) {
+        const mins = (first - new Date(a.created_at).getTime()) / 60000;
+        if (mins >= 0 && mins < 24 * 60) delays.push(mins);
+      }
+
+      return {
+        id: a.id,
+        alertId: a.alert_id,
+        createdAt: a.created_at,
+        type: a.alert_type,
+        requester: a.requester_name || 'Utilizador',
+        yes: yes.length,
+        no: no.length,
+        yesNames: yes.map((r) => nameOf(r.user_id)),
+        noNames: no.map((r) => nameOf(r.user_id)),
+      };
+    });
+
+    const rank = (m: Map<string, number>, top = 15) =>
+      Array.from(m.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, top);
+
+    const rankUsers = (m: Map<string, number>, top = 15) =>
+      Array.from(m.entries())
+        .map(([id, value]) => ({ name: nameOf(id), value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, top);
+
+    // taxa de disponibilidade individual
+    const rateRows = Array.from(new Set([...yesCount.keys(), ...noCount.keys()])).map((id) => {
+      const y = yesCount.get(id) || 0;
+      const n = noCount.get(id) || 0;
+      return { name: nameOf(id), yes: y, no: n, total: y + n, rate: y + n ? (y / (y + n)) * 100 : 0 };
+    }).sort((a, b) => b.total - a.total);
+
+    const total = alerts.length;
+    return {
+      total,
+      answered,
+      unanswered: total - answered,
+      withPositive,
+      withoutPositive: total - withPositive,
+      totalPositive,
+      totalNegative,
+      responseRate: total ? (answered / total) * 100 : 0,
+      avgPositive: total ? totalPositive / total : 0,
+      avgDelay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : 0,
+      byType: rank(byType),
+      requesters: rank(requesters),
+      yesRanking: rankUsers(yesCount),
+      noRanking: rankUsers(noCount),
+      rateRows,
+      list,
+    };
+  }, [alerts, responses, readinessNames]);
 
 
   // Resolve user + vehicle labels from both datasets
@@ -530,7 +688,7 @@ export default function Statistics() {
           </div>
 
           <Tabs defaultValue="locations">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
               <TabsTrigger value="locations" className="text-xs md:text-sm">
                 <MapPin className="h-4 w-4 mr-1" />Localidades
               </TabsTrigger>
@@ -542,6 +700,9 @@ export default function Statistics() {
               </TabsTrigger>
               <TabsTrigger value="vehicles" className="text-xs md:text-sm">
                 <Ambulance className="h-4 w-4 mr-1" />Viaturas
+              </TabsTrigger>
+              <TabsTrigger value="readiness" className="text-xs md:text-sm">
+                <Siren className="h-4 w-4 mr-1" />Prontidão
               </TabsTrigger>
             </TabsList>
 
@@ -590,7 +751,103 @@ export default function Statistics() {
             <TabsContent value="vehicles" className="space-y-4 mt-4">
               <RankingCard title="Top viaturas" data={stats.vehicles} />
             </TabsContent>
+
+            <TabsContent value="readiness" className="space-y-4 mt-4">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <StatCard icon={<Siren className="h-4 w-4" />} label="Pedidos" value={readinessStats.total} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Com resposta" value={readinessStats.answered} />
+                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem resposta" value={readinessStats.unanswered} />
+                <StatCard icon={<Users className="h-4 w-4" />} label="Com disponíveis" value={readinessStats.withPositive} />
+                <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Taxa resposta" value={`${readinessStats.responseRate.toFixed(0)}%`} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="1ª resposta (méd.)" value={readinessStats.avgDelay ? `${readinessStats.avgDelay.toFixed(0)} min` : '—'} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                <RankingCard title="Pedidos por tipo" data={readinessStats.byType} />
+                <RankingCard title="Quem mais pede prontidão" data={readinessStats.requesters} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                <RankingCard title="Quem mais dá disponibilidade (Sim)" data={readinessStats.yesRanking} />
+                <RankingCard title="Quem mais responde Não disponível" data={readinessStats.noRanking} />
+              </div>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Taxa de disponibilidade por elemento</CardTitle></CardHeader>
+                <CardContent>
+                  {readinessStats.rateRows.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem respostas no período.</p>
+                  ) : (
+                    <div className="max-h-96 overflow-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr>
+                            <th className="text-left p-2">Elemento</th>
+                            <th className="text-right p-2">Sim</th>
+                            <th className="text-right p-2">Não</th>
+                            <th className="text-right p-2">Total</th>
+                            <th className="text-right p-2">% Disponível</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {readinessStats.rateRows.map((r) => (
+                            <tr key={r.name} className="border-t">
+                              <td className="p-2">{r.name}</td>
+                              <td className="p-2 text-right text-green-600">{r.yes}</td>
+                              <td className="p-2 text-right text-destructive">{r.no}</td>
+                              <td className="p-2 text-right">{r.total}</td>
+                              <td className="p-2 text-right font-medium">{r.rate.toFixed(0)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Histórico de pedidos ({readinessStats.list.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {readinessStats.list.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem pedidos de prontidão no período.</p>
+                  ) : (
+                    <div className="max-h-96 overflow-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr>
+                            <th className="text-left p-2">Data</th>
+                            <th className="text-left p-2">Tipo</th>
+                            <th className="text-left p-2">Pedido por</th>
+                            <th className="text-left p-2">Disponíveis</th>
+                            <th className="text-left p-2">Não disponíveis</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {readinessStats.list.map((a) => (
+                            <tr key={a.id} className="border-t align-top">
+                              <td className="p-2 whitespace-nowrap">
+                                {new Date(a.createdAt).toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon' })}
+                              </td>
+                              <td className="p-2 capitalize whitespace-nowrap">{a.type}</td>
+                              <td className="p-2 whitespace-nowrap">{a.requester}</td>
+                              <td className="p-2 text-green-600">
+                                {a.yes ? `${a.yes} — ${a.yesNames.join(', ')}` : '—'}
+                              </td>
+                              <td className="p-2 text-destructive">
+                                {a.no ? `${a.no} — ${a.noNames.join(', ')}` : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
           </Tabs>
+
 
           {/* Fichas incompletas */}
           <Card>
