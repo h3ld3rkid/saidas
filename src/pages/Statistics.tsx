@@ -10,7 +10,7 @@ import {
   PieChart, Pie, Cell, Legend, LineChart, Line,
 } from 'recharts';
 import { displayExitType } from '@/lib/exitType';
-import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer, AlertTriangle } from 'lucide-react';
+import { BarChart3, MapPin, Users, Ambulance, Activity, UsersRound, Printer, AlertTriangle, Siren } from 'lucide-react';
 
 type StatRow = {
   id: string;
@@ -688,7 +688,7 @@ export default function Statistics() {
           </div>
 
           <Tabs defaultValue="locations">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 h-auto">
               <TabsTrigger value="locations" className="text-xs md:text-sm">
                 <MapPin className="h-4 w-4 mr-1" />Localidades
               </TabsTrigger>
@@ -700,6 +700,9 @@ export default function Statistics() {
               </TabsTrigger>
               <TabsTrigger value="vehicles" className="text-xs md:text-sm">
                 <Ambulance className="h-4 w-4 mr-1" />Viaturas
+              </TabsTrigger>
+              <TabsTrigger value="readiness" className="text-xs md:text-sm">
+                <Siren className="h-4 w-4 mr-1" />Prontidão
               </TabsTrigger>
             </TabsList>
 
