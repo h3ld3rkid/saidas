@@ -193,6 +193,8 @@ export type Database = {
         Row: {
           alert_id: string
           alert_type: string
+          closed_at: string | null
+          closed_by_name: string | null
           created_at: string
           id: string
           requester_name: string
@@ -201,6 +203,8 @@ export type Database = {
         Insert: {
           alert_id: string
           alert_type: string
+          closed_at?: string | null
+          closed_by_name?: string | null
           created_at?: string
           id?: string
           requester_name: string
@@ -209,6 +213,8 @@ export type Database = {
         Update: {
           alert_id?: string
           alert_type?: string
+          closed_at?: string | null
+          closed_by_name?: string | null
           created_at?: string
           id?: string
           requester_name?: string
