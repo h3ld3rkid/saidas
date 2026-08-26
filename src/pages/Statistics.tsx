@@ -347,9 +347,16 @@ export default function Statistics() {
       if (filterDistrict !== 'all' && r.patient_district !== filterDistrict) return false;
       if (filterMunicipality !== 'all' && r.patient_municipality !== filterMunicipality) return false;
       if (filterParish !== 'all' && r.patient_parish !== filterParish) return false;
+      if (filterType !== 'all') {
+        const t = displayExitType(r.exit_type || 'Outro');
+        const key = TYPE_KEYS.includes(t) ? t : 'Outro';
+        if (filterType === 'not-codu') {
+          if (key === 'Emergência/CODU') return false;
+        } else if (key !== filterType) return false;
+      }
       return true;
     });
-  }, [rows, filterDistrict, filterMunicipality, filterParish]);
+  }, [rows, filterDistrict, filterMunicipality, filterParish, filterType]);
 
   const stats = useMemo(() => {
     const total = filteredRows.length;
