@@ -251,6 +251,42 @@ export default function Statistics() {
     }).sort((a, b) => b.total - a.total);
 
     const total = alerts.length;
+    const totalResponses = totalPositive + totalNegative;
+
+    // Detalhe por tipo de alerta
+    const typeDetail = Array.from(byType.keys()).map((t) => {
+      const items = list.filter((a) => String(a.type || 'desconhecido').toLowerCase() === t);
+      const yes = items.reduce((s, a) => s + a.yes, 0);
+      const no = items.reduce((s, a) => s + a.no, 0);
+      const noAnswer = items.filter((a) => a.yes + a.no === 0).length;
+      return {
+        name: t,
+        pedidos: items.length,
+        yes,
+        no,
+        noAnswer,
+        answeredRate: items.length ? ((items.length - noAnswer) / items.length) * 100 : 0,
+        yesRate: yes + no ? (yes / (yes + no)) * 100 : 0,
+      };
+    }).sort((a, b) => b.pedidos - a.pedidos);
+
+    // Distribuição por hora do dia (Europe/Lisbon)
+    const hourMap = new Map<number, number>();
+    alerts.forEach((a) => {
+      const h = Number(new Date(a.created_at).toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon', hour: '2-digit', hour12: false }));
+      hourMap.set(h, (hourMap.get(h) || 0) + 1);
+    });
+    const byHour = Array.from({ length: 24 }, (_, h) => ({ name: `${String(h).padStart(2, '0')}h`, value: hourMap.get(h) || 0 }));
+
+    const answerSplit = [
+      { name: 'Disponível (Sim)', value: totalPositive },
+      { name: 'Não disponível', value: totalNegative },
+    ];
+    const alertSplit = [
+      { name: 'Com resposta', value: answered },
+      { name: 'Sem qualquer resposta', value: total - answered },
+    ];
+
     return {
       total,
       answered,
@@ -259,10 +295,22 @@ export default function Statistics() {
       withoutPositive: total - withPositive,
       totalPositive,
       totalNegative,
+      totalResponses,
+      yesPct: totalResponses ? (totalPositive / totalResponses) * 100 : 0,
+      noPct: totalResponses ? (totalNegative / totalResponses) * 100 : 0,
+      unansweredRate: total ? ((total - answered) / total) * 100 : 0,
+      withPositiveRate: total ? (withPositive / total) * 100 : 0,
+      avgResponsesPerAlert: total ? totalResponses / total : 0,
       responseRate: total ? (answered / total) * 100 : 0,
       avgPositive: total ? totalPositive / total : 0,
       avgDelay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : 0,
+      minDelay: delays.length ? Math.min(...delays) : 0,
+      maxDelay: delays.length ? Math.max(...delays) : 0,
       byType: rank(byType),
+      typeDetail,
+      byHour,
+      answerSplit,
+      alertSplit,
       requesters: rank(requesters),
       yesRanking: rankUsers(yesCount),
       noRanking: rankUsers(noCount),
