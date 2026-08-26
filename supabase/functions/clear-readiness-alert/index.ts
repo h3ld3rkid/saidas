@@ -202,29 +202,21 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // THIRD: Delete responses and alert
-    console.log(`Deleting responses for alert ${alertId}`);
-    const { error: delRespError, count: delRespCount } = await supabase
-      .from('readiness_responses')
-      .delete({ count: 'exact' })
-      .eq('alert_id', alertId);
-
-    if (delRespError) {
-      console.error('Error deleting responses:', delRespError);
-    } else {
-      console.log(`Deleted ${delRespCount} responses`);
-    }
-
-    console.log(`Deleting alert ${alertId}`);
-    const { error: delAlertError, count: delAlertCount } = await supabase
+    // THIRD: Close the alert (keep history for statistics — do NOT delete)
+    console.log(`Closing alert ${alertId}`);
+    const { error: closeError, count: closedCount } = await supabase
       .from('readiness_alerts')
-      .delete({ count: 'exact' })
-      .eq('alert_id', alertId);
+      .update(
+        { closed_at: new Date().toISOString(), closed_by_name: safeClosedByName },
+        { count: 'exact' }
+      )
+      .eq('alert_id', alertId)
+      .is('closed_at', null);
 
-    if (delAlertError) {
-      console.error('Error deleting alert:', delAlertError);
+    if (closeError) {
+      console.error('Error closing alert:', closeError);
     } else {
-      console.log(`Deleted ${delAlertCount} alerts`);
+      console.log(`Closed ${closedCount} alerts`);
     }
 
     const result = {
@@ -232,8 +224,7 @@ const handler = async (req: Request): Promise<Response> => {
       notificationsSent: notificationsSent,
       positiveNotifications: positiveNotifications.length,
       cancelledNotifications: cancelledNotifications.length,
-      deletedResponses: delRespCount ?? 0,
-      deletedAlerts: delAlertCount ?? 0,
+      closedAlerts: closedCount ?? 0,
       alertType: alertType
     };
 

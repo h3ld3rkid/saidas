@@ -190,6 +190,7 @@ export function AppSidebar() {
       const { data: condutoresData } = await supabase
         .from('readiness_alerts')
         .select('alert_id')
+        .is('closed_at', null)
         .eq('alert_type', 'condutores')
         .gte('created_at', thirtyMinutesAgo)
         .limit(1);
@@ -197,6 +198,7 @@ export function AppSidebar() {
       const { data: socorristasData } = await supabase
         .from('readiness_alerts')
         .select('alert_id')
+        .is('closed_at', null)
         .eq('alert_type', 'socorristas')
         .gte('created_at', thirtyMinutesAgo)
         .limit(1);
@@ -244,6 +246,7 @@ export function AppSidebar() {
       const { data: activeAlerts } = await supabase
         .from('readiness_alerts')
         .select('alert_id')
+        .is('closed_at', null)
         .gte('created_at', thirtyMinutesAgo);
 
       if (activeAlerts && activeAlerts.length >= 2) {

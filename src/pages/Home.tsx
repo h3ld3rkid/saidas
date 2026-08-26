@@ -102,6 +102,7 @@ const fetchReadinessResponses = async () => {
   const { data: alerts, error: alertsError } = await supabase
     .from('readiness_alerts')
     .select('alert_id, alert_type, requester_name, created_at')
+    .is('closed_at', null)
     .order('created_at', { ascending: false });
 
   if (alertsError) throw alertsError;

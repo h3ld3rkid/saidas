@@ -35,6 +35,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: oldAlerts, error: fetchError } = await supabase
       .from('readiness_alerts')
       .select('alert_id, alert_type')
+      .is('closed_at', null)
       .lt('created_at', oneHourAgo);
 
     if (fetchError) {

@@ -32,6 +32,7 @@ const Dashboard = () => {
         const { data: alertsData } = await supabase
           .from('readiness_alerts')
           .select('*')
+          .is('closed_at', null)
           .gte('created_at', oneHourAgo)
           .order('created_at', { ascending: false });
 
