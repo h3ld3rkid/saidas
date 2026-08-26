@@ -822,12 +822,115 @@ export default function Statistics() {
             <TabsContent value="readiness" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <StatCard icon={<Siren className="h-4 w-4" />} label="Pedidos" value={readinessStats.total} />
-                <StatCard icon={<Activity className="h-4 w-4" />} label="Com resposta" value={readinessStats.answered} />
-                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem resposta" value={readinessStats.unanswered} />
-                <StatCard icon={<Users className="h-4 w-4" />} label="Com disponíveis" value={readinessStats.withPositive} />
-                <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Taxa resposta" value={`${readinessStats.responseRate.toFixed(0)}%`} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Com resposta" value={`${readinessStats.answered} (${readinessStats.responseRate.toFixed(0)}%)`} />
+                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem resposta" value={`${readinessStats.unanswered} (${readinessStats.unansweredRate.toFixed(0)}%)`} />
+                <StatCard icon={<Users className="h-4 w-4" />} label="Com disponíveis" value={`${readinessStats.withPositive} (${readinessStats.withPositiveRate.toFixed(0)}%)`} />
+                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem disponíveis" value={readinessStats.withoutPositive} />
                 <StatCard icon={<Activity className="h-4 w-4" />} label="1ª resposta (méd.)" value={readinessStats.avgDelay ? `${readinessStats.avgDelay.toFixed(0)} min` : '—'} />
               </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Total respostas" value={readinessStats.totalResponses} />
+                <StatCard icon={<Users className="h-4 w-4 text-green-600" />} label="Sim" value={`${readinessStats.totalPositive} (${readinessStats.yesPct.toFixed(0)}%)`} />
+                <StatCard icon={<Users className="h-4 w-4 text-destructive" />} label="Não" value={`${readinessStats.totalNegative} (${readinessStats.noPct.toFixed(0)}%)`} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Respostas/pedido" value={readinessStats.avgResponsesPerAlert.toFixed(1)} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Resposta + rápida" value={readinessStats.minDelay ? `${readinessStats.minDelay.toFixed(0)} min` : '—'} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Resposta + lenta" value={readinessStats.maxDelay ? `${readinessStats.maxDelay.toFixed(0)} min` : '—'} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Respostas: Sim vs Não</CardTitle></CardHeader>
+                  <CardContent className="h-64">
+                    {readinessStats.totalResponses === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sem respostas no período.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={readinessStats.answerSplit} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80} label>
+                            <Cell fill="hsl(142 70% 40%)" />
+                            <Cell fill="hsl(0 84% 55%)" />
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Pedidos com / sem resposta</CardTitle></CardHeader>
+                  <CardContent className="h-64">
+                    {readinessStats.total === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sem pedidos no período.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={readinessStats.alertSplit} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80} label>
+                            <Cell fill="hsl(217 91% 55%)" />
+                            <Cell fill="hsl(220 9% 45%)" />
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Detalhe por tipo de pedido</CardTitle></CardHeader>
+                <CardContent>
+                  {readinessStats.typeDetail.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem pedidos no período.</p>
+                  ) : (
+                    <div className="overflow-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left p-2">Tipo</th>
+                            <th className="text-right p-2">Pedidos</th>
+                            <th className="text-right p-2">Sim</th>
+                            <th className="text-right p-2">Não</th>
+                            <th className="text-right p-2">Sem resposta</th>
+                            <th className="text-right p-2">% respondidos</th>
+                            <th className="text-right p-2">% Sim</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {readinessStats.typeDetail.map((t) => (
+                            <tr key={t.name} className="border-t">
+                              <td className="p-2 capitalize">{t.name}</td>
+                              <td className="p-2 text-right">{t.pedidos}</td>
+                              <td className="p-2 text-right text-green-600">{t.yes}</td>
+                              <td className="p-2 text-right text-destructive">{t.no}</td>
+                              <td className="p-2 text-right">{t.noAnswer}</td>
+                              <td className="p-2 text-right font-medium">{t.answeredRate.toFixed(0)}%</td>
+                              <td className="p-2 text-right font-medium">{t.yesRate.toFixed(0)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Pedidos por hora do dia</CardTitle></CardHeader>
+                <CardContent className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={readinessStats.byHour}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="name" interval={1} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
               <div className="grid lg:grid-cols-2 gap-4">
                 <RankingCard title="Pedidos por tipo" data={readinessStats.byType} />
@@ -838,6 +941,7 @@ export default function Statistics() {
                 <RankingCard title="Quem mais dá disponibilidade (Sim)" data={readinessStats.yesRanking} />
                 <RankingCard title="Quem mais responde Não disponível" data={readinessStats.noRanking} />
               </div>
+
 
               <Card>
                 <CardHeader><CardTitle className="text-base">Taxa de disponibilidade por elemento</CardTitle></CardHeader>
