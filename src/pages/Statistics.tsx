@@ -67,6 +67,7 @@ export default function Statistics() {
   const [filterDistrict, setFilterDistrict] = useState<string>('all');
   const [filterMunicipality, setFilterMunicipality] = useState<string>('all');
   const [filterParish, setFilterParish] = useState<string>('all');
+  const [filterType, setFilterType] = useState<string>('all');
 
   const years = useMemo(() => {
     const y = now.getFullYear();
