@@ -661,10 +661,21 @@ export default function Statistics() {
             {locationOptions.parishes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(filterDistrict !== 'all' || filterMunicipality !== 'all' || filterParish !== 'all') && (
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-[220px]"><SelectValue placeholder="Tipo de serviço" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os tipos</SelectItem>
+            <SelectItem value="Emergência/CODU">Apenas Emergência/CODU</SelectItem>
+            <SelectItem value="not-codu">Todos exceto CODU</SelectItem>
+            <SelectItem value="Emergência Particular">Emergência Particular</SelectItem>
+            <SelectItem value="VSL">VSL</SelectItem>
+            <SelectItem value="Outro">Outro</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterDistrict !== 'all' || filterMunicipality !== 'all' || filterParish !== 'all' || filterType !== 'all') && (
           <button
             className="text-xs text-muted-foreground underline self-center"
-            onClick={() => { setFilterDistrict('all'); setFilterMunicipality('all'); setFilterParish('all'); }}
+            onClick={() => { setFilterDistrict('all'); setFilterMunicipality('all'); setFilterParish('all'); setFilterType('all'); }}
           >
             Limpar filtros
           </button>
