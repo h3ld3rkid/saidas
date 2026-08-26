@@ -67,6 +67,7 @@ export default function Statistics() {
   const [filterDistrict, setFilterDistrict] = useState<string>('all');
   const [filterMunicipality, setFilterMunicipality] = useState<string>('all');
   const [filterParish, setFilterParish] = useState<string>('all');
+  const [filterType, setFilterType] = useState<string>('all');
 
   const years = useMemo(() => {
     const y = now.getFullYear();
@@ -250,6 +251,42 @@ export default function Statistics() {
     }).sort((a, b) => b.total - a.total);
 
     const total = alerts.length;
+    const totalResponses = totalPositive + totalNegative;
+
+    // Detalhe por tipo de alerta
+    const typeDetail = Array.from(byType.keys()).map((t) => {
+      const items = list.filter((a) => String(a.type || 'desconhecido').toLowerCase() === t);
+      const yes = items.reduce((s, a) => s + a.yes, 0);
+      const no = items.reduce((s, a) => s + a.no, 0);
+      const noAnswer = items.filter((a) => a.yes + a.no === 0).length;
+      return {
+        name: t,
+        pedidos: items.length,
+        yes,
+        no,
+        noAnswer,
+        answeredRate: items.length ? ((items.length - noAnswer) / items.length) * 100 : 0,
+        yesRate: yes + no ? (yes / (yes + no)) * 100 : 0,
+      };
+    }).sort((a, b) => b.pedidos - a.pedidos);
+
+    // Distribuição por hora do dia (Europe/Lisbon)
+    const hourMap = new Map<number, number>();
+    alerts.forEach((a) => {
+      const h = Number(new Date(a.created_at).toLocaleString('pt-PT', { timeZone: 'Europe/Lisbon', hour: '2-digit', hour12: false }));
+      hourMap.set(h, (hourMap.get(h) || 0) + 1);
+    });
+    const byHour = Array.from({ length: 24 }, (_, h) => ({ name: `${String(h).padStart(2, '0')}h`, value: hourMap.get(h) || 0 }));
+
+    const answerSplit = [
+      { name: 'Disponível (Sim)', value: totalPositive },
+      { name: 'Não disponível', value: totalNegative },
+    ];
+    const alertSplit = [
+      { name: 'Com resposta', value: answered },
+      { name: 'Sem qualquer resposta', value: total - answered },
+    ];
+
     return {
       total,
       answered,
@@ -258,10 +295,22 @@ export default function Statistics() {
       withoutPositive: total - withPositive,
       totalPositive,
       totalNegative,
+      totalResponses,
+      yesPct: totalResponses ? (totalPositive / totalResponses) * 100 : 0,
+      noPct: totalResponses ? (totalNegative / totalResponses) * 100 : 0,
+      unansweredRate: total ? ((total - answered) / total) * 100 : 0,
+      withPositiveRate: total ? (withPositive / total) * 100 : 0,
+      avgResponsesPerAlert: total ? totalResponses / total : 0,
       responseRate: total ? (answered / total) * 100 : 0,
       avgPositive: total ? totalPositive / total : 0,
       avgDelay: delays.length ? delays.reduce((a, b) => a + b, 0) / delays.length : 0,
+      minDelay: delays.length ? Math.min(...delays) : 0,
+      maxDelay: delays.length ? Math.max(...delays) : 0,
       byType: rank(byType),
+      typeDetail,
+      byHour,
+      answerSplit,
+      alertSplit,
       requesters: rank(requesters),
       yesRanking: rankUsers(yesCount),
       noRanking: rankUsers(noCount),
@@ -346,9 +395,16 @@ export default function Statistics() {
       if (filterDistrict !== 'all' && r.patient_district !== filterDistrict) return false;
       if (filterMunicipality !== 'all' && r.patient_municipality !== filterMunicipality) return false;
       if (filterParish !== 'all' && r.patient_parish !== filterParish) return false;
+      if (filterType !== 'all') {
+        const t = displayExitType(r.exit_type || 'Outro');
+        const key = TYPE_KEYS.includes(t) ? t : 'Outro';
+        if (filterType === 'not-codu') {
+          if (key === 'Emergência/CODU') return false;
+        } else if (key !== filterType) return false;
+      }
       return true;
     });
-  }, [rows, filterDistrict, filterMunicipality, filterParish]);
+  }, [rows, filterDistrict, filterMunicipality, filterParish, filterType]);
 
   const stats = useMemo(() => {
     const total = filteredRows.length;
@@ -605,10 +661,21 @@ export default function Statistics() {
             {locationOptions.parishes.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}
           </SelectContent>
         </Select>
-        {(filterDistrict !== 'all' || filterMunicipality !== 'all' || filterParish !== 'all') && (
+        <Select value={filterType} onValueChange={setFilterType}>
+          <SelectTrigger className="w-[220px]"><SelectValue placeholder="Tipo de serviço" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os tipos</SelectItem>
+            <SelectItem value="Emergência/CODU">Apenas Emergência/CODU</SelectItem>
+            <SelectItem value="not-codu">Todos exceto CODU</SelectItem>
+            <SelectItem value="Emergência Particular">Emergência Particular</SelectItem>
+            <SelectItem value="VSL">VSL</SelectItem>
+            <SelectItem value="Outro">Outro</SelectItem>
+          </SelectContent>
+        </Select>
+        {(filterDistrict !== 'all' || filterMunicipality !== 'all' || filterParish !== 'all' || filterType !== 'all') && (
           <button
             className="text-xs text-muted-foreground underline self-center"
-            onClick={() => { setFilterDistrict('all'); setFilterMunicipality('all'); setFilterParish('all'); }}
+            onClick={() => { setFilterDistrict('all'); setFilterMunicipality('all'); setFilterParish('all'); setFilterType('all'); }}
           >
             Limpar filtros
           </button>
@@ -755,12 +822,115 @@ export default function Statistics() {
             <TabsContent value="readiness" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                 <StatCard icon={<Siren className="h-4 w-4" />} label="Pedidos" value={readinessStats.total} />
-                <StatCard icon={<Activity className="h-4 w-4" />} label="Com resposta" value={readinessStats.answered} />
-                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem resposta" value={readinessStats.unanswered} />
-                <StatCard icon={<Users className="h-4 w-4" />} label="Com disponíveis" value={readinessStats.withPositive} />
-                <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Taxa resposta" value={`${readinessStats.responseRate.toFixed(0)}%`} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Com resposta" value={`${readinessStats.answered} (${readinessStats.responseRate.toFixed(0)}%)`} />
+                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem resposta" value={`${readinessStats.unanswered} (${readinessStats.unansweredRate.toFixed(0)}%)`} />
+                <StatCard icon={<Users className="h-4 w-4" />} label="Com disponíveis" value={`${readinessStats.withPositive} (${readinessStats.withPositiveRate.toFixed(0)}%)`} />
+                <StatCard icon={<AlertTriangle className="h-4 w-4 text-destructive" />} label="Sem disponíveis" value={readinessStats.withoutPositive} />
                 <StatCard icon={<Activity className="h-4 w-4" />} label="1ª resposta (méd.)" value={readinessStats.avgDelay ? `${readinessStats.avgDelay.toFixed(0)} min` : '—'} />
               </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <StatCard icon={<BarChart3 className="h-4 w-4" />} label="Total respostas" value={readinessStats.totalResponses} />
+                <StatCard icon={<Users className="h-4 w-4 text-green-600" />} label="Sim" value={`${readinessStats.totalPositive} (${readinessStats.yesPct.toFixed(0)}%)`} />
+                <StatCard icon={<Users className="h-4 w-4 text-destructive" />} label="Não" value={`${readinessStats.totalNegative} (${readinessStats.noPct.toFixed(0)}%)`} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Respostas/pedido" value={readinessStats.avgResponsesPerAlert.toFixed(1)} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Resposta + rápida" value={readinessStats.minDelay ? `${readinessStats.minDelay.toFixed(0)} min` : '—'} />
+                <StatCard icon={<Activity className="h-4 w-4" />} label="Resposta + lenta" value={readinessStats.maxDelay ? `${readinessStats.maxDelay.toFixed(0)} min` : '—'} />
+              </div>
+
+              <div className="grid lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Respostas: Sim vs Não</CardTitle></CardHeader>
+                  <CardContent className="h-64">
+                    {readinessStats.totalResponses === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sem respostas no período.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={readinessStats.answerSplit} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80} label>
+                            <Cell fill="hsl(142 70% 40%)" />
+                            <Cell fill="hsl(0 84% 55%)" />
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader><CardTitle className="text-base">Pedidos com / sem resposta</CardTitle></CardHeader>
+                  <CardContent className="h-64">
+                    {readinessStats.total === 0 ? (
+                      <p className="text-sm text-muted-foreground">Sem pedidos no período.</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={readinessStats.alertSplit} dataKey="value" nameKey="name" innerRadius={45} outerRadius={80} label>
+                            <Cell fill="hsl(217 91% 55%)" />
+                            <Cell fill="hsl(220 9% 45%)" />
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Detalhe por tipo de pedido</CardTitle></CardHeader>
+                <CardContent>
+                  {readinessStats.typeDetail.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Sem pedidos no período.</p>
+                  ) : (
+                    <div className="overflow-auto border rounded-md">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left p-2">Tipo</th>
+                            <th className="text-right p-2">Pedidos</th>
+                            <th className="text-right p-2">Sim</th>
+                            <th className="text-right p-2">Não</th>
+                            <th className="text-right p-2">Sem resposta</th>
+                            <th className="text-right p-2">% respondidos</th>
+                            <th className="text-right p-2">% Sim</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {readinessStats.typeDetail.map((t) => (
+                            <tr key={t.name} className="border-t">
+                              <td className="p-2 capitalize">{t.name}</td>
+                              <td className="p-2 text-right">{t.pedidos}</td>
+                              <td className="p-2 text-right text-green-600">{t.yes}</td>
+                              <td className="p-2 text-right text-destructive">{t.no}</td>
+                              <td className="p-2 text-right">{t.noAnswer}</td>
+                              <td className="p-2 text-right font-medium">{t.answeredRate.toFixed(0)}%</td>
+                              <td className="p-2 text-right font-medium">{t.yesRate.toFixed(0)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader><CardTitle className="text-base">Pedidos por hora do dia</CardTitle></CardHeader>
+                <CardContent className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={readinessStats.byHour}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                      <XAxis dataKey="name" interval={1} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
 
               <div className="grid lg:grid-cols-2 gap-4">
                 <RankingCard title="Pedidos por tipo" data={readinessStats.byType} />
@@ -771,6 +941,7 @@ export default function Statistics() {
                 <RankingCard title="Quem mais dá disponibilidade (Sim)" data={readinessStats.yesRanking} />
                 <RankingCard title="Quem mais responde Não disponível" data={readinessStats.noRanking} />
               </div>
+
 
               <Card>
                 <CardHeader><CardTitle className="text-base">Taxa de disponibilidade por elemento</CardTitle></CardHeader>
