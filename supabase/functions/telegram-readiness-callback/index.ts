@@ -98,6 +98,53 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`User ${userNameWithRole} responded: ${isAvailable ? 'Available' : 'Not Available'}`);
 
+    // Get the alert FIRST — refuse responses to closed/unknown alerts
+    const { data: alert } = await supabase
+      .from('readiness_alerts')
+      .select('requester_name, alert_type, requester_user_id, closed_at')
+      .eq('alert_id', alertId)
+      .maybeSingle();
+
+    const answerCallback = async (text: string) => {
+      await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ callback_query_id: callbackQuery.id, text, show_alert: true }),
+      });
+    };
+
+    // Remove the inline buttons of the original message (best effort)
+    const removeButtons = async () => {
+      try {
+        await fetch(`https://api.telegram.org/bot${botToken}/editMessageReplyMarkup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: callbackQuery.message.chat.id,
+            message_id: callbackQuery.message.message_id,
+            reply_markup: { inline_keyboard: [] },
+          }),
+        });
+      } catch (e) {
+        console.error('Failed to remove buttons:', e);
+      }
+    };
+
+    if (!alert || alert.closed_at) {
+      console.log(`Alert ${alertId} not found or already closed — ignoring response.`);
+      await answerCallback("⚠️ Este pedido de prontidão já foi encerrado. A sua resposta não foi registada.");
+      await removeButtons();
+      return new Response(JSON.stringify({ ok: true, ignored: 'alert_closed' }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const isTestAlert = !!alert.alert_type?.startsWith('test_');
+    const baseType = (alert.alert_type || '').replace(/^test_/, '');
+    const categoryLabel = baseType === 'condutores' ? 'CONDUTORES' : baseType === 'socorristas' ? 'SOCORRISTAS' : baseType.toUpperCase();
+    const alertLabel = isTestAlert ? `TESTE ${categoryLabel}` : categoryLabel;
+
     // Store the response
     const { data: insertedResponse, error: insertError } = await supabase
       .from('readiness_responses')
@@ -117,46 +164,41 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
     if (insertError?.code === '23505') {
-      console.log('Duplicate response — continuing to notify subscribers anyway.');
+      // Already answered — acknowledge but do NOT notify again
+      console.log('Duplicate response — skipping notifications.');
+      await answerCallback("ℹ️ Já tinha respondido a este pedido. A sua resposta anterior mantém-se.");
+      await removeButtons();
+      return new Response(JSON.stringify({ ok: true, ignored: 'duplicate' }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     console.log('Response inserted:', insertedResponse);
 
-    // Get the original alert details
-    const { data: alert } = await supabase
-      .from('readiness_alerts')
-      .select('requester_name, alert_type, requester_user_id')
-      .eq('alert_id', alertId)
-      .single();
-
     // Answer the callback query with a visible popup
-    await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        callback_query_id: callbackQuery.id,
-        text: isAvailable 
-          ? "✅ Resposta registada com sucesso!\n\nEstás disponível para este alerta." 
-          : "❌ Resposta registada com sucesso!\n\nNão estás disponível para este alerta.",
-        show_alert: true
-      })
-    });
+    await answerCallback(
+      isAvailable
+        ? "✅ Resposta registada com sucesso!\n\nEstás disponível para este alerta."
+        : "❌ Resposta registada com sucesso!\n\nNão estás disponível para este alerta."
+    );
+    await removeButtons();
 
     // Create real-time notification for the original requester
-    if (isAvailable && alert) {
+    if (isAvailable) {
       // Insert into realtime notifications table
       await supabase
         .from('realtime_notifications')
         .insert({
           alert_id: alertId,
           responder_name: userNameWithRole,
-          message: `${userNameWithRole} está disponível para o alerta de ${alert.alert_type}`,
+          message: `${userNameWithRole} está disponível para o alerta de ${alertLabel}`,
           created_at: new Date().toISOString()
         });
 
       // Notify mods/admins who opted-in via Telegram (skip in test mode)
-      const isTestAlert = alert.alert_type?.startsWith('test_');
       const { data: subscribers } = isTestAlert
         ? { data: [] as any[] }
         : await supabase
@@ -166,7 +208,8 @@ const handler = async (req: Request): Promise<Response> => {
             .not('telegram_chat_id', 'is', null)
             .in('role', ['admin', 'mod']);
 
-      const text = `✅ <b>${userNameWithRole}</b> está disponível para o alerta de <b>${alert.alert_type}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
+      const text = `✅ <b>${userNameWithRole}</b> está disponível para o alerta de <b>${alertLabel}</b>${alert.requester_name ? ` (pedido por ${alert.requester_name})` : ''}.`;
+
 
       const recipientChatIds = new Set<string>(
         (subscribers ?? [])
