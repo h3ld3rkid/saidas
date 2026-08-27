@@ -161,6 +161,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // For test alerts, do NOT broadcast cancellations to non-responders/negative responders.
     // Only send positive-response acknowledgements to those who actually replied.
+    const positiveChatIds = new Set(positiveNotifications.map((r: any) => r.chatId));
     const cancelledNotifications = isTest ? [] : (allProfiles || [])
       .filter((p: any) => !allResponders.includes(p.user_id) || negativeResponders.includes(p.user_id))
       .map((p: any) => ({
@@ -168,7 +169,8 @@ const handler = async (req: Request): Promise<Response> => {
         name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Utilizador',
         type: 'cancelled'
       }))
-      .filter((r: any) => r && r.chatId);
+      .filter((r: any) => r && r.chatId && !positiveChatIds.has(r.chatId));
+
 
     console.log(`Sending ${positiveNotifications.length} positive notifications`);
     console.log(`Sending ${cancelledNotifications.length} cancellation notifications (isTest=${isTest})`);
