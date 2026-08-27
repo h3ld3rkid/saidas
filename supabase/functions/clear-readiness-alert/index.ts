@@ -33,17 +33,69 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const { alertId, alertType, closedByName }: ClearAlertRequest = await req.json();
+    const { alertId, alertType: alertTypeParam, closedByName }: ClearAlertRequest = await req.json();
     const safeClosedByName = (closedByName && String(closedByName).trim()) ? String(closedByName).trim() : 'Utilizador';
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // STEP 0: Fetch the alert from DB — the DB is the source of truth for alert_type
+    const { data: alertRow, error: alertFetchError } = await supabase
+      .from('readiness_alerts')
+      .select('alert_id, alert_type, closed_at')
+      .eq('alert_id', alertId)
+      .maybeSingle();
+
+    if (alertFetchError) {
+      console.error('Error fetching alert:', alertFetchError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch alert' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    if (!alertRow) {
+      console.log(`Alert ${alertId} not found — nothing to do.`);
+      return new Response(
+        JSON.stringify({ success: true, notificationsSent: 0, closedAlerts: 0, reason: 'alert_not_found' }),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const alertType = alertRow.alert_type || alertTypeParam;
     const isTest = typeof alertType === 'string' && alertType.startsWith('test_');
     const baseType = isTest ? alertType.replace(/^test_/, '') : alertType;
     const categoryLabel = baseType === 'condutores' ? 'CONDUTORES' : baseType === 'socorristas' ? 'SOCORRISTAS' : String(baseType || '').toUpperCase();
     const alertLabel = isTest ? `TESTE ${categoryLabel}` : categoryLabel;
-    console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType: ${alertType}, closedBy: ${safeClosedByName}`);
+    console.log(`Starting clear-readiness-alert for alertId: ${alertId}, alertType (DB): ${alertType}, closedBy: ${safeClosedByName}`);
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // STEP 1: Close the alert ATOMICALLY before sending anything.
+    // If no row was updated, the alert was already closed -> do NOT send duplicate messages.
+    const { data: closedRows, error: closeError } = await supabase
+      .from('readiness_alerts')
+      .update({ closed_at: new Date().toISOString(), closed_by_name: safeClosedByName })
+      .eq('alert_id', alertId)
+      .is('closed_at', null)
+      .select('alert_id');
 
-    // FIRST: Get ALL responses BEFORE deleting anything
+    if (closeError) {
+      console.error('Error closing alert:', closeError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to close alert' }),
+        { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    const closedCount = closedRows?.length ?? 0;
+    if (closedCount === 0) {
+      console.log(`Alert ${alertId} was already closed — skipping notifications (idempotent).`);
+      return new Response(
+        JSON.stringify({ success: true, notificationsSent: 0, closedAlerts: 0, alertType, reason: 'already_closed' }),
+        { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+      );
+    }
+
+    // SECOND: Get ALL responses
+
     console.log('Fetching all responses...');
     const { data: responses, error: responsesError } = await supabase
       .from('readiness_responses')
