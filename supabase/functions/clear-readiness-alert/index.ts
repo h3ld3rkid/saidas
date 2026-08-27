@@ -254,31 +254,15 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // THIRD: Close the alert (keep history for statistics — do NOT delete)
-    console.log(`Closing alert ${alertId}`);
-    const { error: closeError, count: closedCount } = await supabase
-      .from('readiness_alerts')
-      .update(
-        { closed_at: new Date().toISOString(), closed_by_name: safeClosedByName },
-        { count: 'exact' }
-      )
-      .eq('alert_id', alertId)
-      .is('closed_at', null);
-
-    if (closeError) {
-      console.error('Error closing alert:', closeError);
-    } else {
-      console.log(`Closed ${closedCount} alerts`);
-    }
-
     const result = {
       success: true, 
       notificationsSent: notificationsSent,
       positiveNotifications: positiveNotifications.length,
       cancelledNotifications: cancelledNotifications.length,
-      closedAlerts: closedCount ?? 0,
+      closedAlerts: closedCount,
       alertType: alertType
     };
+
 
     console.log('Final result:', result);
 
