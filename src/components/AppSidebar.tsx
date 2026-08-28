@@ -526,21 +526,122 @@ export function AppSidebar() {
             <SidebarGroupLabel>Administração</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminItems.map((item) => (
-                  <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      onClick={() => handleNavigation(item.path)}
-                      className={
-                        isActive(item.path)
-                          ? 'bg-accent text-accent-foreground'
-                          : 'hover:bg-accent/50'
-                      }
-                    >
-                      <item.icon className="h-4 w-4" />
-                      {showLabels && <span>{item.title}</span>}
-                    </SidebarMenuButton>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => handleNavigation('/vehicles')}
+                    className={
+                      isActive('/vehicles')
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-accent/50'
+                    }
+                  >
+                    <Car className="h-4 w-4" />
+                    {showLabels && <span>Viaturas</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <Collapsible defaultOpen={isActive('/users')} className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="hover:bg-accent/50">
+                        <Users className="h-4 w-4" />
+                        {showLabels && (
+                          <>
+                            <span>Utilizadores</span>
+                            <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {utilizadoresSubItems.map((sub) => (
+                          <SidebarMenuSubItem key={sub.path}>
+                            <SidebarMenuSubButton
+                              onClick={() => handleNavigation(sub.path)}
+                              className={
+                                isActive('/users') &&
+                                ((location.search.includes('tab=list') && sub.path.includes('tab=list')) ||
+                                 (!location.search.includes('tab=list') && sub.path.includes('tab=create')))
+                                  ? 'bg-accent text-accent-foreground'
+                                  : 'hover:bg-accent/50'
+                              }
+                            >
+                              <span>{sub.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
                   </SidebarMenuItem>
-                ))}
+                </Collapsible>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => handleNavigation('/settings')}
+                    className={
+                      isActive('/settings')
+                        ? 'bg-accent text-accent-foreground'
+                        : 'hover:bg-accent/50'
+                    }
+                  >
+                    <Settings className="h-4 w-4" />
+                    {showLabels && <span>Configurações</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <Collapsible defaultOpen={isActive('/telegram') || isActive('/test-readiness')} className="group/collapsible">
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton className="hover:bg-accent/50">
+                        <MessageCircle className="h-4 w-4" />
+                        {showLabels && (
+                          <>
+                            <span>Comunicação</span>
+                            <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                          </>
+                        )}
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {comunicacaoSubItems.map((sub) => (
+                          <SidebarMenuSubItem key={sub.path}>
+                            <SidebarMenuSubButton
+                              onClick={() => handleNavigation(sub.path)}
+                              className={
+                                isActive(sub.path)
+                                  ? 'bg-accent text-accent-foreground'
+                                  : 'hover:bg-accent/50'
+                              }
+                            >
+                              <sub.icon className="h-4 w-4" />
+                              <span>{sub.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
+
+                {adminItems
+                  .filter((item) => item.path === '/notices')
+                  .map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        onClick={() => handleNavigation(item.path)}
+                        className={
+                          isActive(item.path)
+                            ? 'bg-accent text-accent-foreground'
+                            : 'hover:bg-accent/50'
+                        }
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {showLabels && <span>{item.title}</span>}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
