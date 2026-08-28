@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -48,7 +49,10 @@ const ManageUsers = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'create' | 'list'>(
+    searchParams.get('tab') === 'list' ? 'list' : 'create'
+  );
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [tempPasswordDialog, setTempPasswordDialog] = useState<{ open: boolean; password: string; title: string; description: string }>({
     open: false,
