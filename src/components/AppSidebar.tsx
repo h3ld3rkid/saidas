@@ -16,7 +16,15 @@ import {
   SidebarHeader,
   SidebarFooter,
   useSidebar,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -44,7 +52,7 @@ import {
   Settings,
   Home,
   MessageCircle,
-  Shield,
+  ChevronDown,
   UserCheck,
   Zap,
   Calendar,
