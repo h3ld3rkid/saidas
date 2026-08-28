@@ -324,15 +324,9 @@ export function AppSidebar() {
 
   const adminItems = [
     {
-      title: 'Gerir Viaturas',
+      title: 'Viaturas',
       icon: Car,
       path: '/vehicles',
-      roles: ['admin'],
-    },
-    {
-      title: 'Gerir Utilizadores',
-      icon: Users,
-      path: '/users',
       roles: ['admin'],
     },
     {
@@ -342,29 +336,21 @@ export function AppSidebar() {
       roles: ['admin'],
     },
     {
-      title: 'Avisos de Entrada',
-      icon: Shield,
-      path: '/splash-announcements',
-      roles: ['admin'],
-    },
-    {
-      title: 'Telegram',
-      icon: MessageCircle,
-      path: '/telegram',
-      roles: ['admin'],
-    },
-    {
       title: 'Configurações',
       icon: Settings,
       path: '/settings',
       roles: ['admin'],
     },
-    {
-      title: 'Teste de Prontidão',
-      icon: FlaskConical,
-      path: '/test-readiness',
-      roles: ['admin'],
-    },
+  ];
+
+  const utilizadoresSubItems = [
+    { title: 'Gerir', path: '/users?tab=list' },
+    { title: 'Criar', path: '/users?tab=create' },
+  ];
+
+  const comunicacaoSubItems = [
+    { title: 'Telegram', icon: MessageCircle, path: '/telegram' },
+    { title: 'Testes de Prontidão', icon: FlaskConical, path: '/test-readiness' },
   ];
 
   const handleNavigation = (path: string, external?: boolean) => {
