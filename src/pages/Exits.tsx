@@ -93,6 +93,8 @@ const Exits = () => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchFicha, setSearchFicha] = useState('');
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [selectedExit, setSelectedExit] = useState<VehicleExit | null>(null);
 
   // Component to display crew names
   const CrewDisplay = ({ crewString }: { crewString: string }) => {
@@ -105,12 +107,30 @@ const Exits = () => {
     return <span>{formatCrewNames(crewString)}</span>;
   };
 
+  // Load available years once, in background (non-blocking)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .rpc('get_vehicle_exits_with_privacy')
+        .select('departure_date')
+        .order('departure_date', { ascending: true })
+        .limit(1);
+      const first = (data as any[])?.[0]?.departure_date;
+      const startYear = first ? new Date(first).getFullYear() : currentYear;
+      const years: number[] = [];
+      for (let y = currentYear; y >= Math.min(startYear, currentYear); y--) years.push(y);
+      setAvailableYears(years);
+    })();
+  }, [user]);
+
   useEffect(() => {
     const fetchExits = async () => {
       if (!user) return;
+      setLoading(true);
 
       // Use RPC function to get exits with sensitive data privacy after 24h.
-      // Fetch in ordered pages because Supabase caps each response at 1000 rows.
+      // Only fetch the selected year (counters reset annually) to keep the page fast.
       const pageSize = 1000;
       let from = 0;
       let exitsData: any[] = [];
@@ -119,6 +139,8 @@ const Exits = () => {
       while (true) {
         const { data: pageData, error: pageError } = await supabase
           .rpc('get_vehicle_exits_with_privacy')
+          .gte('departure_date', `${selectedYear}-01-01`)
+          .lte('departure_date', `${selectedYear}-12-31`)
           .order('departure_date', { ascending: false })
           .order('departure_time', { ascending: false })
           .order('created_at', { ascending: false })
@@ -184,7 +206,7 @@ const Exits = () => {
     };
 
     fetchExits();
-  }, [user, role]);
+  }, [user, role, selectedYear]);
 
   const handleDeleteExit = async (exitId: string) => {
     setDeleting(exitId);
@@ -362,12 +384,8 @@ const Exits = () => {
         String(exit.service_number ?? '').includes(q)
       );
     }
-    const exitYear = new Date(exit.departure_date).getFullYear();
-    return exitYear === selectedYear;
+    return true;
   });
-
-  // Obter anos disponíveis para o dropdown
-  const availableYears = [...new Set(exits.map(exit => new Date(exit.departure_date).getFullYear()))].sort((a, b) => b - a);
 
   // Paginação
   const totalPages = Math.ceil(filteredExits.length / itemsPerPage);
@@ -457,14 +475,9 @@ const Exits = () => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                        </DialogTrigger>
-                        <ExitDetailsModal exit={exit} />
-                      </Dialog>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedExit(exit)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
                       
                       {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
                         <Button 
@@ -549,14 +562,9 @@ const Exits = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                            </DialogTrigger>
-                            <ExitDetailsModal exit={exit} />
-                          </Dialog>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedExit(exit)}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
                           
 {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
   <Button 
@@ -609,7 +617,7 @@ const Exits = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t text-xs md:text-sm">
               <div className="text-muted-foreground">
-                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, exits.length)} de {exits.length}
+                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredExits.length)} de {filteredExits.length}
               </div>
               <div className="flex gap-1">
                 <Button
@@ -635,6 +643,10 @@ const Exits = () => {
           )}
         </Card>
       )}
+
+      <Dialog open={!!selectedExit} onOpenChange={(o) => { if (!o) setSelectedExit(null); }}>
+        {selectedExit && <ExitDetailsModal exit={selectedExit} />}
+      </Dialog>
     </div>
   );
 };
