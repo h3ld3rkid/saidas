@@ -206,7 +206,7 @@ const Exits = () => {
     };
 
     fetchExits();
-  }, [user, role]);
+  }, [user, role, selectedYear]);
 
   const handleDeleteExit = async (exitId: string) => {
     setDeleting(exitId);
@@ -384,12 +384,8 @@ const Exits = () => {
         String(exit.service_number ?? '').includes(q)
       );
     }
-    const exitYear = new Date(exit.departure_date).getFullYear();
-    return exitYear === selectedYear;
+    return true;
   });
-
-  // Obter anos disponíveis para o dropdown
-  const availableYears = [...new Set(exits.map(exit => new Date(exit.departure_date).getFullYear()))].sort((a, b) => b - a);
 
   // Paginação
   const totalPages = Math.ceil(filteredExits.length / itemsPerPage);
@@ -479,14 +475,9 @@ const Exits = () => {
                       </div>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="icon" className="h-8 w-8">
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                        </DialogTrigger>
-                        <ExitDetailsModal exit={exit} />
-                      </Dialog>
+                      <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedExit(exit)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
                       
                       {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
                         <Button 
@@ -571,14 +562,9 @@ const Exits = () => {
                       </td>
                       <td className="p-3">
                         <div className="flex gap-1 justify-center">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Eye className="h-3.5 w-3.5" />
-                              </Button>
-                            </DialogTrigger>
-                            <ExitDetailsModal exit={exit} />
-                          </Dialog>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedExit(exit)}>
+                            <Eye className="h-3.5 w-3.5" />
+                          </Button>
                           
 {(hasRole('admin') || exit.user_id === user?.id || (user && exit.crew?.includes(user.id)) || hasRole('mod')) && (
   <Button 
@@ -631,7 +617,7 @@ const Exits = () => {
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t text-xs md:text-sm">
               <div className="text-muted-foreground">
-                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, exits.length)} de {exits.length}
+                {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredExits.length)} de {filteredExits.length}
               </div>
               <div className="flex gap-1">
                 <Button
@@ -657,6 +643,10 @@ const Exits = () => {
           )}
         </Card>
       )}
+
+      <Dialog open={!!selectedExit} onOpenChange={(o) => { if (!o) setSelectedExit(null); }}>
+        {selectedExit && <ExitDetailsModal exit={selectedExit} />}
+      </Dialog>
     </div>
   );
 };
