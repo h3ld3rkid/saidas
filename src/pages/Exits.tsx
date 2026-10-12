@@ -93,6 +93,8 @@ const Exits = () => {
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState<number>(currentYear);
   const [searchFicha, setSearchFicha] = useState('');
+  const [availableYears, setAvailableYears] = useState<number[]>([currentYear]);
+  const [selectedExit, setSelectedExit] = useState<VehicleExit | null>(null);
 
   // Component to display crew names
   const CrewDisplay = ({ crewString }: { crewString: string }) => {
@@ -105,12 +107,30 @@ const Exits = () => {
     return <span>{formatCrewNames(crewString)}</span>;
   };
 
+  // Load available years once, in background (non-blocking)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .rpc('get_vehicle_exits_with_privacy')
+        .select('departure_date')
+        .order('departure_date', { ascending: true })
+        .limit(1);
+      const first = (data as any[])?.[0]?.departure_date;
+      const startYear = first ? new Date(first).getFullYear() : currentYear;
+      const years: number[] = [];
+      for (let y = currentYear; y >= Math.min(startYear, currentYear); y--) years.push(y);
+      setAvailableYears(years);
+    })();
+  }, [user]);
+
   useEffect(() => {
     const fetchExits = async () => {
       if (!user) return;
+      setLoading(true);
 
       // Use RPC function to get exits with sensitive data privacy after 24h.
-      // Fetch in ordered pages because Supabase caps each response at 1000 rows.
+      // Only fetch the selected year (counters reset annually) to keep the page fast.
       const pageSize = 1000;
       let from = 0;
       let exitsData: any[] = [];
@@ -119,6 +139,8 @@ const Exits = () => {
       while (true) {
         const { data: pageData, error: pageError } = await supabase
           .rpc('get_vehicle_exits_with_privacy')
+          .gte('departure_date', `${selectedYear}-01-01`)
+          .lte('departure_date', `${selectedYear}-12-31`)
           .order('departure_date', { ascending: false })
           .order('departure_time', { ascending: false })
           .order('created_at', { ascending: false })
